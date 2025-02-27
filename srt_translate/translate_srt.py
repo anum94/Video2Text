@@ -222,6 +222,7 @@ for input_file_path in tqdm(input_file_paths):
 
 
     # In the main translation loop:
+    block_size = len(subs)
     total_blocks = (len(subs) + block_size - 1) // block_size
 
     # Translate block by block
