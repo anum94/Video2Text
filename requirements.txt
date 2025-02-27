@@ -1,0 +1,8 @@
+transformers
+torch
+flash_attn
+accelerate
+pillow
+opencv-python
+openai
+pysrt
