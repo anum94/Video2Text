@@ -157,16 +157,26 @@ def check_path_and_list_srt_files(path):
 
 
 # Check for the correct usage and provide feedback if needed
-if len(sys.argv) != 3:
+if len(sys.argv) < 3:
     print("Usage: python translate_srt.py path/to/your/file/or/folder.srt")
     sys.exit(1)
 
 # Check the .srt file and load it in
 input_path = sys.argv[1]
 input_file_paths = check_path_and_list_srt_files(input_path)
-input_file_paths = input_file_paths * 50
+input_file_paths = input_file_paths * 10
 #setup the output directory
 output_path = sys.argv[2]
+
+# If only a subset should be executed
+if len(sys.argv) > 3:
+    start = int(sys.argv[3])
+    end = int(sys.argv[4])
+else:
+    start = 0
+    end = len(input_file_paths)
+input_file_paths = input_file_paths[start:end]
+
 if not os.path.exists(output_path):
     # If it does not exist, create the directory
     os.makedirs(output_path)
