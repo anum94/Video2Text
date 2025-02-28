@@ -1,4 +1,4 @@
-
+from gitdb.fun import chunk_size
 from openai import OpenAI
 import pysrt
 import sys
@@ -6,13 +6,14 @@ import os
 import configparser
 import shutil
 import time
+import concurrent.futures
 from dotenv import load_dotenv
 from tqdm import tqdm
 load_dotenv("../.env")
 # Initialize and read the configuration
 config = configparser.ConfigParser()
 config.read('config.ini')
-
+global output_path
 # Defining a unique marker
 # Choose a unique sequence that won't appear in translations.
 # (not in use in current version)
@@ -81,9 +82,10 @@ def split_long_line(text, max_line_length):
 
 
 # Function to translate blocks of subtitles with context-specific information
-def translate_block(block, block_num, total_blocks):
+def translate_block(block, block_num, total_blocks, model, max_tokens,temperature):
     # print_horizontal_line()
-    print(f"::: [ Translating block {block_num} / {total_blocks} ]")
+    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    #print(f"::: [ Translating block {block_num} / {total_blocks} ]")
     original_indices = [sub.index for sub in block]
     combined_text = "\n".join([f"[{sub.index}] {sub.text}".replace('\n', ' ') for sub in block])
 
@@ -156,43 +158,16 @@ def check_path_and_list_srt_files(path):
         return f"The path '{path}' does not exist."
 
 
-# Check for the correct usage and provide feedback if needed
-if len(sys.argv) < 3:
-    print("Usage: python translate_srt.py path/to/your/file/or/folder.srt")
-    sys.exit(1)
 
-# Check the .srt file and load it in
-input_path = sys.argv[1]
-input_file_paths = check_path_and_list_srt_files(input_path)
-input_file_paths = input_file_paths * 10
-#setup the output directory
-output_path = sys.argv[2]
+def translate(input_file_path):
 
-# If only a subset should be executed
-if len(sys.argv) > 3:
-    start = int(sys.argv[3])
-    end = int(sys.argv[4])
-else:
-    start = 0
-    end = len(input_file_paths)
-input_file_paths = input_file_paths[start:end]
-
-if not os.path.exists(output_path):
-    # If it does not exist, create the directory
-    os.makedirs(output_path)
-
-# Start translation
-print (f"{len(input_file_paths)} files detected. \n Starting translation.")
-# Initialize the OpenAI client
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
-for input_file_path in tqdm(input_file_paths):
     if not input_file_path.lower().endswith('.srt'):
         print("The provided file does not have an .srt extension.")
         sys.exit(1)
 
     # Load in the .srt file
     try:
+
         subs = pysrt.open(input_file_path)
     except Exception as e:
         print(f"Error reading the SRT file: {e}")
@@ -200,23 +175,10 @@ for input_file_path in tqdm(input_file_paths):
 
     # Determine the output file path based on the input
     output_file = os.path.basename(input_file_path).replace('.srt', '_translated.srt')
+    output_path = sys.argv[2]
     output_file_path = os.path.join(output_path, output_file)
-    '''
-    # Check if the output file already exists
-    if os.path.exists(output_file_path):
-        print(f"Warning: The file {output_file_path} already exists.")
-        overwrite = input("Do you want to overwrite it? (y/n): ").lower().strip()
-        while overwrite not in ['y', 'n']:
-            overwrite = input("Please enter 'y' or 'n': ").lower().strip()
 
-        if overwrite == 'n':
-            print("Translation canceled. file was overwritten.")
-            sys.exit(0)
-    '''
-    # Configuration retrievals
     try:
-        # Here, no is_int argument is necessary because it defaults to False.
-        default_translation_language = get_config('Translation', 'DefaultLanguage', "Please enter the default translation language code (e.g., 'es' for Spanish):")
         # For integer values, explicitly specify is_int=True.
         block_size = get_config('Settings', 'BlockSize', "Please enter the number of subtitles to process at once (e.g., 10):", is_int=True)
         max_line_length = get_config('Settings', 'MaxLineLength', "Max characters per subtitle line:", is_int=True)
@@ -229,8 +191,6 @@ for input_file_path in tqdm(input_file_paths):
     except Exception as e:
         print(f"Error retrieving configuration: {e}")
         sys.exit(1)
-
-
     # In the main translation loop:
     block_size = len(subs)
     total_blocks = (len(subs) + block_size - 1) // block_size
@@ -239,7 +199,7 @@ for input_file_path in tqdm(input_file_paths):
     try:
         for i, start in enumerate(range(0, len(subs), block_size)):
             block = subs[start:start + block_size]
-            translated_block = translate_block(block, i + 1, total_blocks)
+            translated_block = translate_block(block, i + 1, total_blocks, model, max_tokens,temperature)
             for j, sub in enumerate(block):
                 if j < len(translated_block):
                     # Apply line splitting only if max_line_length is greater than zero.
@@ -258,5 +218,45 @@ for input_file_path in tqdm(input_file_paths):
     # Save the translated subtitles
     subs.save(output_file_path)
     #print_horizontal_line()
-    print(f"::: Translation done!\n::: Translated subtitles saved to: {output_file_path}")
+    #print(f"::: Translation done!\n::: Translated subtitles saved to: {output_file_path}")
     #print_horizontal_line()
+    return  output_file_path
+
+if __name__ == '__main__':
+    #freeze_support()
+    if len(sys.argv) < 3:
+        print("Usage: python translate_srt.py path/to/your/file/or/folder.srt")
+        sys.exit(1)
+
+    # Check the .srt file and load it in
+    input_path = sys.argv[1]
+    input_file_paths = check_path_and_list_srt_files(input_path)
+    input_file_paths = input_file_paths * 50
+    # setup the output directory
+
+    output_path = sys.argv[2]
+
+    # If only a subset should be executed
+    if len(sys.argv) > 3:
+        start = int(sys.argv[3])
+        end = int(sys.argv[4])
+    else:
+        start = 0
+        end = len(input_file_paths)
+    input_file_paths = input_file_paths[start:end]
+
+    if not os.path.exists(output_path):
+        # If it does not exist, create the directory
+        os.makedirs(output_path)
+
+    # Start translation
+    print(f"{len(input_file_paths)} files detected. \n Starting translation.")
+
+    start_time = time.time()
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        futures = [executor.submit(translate, input_file_path) for input_file_path in input_file_paths]
+        for future in concurrent.futures.as_completed(futures):
+            print(f"Translation done for file: {futures.index(future)}")
+
+    end_time = time.time()
+    print(f"Translated all provided files in {end_time - start_time:.2f} seconds")
