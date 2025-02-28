@@ -43,7 +43,7 @@ commentary_directory = "/Users/anumafzal/PycharmProjects/video2Text/RaceCommenta
 
 
 transcription_file = "transcriptions_whole_data_english/AC_150221-130155_R_ks_porsche_macan_mugello__kyakkan.merged.mp4_translated.srt"
-mp4_file = "recordings/AC_150221-130155_R_ks_porsche_macan_mugello_/AC_150221-130155_R_ks_porsche_macan_mugello_客観.mp4"
+mp4_file = "/groups/gac50547/RaceCommentary/recordings/AC_150221-130155_R_ks_porsche_macan_mugello_/AC_150221-130155_R_ks_porsche_macan_mugello_客観.mp4"
 video = sample_frames(mp4_file, 6)
 
 model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
