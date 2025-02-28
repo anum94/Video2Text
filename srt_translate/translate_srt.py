@@ -1,4 +1,4 @@
-from gitdb.fun import chunk_size
+
 from openai import OpenAI
 import pysrt
 import sys
