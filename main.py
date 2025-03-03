@@ -18,7 +18,7 @@ def sample_frames(path, num_frames):
     interval = total_frames // num_frames
     frames = []
     take_next_frame = False
-    for i in tqdm(range(total_frames), total=total_frames):
+    for i in range(total_frames):
         try:
             ret, frame = video.read()
             pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -103,6 +103,6 @@ toks = "<image>" * num_frames
 prompt = "<|im_start|>user"+ toks + f"\n{user_prompt}<|im_end|><|im_start|>assistant"
 inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
 
-output = model.generate(**inputs, max_new_tokens=256, do_sample=False)
+output = model.generate(**inputs, max_new_tokens=1024, do_sample=False)
 print(processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:])
 
