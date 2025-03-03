@@ -4,6 +4,7 @@ import os
 import cv2
 from PIL import Image
 import sys
+from tqdm import tqdm
 def replace_video_with_images(text, frames):
   return text.replace("<video>", "<image>" * frames)
 
