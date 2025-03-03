@@ -12,14 +12,18 @@ def get_video_info(path):
     total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
     return total_frames
 def sample_frames(path, num_frames):
-
+    print ("1")
     video = cv2.VideoCapture(path)
+    print ("2")
     total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
     interval = total_frames // num_frames
     frames = []
+    print (f"3, total frames: {total_frames}")
     for i in range(total_frames):
         ret, frame = video.read()
+        print ("4")
         pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        print ("5")
         if not ret:
             continue
         if i % interval == 0:
