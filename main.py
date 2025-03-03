@@ -130,21 +130,22 @@ model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
     model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
     model.to("cuda")
 for t in (range(video_metadata["duration"])):
-    video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
+    if t % 10:
+        video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
 
 
-    inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
+        inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
 
-    output = model.generate(**inputs, max_new_tokens=128, do_sample=True)
-    pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
+        output = model.generate(**inputs, max_new_tokens=128, do_sample=True)
+        pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
 
-    print (f"{t}: {pred_utterence}")
-    if "<WAIT>" in pred_utterence:
-        pred_timing.append(False)
-    else:
-        pred_timing.append(True)
+        print (f"{t}: {pred_utterence}")
+        if "<WAIT>" in pred_utterence:
+            pred_timing.append(False)
+        else:
+            pred_timing.append(True)
 
-    pred_utterences.append(pred_utterence)
+        pred_utterences.append(pred_utterence)
 
 correlations = [1 if a==b else 0 for a ,b in zip(ref_timing, pred_timing)]
 
