@@ -40,7 +40,11 @@ def get_commentary_path(game_path):
     game_path = os.path.basename(game_path)
     commentary_path = [os.path.join(commentary_directory, file) for file in os.listdir(commentary_directory) if
      file.endswith('.srt') and os.path.isfile(os.path.join(commentary_directory, file)) and "kyakkan" in file
-         and game_path in file][0]
+         and game_path in file]
+    if len(commentary_path) > 0:
+        commentary_path = commentary_path[0]
+    else:
+        commentary_path = None
     return commentary_path
 
 
@@ -68,9 +72,13 @@ all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video
 if n is None:
     n = len(all_game_path)
 for game_path in all_game_path[:n]:
-    mp4_file = [os.path.join(game_path,file) for file in os.listdir(game_path) if
-                 file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
     transcription_file = get_commentary_path(game_path)
+    if transcription_file is not None:
+        mp4_file = [os.path.join(game_path,file) for file in os.listdir(game_path) if
+                     file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
+    else:
+        print (f"kyakkan commentary not available for game: {game_path}")
+        continue
 
 
 #transcription_file = "transcriptions_whole_data_english/AC_150221-130155_R_ks_porsche_macan_mugello__kyakkan.merged.mp4_translated.srt"
