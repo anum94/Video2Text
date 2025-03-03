@@ -48,7 +48,7 @@ def get_commentary_path(game_path):
 if __name__ == '__main__':
     if len(sys.argv) > 2:
         folder = sys.argv[1]
-        n = sys.argv[1]
+        n = int(sys.argv[1])
     elif len(sys.argv) > 1:
         folder = sys.argv[1]
         n = None
