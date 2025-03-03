@@ -94,7 +94,11 @@ processor = LlavaProcessor.from_pretrained(model_id)
 model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
 model.to("cuda")
 
-user_prompt = "Please generate a commentary in english for the provided video?"
+user_prompt = ("You are a professional commentator for car racing. You will be "
+               "provided with a section of a video from a whole game and your task is to generate a commentary"
+               "if something exciting happened in that time frame. If nothing important happened during the video, then "
+               "please generate a <WAIT> token. Now please generate a commentary in english for the provided video"
+               "if there are some interesting developments happening in the game.")
 toks = "<image>" * num_frames
 prompt = "<|im_start|>user"+ toks + f"\n{user_prompt}<|im_end|><|im_start|>assistant"
 inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
