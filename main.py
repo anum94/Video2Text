@@ -124,9 +124,8 @@ prompt = "<|im_start|>user"+ toks + f"\n{user_prompt}<|im_end|><|im_start|>assis
 
 generation = []
 for t in (range(video_metadata["duration"])):
-    print(t)
     video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
-    '''
+
     model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
     processor = LlavaProcessor.from_pretrained(model_id)
 
@@ -136,8 +135,9 @@ for t in (range(video_metadata["duration"])):
 
     output = model.generate(**inputs, max_new_tokens=1024, do_sample=False)
     generation_t = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
+    print (f"{t}: {generation_t}")
     generation.append(generation_t)
-    '''
+
 
 
 
