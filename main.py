@@ -125,10 +125,10 @@ prompt = "<|im_start|>user"+ toks + f"\n{user_prompt}<|im_end|><|im_start|>assis
 pred_utterences = []
 pred_timing = []
 model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
-    processor = LlavaProcessor.from_pretrained(model_id)
+processor = LlavaProcessor.from_pretrained(model_id)
 
-    model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
-    model.to("cuda")
+model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
+model.to("cuda")
 for t in (range(video_metadata["duration"])):
     if t % 10:
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
@@ -148,8 +148,6 @@ for t in (range(video_metadata["duration"])):
         pred_utterences.append(pred_utterence)
 
 correlations = [1 if a==b else 0 for a ,b in zip(ref_timing, pred_timing)]
-
-
 confusion_matrix(ref_timing, pred_timing)
 
 
