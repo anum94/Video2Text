@@ -65,7 +65,7 @@ commentary_directory = os.path.join(folder,commentary_directory)
 
 
 all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video_directory) if os.path.isdir(os.path.join(video_directory, name))]
-if n is None:
+if n is not None:
     n = len(all_game_path)
 for game_path in all_game_path[:n]:
     mp4_file = [os.path.join(game_path,file) for file in os.listdir(game_path) if
