@@ -17,7 +17,7 @@ def sample_frames(path, num_frames):
     interval = total_frames // num_frames
     frames = []
     take_next_frame = False
-    for i in range(total_frames):
+    for i in tqdm(range(total_frames)):
         try:
             ret, frame = video.read()
             pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
