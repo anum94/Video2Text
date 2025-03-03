@@ -5,20 +5,44 @@ import cv2
 from PIL import Image
 import sys
 from tqdm import tqdm
+
+from utils.data_utils import read_srt, srt_time_to_seconds
+
+
+def get_utterence_timing(ground_truth,metadata):
+    utterence_timing = [False] * int(metadata.get("duration"))
+    utterences = []
+    for gt in ground_truth:
+        i = srt_time_to_seconds(gt.start)
+        utterence_timing[i] = True
+        utterences.append(gt.text)
+    return utterences, utterence_timing
+
 def replace_video_with_images(text, frames):
   return text.replace("<video>", "<image>" * frames)
 
 def get_video_info(path):
     video = cv2.VideoCapture(path)
     total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-    return total_frames
-def sample_frames(path, num_frames):
+    fps = int(video.get(cv2.CAP_PROP_FPS))
+    duration = int(total_frames/fps)
+    return {"total_frames": total_frames, "frames_per_second": fps,
+            "duration":duration }
+def sample_frames(path, num_frames, start_frame = None, end_frame = None):
+
     video = cv2.VideoCapture(path)
-    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-    interval = total_frames // num_frames
+    if start_frame is not None:
+        video.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+
+    if end_frame is None:
+        end_frame = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    interval = (end_frame - start_frame) // num_frames
     frames = []
     take_next_frame = False
-    for i in range(total_frames):
+
+
+    for i in range(end_frame):
         try:
             ret, frame = video.read()
             pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -35,7 +59,7 @@ def sample_frames(path, num_frames):
                 take_next_frame = True
 
     video.release()
-    return frames[:num_frames]
+    return frames
 def get_commentary_path(game_path):
     game_path = os.path.basename(game_path)
     commentary_path = [os.path.join(commentary_directory, file) for file in os.listdir(commentary_directory) if
@@ -85,24 +109,34 @@ for game_path in all_game_path[:n]:
 #transcription_file = os.path.join(folder, transcription_file)
 #mp4_file = "AC_150221-130155_R_ks_porsche_macan_mugello_/AC_150221-130155_R_ks_porsche_macan_mugello_客観.mp4"
 #mp4_file = os.path.join(video_directory, mp4_file)
-num_frames = 50
-video = sample_frames(mp4_file, num_frames)
+ground_truth = read_srt(transcription_file)
+video_metadata = get_video_info(mp4_file)
+utterences, utterence_timing = get_utterence_timing(ground_truth, video_metadata)
+num_frames_to_use = 30
+num_frames_per_second = video_metadata["frames_per_second"]
 
-model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
-processor = LlavaProcessor.from_pretrained(model_id)
-
-model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
-model.to("cuda")
-
-user_prompt = ("You are a professional commentator for car racing. You will be "
-               "provided with a section of a video from a whole game and your task is to generate a commentary"
-               "if something exciting happened in that time frame. If nothing important happened during the video, then "
-               "please generate a <WAIT> token. Now please generate a commentary in english for the provided video"
-               "if there are some interesting developments happening in the game.")
-toks = "<image>" * num_frames
+user_prompt = ("You are a professional commentator for car racing games. You will be provided with few seconds"
+               "interval video extracted from the whole game and your task is to either generate one sentence "
+               "regarding the current state of the game or generate a <WAIT> if there us no development in the state"
+               "of the game.")
+toks = "<image>" * num_frames_to_use
 prompt = "<|im_start|>user"+ toks + f"\n{user_prompt}<|im_end|><|im_start|>assistant"
-inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
 
-output = model.generate(**inputs, max_new_tokens=1024, do_sample=False)
-print(processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:])
+generation = []
+for t in range(video_metadata["duration"]):
+    video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
+    print()
+
+    model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
+    processor = LlavaProcessor.from_pretrained(model_id)
+
+    model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
+    model.to("cuda")
+    inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
+
+    output = model.generate(**inputs, max_new_tokens=1024, do_sample=False)
+    generation_t = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
+    generation.append(generation_t)
+
+
 
