@@ -5,7 +5,7 @@ import cv2
 from PIL import Image
 import sys
 from tqdm import tqdm
-
+from sklearn.metrics import confusion_matrix
 from utils.data_utils import read_srt, srt_time_to_seconds
 
 
@@ -111,7 +111,7 @@ for game_path in all_game_path[:n]:
 #mp4_file = os.path.join(video_directory, mp4_file)
 ground_truth = read_srt(transcription_file)
 video_metadata = get_video_info(mp4_file)
-utterences, utterence_timing = get_utterence_timing(ground_truth, video_metadata)
+ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
 num_frames_to_use = 30
 num_frames_per_second = video_metadata["frames_per_second"]
 
@@ -122,7 +122,9 @@ user_prompt = ("You are a professional commentator for car racing games. You wil
 toks = "<image>" * num_frames_to_use
 prompt = "<|im_start|>user"+ toks + f"\n{user_prompt}<|im_end|><|im_start|>assistant"
 
-generation = []
+pred_utterences = []
+pred_timing = []
+
 for t in (range(video_metadata["duration"])):
     video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
 
@@ -133,11 +135,20 @@ for t in (range(video_metadata["duration"])):
     model.to("cuda")
     inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
 
-    output = model.generate(**inputs, max_new_tokens=1024, do_sample=False)
-    generation_t = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
-    print (f"{t}: {generation_t}")
-    generation.append(generation_t)
+    output = model.generate(**inputs, max_new_tokens=128, do_sample=True)
+    pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
+    print (f"{t}: {pred_utterence}")
+    if "<WAIT>" in pred_utterence:
+        pred_timing.append(False)
+    else:
+        pred_timing.append(True)
 
+    pred_utterences.append(pred_utterence)
+
+correlations = [1 if a==b else 0 for a ,b in zip(ref_timing, pred_timing)]
+
+
+confusion_matrix(ref_timing, pred_timing)
 
 
 
