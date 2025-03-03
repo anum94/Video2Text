@@ -42,7 +42,7 @@ def sample_frames(path, num_frames, start_frame = None, end_frame = None):
     take_next_frame = False
 
 
-    for i in range(end_frame):
+    for i in range(end_frame - start_frame):
         try:
             ret, frame = video.read()
             pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
@@ -126,6 +126,7 @@ generation = []
 for t in (range(video_metadata["duration"])):
     print(t)
     video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
+    '''
     model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
     processor = LlavaProcessor.from_pretrained(model_id)
 
@@ -136,6 +137,8 @@ for t in (range(video_metadata["duration"])):
     output = model.generate(**inputs, max_new_tokens=1024, do_sample=False)
     generation_t = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
     generation.append(generation_t)
+    '''
+
 
 
 
