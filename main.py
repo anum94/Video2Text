@@ -85,7 +85,8 @@ for game_path in all_game_path[:n]:
 #transcription_file = os.path.join(folder, transcription_file)
 #mp4_file = "AC_150221-130155_R_ks_porsche_macan_mugello_/AC_150221-130155_R_ks_porsche_macan_mugello_客観.mp4"
 #mp4_file = os.path.join(video_directory, mp4_file)
-video = sample_frames(mp4_file, 100)
+num_frames = 100
+video = sample_frames(mp4_file, num_frames)
 
 model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
 processor = LlavaProcessor.from_pretrained(model_id)
@@ -94,10 +95,10 @@ model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torc
 model.to("cuda")
 
 user_prompt = "Please generate a commentary in english for the provided video?"
-toks = "<image>" * 12
+toks = "<image>" * num_frames
 prompt = "<|im_start|>user"+ toks + f"\n{user_prompt}<|im_end|><|im_start|>assistant"
 inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
 
-output = model.generate(**inputs, max_new_tokens=100, do_sample=False)
+output = model.generate(**inputs, max_new_tokens=256, do_sample=False)
 print(processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:])
 
