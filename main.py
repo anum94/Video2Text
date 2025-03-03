@@ -22,7 +22,6 @@ def sample_frames(path, num_frames):
         try:
             ret, frame = video.read()
             pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            print (i)
             if not ret:
                 continue
             if i % interval == 0:
@@ -47,9 +46,12 @@ def get_commentary_path(game_path):
 
 
 if __name__ == '__main__':
-    #freeze_support()
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
         folder = sys.argv[1]
+        n = sys.argv[1]
+    elif len(sys.argv) > 1:
+        folder = sys.argv[1]
+        n = None
     else:
         print("Usage: python main.py path/to/folder/containing/data")
         sys.exit(1)
@@ -61,19 +63,21 @@ video_directory = os.path.join(folder,video_directory)
 commentary_directory = "transcriptions_whole_data_english"
 commentary_directory = os.path.join(folder,commentary_directory)
 
-#all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video_directory) if os.path.isdir(os.path.join(video_directory, name))]
-#for game_path in all_game_path:
-#    mp4_file = [os.path.join(game_path,file) for file in os.listdir(game_path) if
-#                 file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
-#    transcription_file = get_commentary_path(game_path)
 
-#folder = "/groups/gac50547"
+all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video_directory) if os.path.isdir(os.path.join(video_directory, name))]
+if n is None:
+    n = len(all_game_path)
+for game_path in all_game_path[:n]:
+    mp4_file = [os.path.join(game_path,file) for file in os.listdir(game_path) if
+                 file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
+    transcription_file = get_commentary_path(game_path)
 
-transcription_file = "transcriptions_whole_data_english/AC_150221-130155_R_ks_porsche_macan_mugello__kyakkan.merged.mp4_translated.srt"
-transcription_file = os.path.join(folder, transcription_file)
-mp4_file = "AC_150221-130155_R_ks_porsche_macan_mugello_/AC_150221-130155_R_ks_porsche_macan_mugello_客観.mp4"
-mp4_file = os.path.join(video_directory, mp4_file)
-video = sample_frames(mp4_file, 12)
+
+#transcription_file = "transcriptions_whole_data_english/AC_150221-130155_R_ks_porsche_macan_mugello__kyakkan.merged.mp4_translated.srt"
+#transcription_file = os.path.join(folder, transcription_file)
+#mp4_file = "AC_150221-130155_R_ks_porsche_macan_mugello_/AC_150221-130155_R_ks_porsche_macan_mugello_客観.mp4"
+#mp4_file = os.path.join(video_directory, mp4_file)
+video = sample_frames(mp4_file, 100)
 
 model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
 processor = LlavaProcessor.from_pretrained(model_id)
