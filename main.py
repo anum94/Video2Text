@@ -131,23 +131,23 @@ processor = LlavaProcessor.from_pretrained(model_id)
 
 model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
 model.to("cuda")
+#model.generation_config.pad_token_id = tokenizer.pad_token_id
 for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duration"]):
+
+    video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
+
+    inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
+
+    output = model.generate(**inputs, max_new_tokens=64, do_sample=True)
+    pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
+    if "<WAIT>" in pred_utterence:
+        pred_timing.append(False)
+    else:
+        pred_timing.append(True)
+
+    pred_utterences.append(pred_utterence)
     if t % 10 == 0:
-        video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
-
-        inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
-
-        output = model.generate(**inputs, max_new_tokens=64, do_sample=True)
-        pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
-
-        print (f"{t}: {pred_utterence}")
-        if "<WAIT>" in pred_utterence:
-            pred_timing.append(False)
-        else:
-            pred_timing.append(True)
-
-        pred_utterences.append(pred_utterence)
-
+        print(f"{t}: {pred_utterence}")
 
 correlations = [1 if a==b else 0 for a ,b in zip(ref_timing, pred_timing)]
 confusion_matrix(ref_timing, pred_timing)
