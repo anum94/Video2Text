@@ -37,6 +37,8 @@ def sample_frames(path, num_frames, start_frame = None, end_frame = None):
     if end_frame is None:
         end_frame = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
+    if start_frame - end_frame < num_frames:
+        print ()
     interval = (end_frame - start_frame) // num_frames
     frames = []
     take_next_frame = False
@@ -129,14 +131,13 @@ processor = LlavaProcessor.from_pretrained(model_id)
 
 model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
 model.to("cuda")
-for t in (range(video_metadata["duration"])):
+for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duration"]):
     if t % 10 == 0:
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
 
-
         inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
 
-        output = model.generate(**inputs, max_new_tokens=128, do_sample=True)
+        output = model.generate(**inputs, max_new_tokens=64, do_sample=True)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
 
         print (f"{t}: {pred_utterence}")
@@ -146,6 +147,7 @@ for t in (range(video_metadata["duration"])):
             pred_timing.append(True)
 
         pred_utterences.append(pred_utterence)
+
 
 correlations = [1 if a==b else 0 for a ,b in zip(ref_timing, pred_timing)]
 confusion_matrix(ref_timing, pred_timing)
