@@ -130,7 +130,7 @@ processor = LlavaProcessor.from_pretrained(model_id)
 model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
 model.to("cuda")
 for t in (range(video_metadata["duration"])):
-    if t % 10:
+    if t % 10 == 0:
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
 
 
