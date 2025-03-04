@@ -7,7 +7,7 @@ import sys
 from tqdm import tqdm
 from sklearn.metrics import confusion_matrix
 from utils.data_utils import read_srt, srt_time_to_seconds
-
+from datetime import datetime
 
 def get_utterence_timing(ground_truth,metadata):
     utterence_timing = [False] * int(metadata.get("duration"))
@@ -133,7 +133,6 @@ processor = LlavaProcessor.from_pretrained(model_id)
 model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
 model.generation_config.pad_token_id = processor.pad_token_id
 model.to("cuda")
-#model.generation_config.pad_token_id = tokenizer.pad_token_id
 for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duration"]):
 
     video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
@@ -151,6 +150,11 @@ for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duratio
     if t % 10 == 0:
         print(f"{t}: {pred_utterence}")
 
+date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
+out_file = os.path.join(folder, "logs", date_time, "logs.txt")
+with open(out_file, 'a') as the_file:
+    for t, ut in enumerate(pred_utterence):
+        the_file.write(f"{t}: {pred_utterence}\n")
 correlations = [1 if a==b else 0 for a ,b in zip(ref_timing, pred_timing)]
 cm = confusion_matrix(ref_timing, pred_timing)
 print (correlations.count(1))
