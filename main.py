@@ -117,6 +117,8 @@ ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
 num_frames_to_use = 30
 num_frames_per_second = video_metadata["frames_per_second"]
 
+model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
+#prompt =
 user_prompt = ("You are a professional commentator for car racing games. You will be provided with few seconds"
                "interval video extracted from the whole game and your task is to either generate one sentence "
                "regarding the current state of the game or generate a <WAIT> if there us no development in the state"
@@ -127,11 +129,11 @@ prompt = "<|im_start|>user"+ toks + f"\n{user_prompt}<|im_end|><|im_start|>assis
 
 pred_utterences = []
 pred_timing = []
-model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
+
 processor = LlavaProcessor.from_pretrained(model_id)
 
 model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
-model.generation_config.pad_token_id = processor.pad_token_id
+#model.generation_config.pad_token_id = processor.pad_token_id
 model.to("cuda")
 for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duration"]):
 
