@@ -153,7 +153,9 @@ for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duratio
         print(f"{t}: {pred_utterence}")
 
 date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
-out_file = os.path.join(folder, "logs", date_time, "logs.txt")
+out_folder = os.path.join(folder, "logs", date_time)
+os.makedirs(out_folder, exist_ok=True)
+out_file = os.path.join(out_folder,"logs.txt")
 with open(out_file, 'a') as the_file:
     for t, ut in enumerate(pred_utterence):
         the_file.write(f"{t}: {pred_utterence}\n")
