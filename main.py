@@ -191,6 +191,7 @@ elif model_id == "llava-hf/LLaVA-NeXT-Video-7B-hf":
 
         output = model.generate(**inputs_video, max_new_tokens=100, do_sample=False)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
+        pred_utterence = pred_utterences.split("ASSISTANT:")
         if "<WAIT>" in pred_utterence:
             pred_timing.append(False)
         else:
