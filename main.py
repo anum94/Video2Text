@@ -202,9 +202,10 @@ elif model_id == "llava-hf/LLaVA-NeXT-Video-7B-hf":
             print(f"{t}: {pred_utterence}")
 
 date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
-out_folder = os.path.join(folder, "logs", date_time)
+out_folder = os.path.join("logs", date_time)
 os.makedirs(out_folder, exist_ok=True)
 out_file = os.path.join(out_folder, "logs.txt")
+print (f"Generation stored at {out_file}")
 with open(out_file, 'a') as the_file:
     for t, ut in enumerate(pred_utterence):
         the_file.write(f"{t}: {pred_utterence}\n")
