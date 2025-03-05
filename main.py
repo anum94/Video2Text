@@ -1,14 +1,22 @@
 from transformers import LlavaProcessor, LlavaForConditionalGeneration
-import torch
 import os
 import cv2
-from PIL import Image
-import sys
+import av
+import torch
+import numpy as np
+from huggingface_hub import hf_hub_download
+from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
+
+
 from tqdm import tqdm
 from sklearn.metrics import confusion_matrix
 from utils.data_utils import read_srt, srt_time_to_seconds
 from datetime import datetime
-
+from PIL import Image
+import torch
+import sys
+import warnings
+warnings.filterwarnings("ignore")
 def get_utterence_timing(ground_truth,metadata):
     utterence_timing = [False] * int(metadata.get("duration"))
     utterences = []
@@ -28,7 +36,7 @@ def get_video_info(path):
     duration = int(total_frames/fps)
     return {"total_frames": total_frames, "frames_per_second": fps,
             "duration":duration }
-def sample_frames(path, num_frames, start_frame = None, end_frame = None):
+def sample_frames(path, num_frames, start_frame = None, end_frame = None, format = "images"):
 
     video = cv2.VideoCapture(path)
     if start_frame is not None:
@@ -61,6 +69,9 @@ def sample_frames(path, num_frames, start_frame = None, end_frame = None):
                 take_next_frame = True
 
     video.release()
+    if format == "video":
+        frames = [np.array(frame) for frame in frames]
+        frames = np.stack(frames, axis=0)
     return frames
 def get_commentary_path(game_path):
     game_path = os.path.basename(game_path)
@@ -72,8 +83,6 @@ def get_commentary_path(game_path):
     else:
         commentary_path = None
     return commentary_path
-
-
 
 if __name__ == '__main__':
     if len(sys.argv) > 2:
@@ -114,55 +123,89 @@ for game_path in all_game_path[:n]:
 ground_truth = read_srt(transcription_file)
 video_metadata = get_video_info(mp4_file)
 ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
-num_frames_to_use = 30
+num_frames_to_use = 3
 num_frames_per_second = video_metadata["frames_per_second"]
 
+
 model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
-#prompt =
-user_prompt = ("You are a professional commentator for car racing games. You will be provided with few seconds"
-               "interval video extracted from the whole game and your task is to either generate one sentence "
-               "regarding the current state of the game or generate a <WAIT> if there us no development in the state"
-               "of the game. Please observe the state in terms of the car shown and the associated players. Ignore the "
-               "background information and avoid from describing the scene. Just explain the game.")
-toks = "<image>" * num_frames_to_use
-prompt = "<|im_start|>user"+ toks + f"\n{user_prompt}<|im_end|><|im_start|>assistant"
+model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
+if model_id == "llava-hf/llava-interleave-qwen-0.5b-hf":
 
-pred_utterences = []
-pred_timing = []
+    user_prompt = ("You are a professional commentator for car racing games. You will be provided with few seconds"
+                   "interval video extracted from the whole game and your task is to either generate one sentence "
+                   "regarding the current state of the game or generate a <WAIT> if there us no development in the state"
+                   "of the game. Please observe the state in terms of the car shown and the associated players. Ignore the "
+                   "background information and avoid from describing the scene. Just explain the game.")
+    toks = "<image>" * num_frames_to_use
+    prompt = "<|im_start|>user"+ toks + f"\n{user_prompt}<|im_end|><|im_start|>assistant"
+    pred_utterences = []
+    pred_timing = []
 
-processor = LlavaProcessor.from_pretrained(model_id)
+    processor = LlavaProcessor.from_pretrained(model_id)
 
-model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
-#model.generation_config.pad_token_id = processor.pad_token_id
-model.to("cuda")
-for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duration"]):
+    model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
+    #model.generation_config.pad_token_id = processor.pad_token_id
+    model.to("cuda")
 
-    video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
+    for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duration"]):
 
-    inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
+        video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
 
-    output = model.generate(**inputs, max_new_tokens=64, do_sample=True)
-    pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
-    if "<WAIT>" in pred_utterence:
-        pred_timing.append(False)
-    else:
-        pred_timing.append(True)
+        inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
 
-    pred_utterences.append(pred_utterence)
-    if t % 10 == 0:
-        print(f"{t}: {pred_utterence}")
+        output = model.generate(**inputs, max_new_tokens=64, do_sample=True)
+        pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
+        if "<WAIT>" in pred_utterence:
+            pred_timing.append(False)
+        else:
+            pred_timing.append(True)
 
-date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
-out_folder = os.path.join(folder, "logs", date_time)
-os.makedirs(out_folder, exist_ok=True)
-out_file = os.path.join(out_folder,"logs.txt")
-with open(out_file, 'a') as the_file:
-    for t, ut in enumerate(pred_utterence):
-        the_file.write(f"{t}: {pred_utterence}\n")
-correlations = [1 if a==b else 0 for a ,b in zip(ref_timing, pred_timing)]
-cm = confusion_matrix(ref_timing, pred_timing)
-print (correlations.count(1))
-print (cm)
+        pred_utterences.append(pred_utterence)
+        if t % 10 == 0:
+            print(f"{t}: {pred_utterence}")
+    date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
+    out_folder = os.path.join(folder, "logs", date_time)
+    os.makedirs(out_folder, exist_ok=True)
+    out_file = os.path.join(out_folder, "logs.txt")
+    with open(out_file, 'a') as the_file:
+        for t, ut in enumerate(pred_utterence):
+            the_file.write(f"{t}: {pred_utterence}\n")
+    correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
+    cm = confusion_matrix(ref_timing, pred_timing)
+    print(correlations.count(1))
+    print(cm)
+
+elif model_id == "llava-hf/LLaVA-NeXT-Video-7B-hf":
+
+    processor = LlavaNextVideoProcessor.from_pretrained(model_id)
+
+    conversation = [
+        {
+
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Why is this video funny?"},
+                {"type": "video"},
+            ],
+        },
+    ]
+    prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
+    for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duration"]):
+
+        video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second, format="video")
+        model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            low_cpu_mem_usage=True,
+        ).to(0)
+        inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
+
+        output = model.generate(**inputs_video, max_new_tokens=100, do_sample=False)
+        print(processor.decode(output[0][2:], skip_special_tokens=True))
+
+
+
+
 
 
 
