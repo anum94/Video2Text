@@ -208,7 +208,7 @@ out_file = os.path.join(out_folder, "logs.txt")
 print (f"Generation stored at {out_file}")
 with open(out_file, 'a') as the_file:
     for t, ut in enumerate(pred_utterences):
-        the_file.write(f"{t}: {pred_utterence}\n")
+        the_file.write(f"{t}: {ut}\n")
 correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
 cm = confusion_matrix(ref_timing, pred_timing)
 print(correlations.count(1))
