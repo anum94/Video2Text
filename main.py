@@ -133,9 +133,10 @@ pred_utterences = []
 pred_timing = []
 user_prompt = ("You are a professional commentator for car racing games. You will be provided with few seconds"
                    "interval video extracted from the whole game and your task is to either generate one sentence "
-                   "regarding the current state of the game or generate a <WAIT> if there us no development in the state"
-                   "of the game. Please observe the state in terms of the car shown and the associated players. Ignore the "
-                   "background information and avoid from describing the scene. Just explain the game.")
+                   "regarding the current state of the game or generate a <WAIT> if there is no developments in the"
+                   "game. You should: 1)Identify the name of car diver through the legends provided and refer to cars by"
+               "the name of the driver. 2) observe the game as a professional commentator would and decribe any developments."
+               "3) Ignore the background information and refrain the describing the scenary. Just explain the game.")
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
 
 
