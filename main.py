@@ -85,6 +85,10 @@ def get_commentary_path(game_path):
     return commentary_path
 
 if __name__ == '__main__':
+    date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
+
+    out_folder = os.path.join("logs", date_time)
+    os.makedirs(out_folder, exist_ok=True)
     if len(sys.argv) > 2:
         folder = sys.argv[1]
         n = int(sys.argv[2])
@@ -132,47 +136,17 @@ user_prompt = ("You are a professional commentator for car racing games. You wil
                    "regarding the current state of the game or generate a <WAIT> if there us no development in the state"
                    "of the game. Please observe the state in terms of the car shown and the associated players. Ignore the "
                    "background information and avoid from describing the scene. Just explain the game.")
-model_id = "llava-hf/llava-interleave-qwen-0.5b-hf"
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
-if model_id == "llava-hf/llava-interleave-qwen-0.5b-hf":
 
 
-    toks = "<image>" * num_frames_to_use
-    prompt = "<|im_start|>user"+ toks + f"\n{user_prompt}<|im_end|><|im_start|>assistant"
-
-
-    processor = LlavaProcessor.from_pretrained(model_id)
-
-    model = LlavaForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16)
-    model.to("cuda")
-
-    for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duration"]):
-
-        video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second)
-
-        inputs = processor(text=prompt, images=video, return_tensors="pt").to(model.device, model.dtype)
-
-        output = model.generate(**inputs, max_new_tokens=64, do_sample=True)
-        pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)[len(user_prompt)+10:]
-        if "<WAIT>" in pred_utterence:
-            pred_timing.append(False)
-        else:
-            pred_timing.append(True)
-
-        pred_utterences.append(pred_utterence)
-        if t % 10 == 0:
-            print(f"{t}: {pred_utterence}")
-
-
-elif model_id == "llava-hf/LLaVA-NeXT-Video-7B-hf":
-    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         model_id,
         torch_dtype=torch.float16,
         low_cpu_mem_usage=True,
     ).to(0)
-    processor = LlavaNextVideoProcessor.from_pretrained(model_id)
+processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
-    conversation = [
+conversation = [
         {
 
             "role": "user",
@@ -182,28 +156,32 @@ elif model_id == "llava-hf/LLaVA-NeXT-Video-7B-hf":
             ],
         },
     ]
-    prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
-    for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duration"]):
+prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
+for t in tqdm(range(video_metadata["duration"]), total = video_metadata["duration"]):
 
-        video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second, format="video")
+    video = sample_frames(mp4_file, num_frames_to_use, start_frame=t*num_frames_per_second, end_frame=(t+1)*num_frames_per_second, format="video")
 
-        inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
+    inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
 
-        output = model.generate(**inputs_video, max_new_tokens=100, do_sample=False)
-        pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
-        pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
-        if "<WAIT>" in pred_utterence:
-            pred_timing.append(False)
-        else:
-            pred_timing.append(True)
+    output = model.generate(**inputs_video, max_new_tokens=100, do_sample=False)
+    pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
+    pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
+    if "<WAIT>" in pred_utterence:
+        pred_timing.append(False)
+    else:
+        pred_timing.append(True)
 
-        pred_utterences.append(pred_utterence)
-        if t % 10 == 0:
-            print(f"{t}: {pred_utterence}")
+    pred_utterences.append(pred_utterence)
+    if t % 10 == 0:
+        print(f"{t}: {pred_utterence}")
 
-date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
-out_folder = os.path.join("logs", date_time)
-os.makedirs(out_folder, exist_ok=True)
+complete_commentary = ""
+previous = ""
+for pred_utterence in pred_utterences:
+    if previous != pred_utterence:
+        complete_commentary += pred_utterence
+    previous = pred_utterence
+print (f"Complete Commentary: {complete_commentary}")
 out_file = os.path.join(out_folder, "logs.txt")
 print (f"Generation stored at {out_file}")
 with open(out_file, 'a') as the_file:
