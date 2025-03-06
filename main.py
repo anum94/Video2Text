@@ -52,7 +52,50 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
     pred_utterences = []
     pred_timing = []
 
-    for t in tqdm(range(video_metadata["duration"][::step]), total=video_metadata["duration"]/step):
+    for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
+
+        video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * num_frames_per_second,
+                              end_frame=(t + 1) * num_frames_per_second, format="video")
+
+        inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
+
+        output = model.generate(**inputs_video, max_new_tokens=100, do_sample=False)
+        pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
+        pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
+        if "<WAIT>" in pred_utterence:
+            pred_timing.append(False)
+        else:
+            pred_timing.append(True)
+
+        pred_utterences.append(pred_utterence)
+        if t % 10 == 0 and verbose:
+            print(f"{t}: {pred_utterence}")
+
+    pred_utterences_cleaned = remove_repeatitions(pred_utterences)
+    out_file = write_logs(out_folder, pred_utterences_cleaned)
+
+    eval_metrics = compute_metrics(ref_timing, pred_timing)
+
+    if verbose:
+        print(eval_metrics)
+        print(f"Complete Commentary: {pred_utterences_cleaned}")
+
+    return pred_utterences
+
+def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False):
+
+    conversation = get_user_prompt("baseline")
+    prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
+
+    ground_truth = read_srt(transcription_file)
+    video_metadata = get_video_info(mp4_file)
+    ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
+    num_frames_per_second = video_metadata["frames_per_second"]
+
+    pred_utterences = []
+    pred_timing = []
+
+    for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
 
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * num_frames_per_second,
                               end_frame=(t + 1) * num_frames_per_second, format="video")
@@ -141,7 +184,7 @@ num_frames_to_use = 3
 if step is None:
     step = 1
 baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
-#baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step=step)
+baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step=step)
 
 
 
