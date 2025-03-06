@@ -116,7 +116,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
     pred_utterences_cleaned = remove_repeatitions(pred_utterences)
     out_file = write_logs(out_folder, pred_utterences_cleaned)
-
+    ref_timing = [ref for ref in range(0,len(ref_timing),step)]
     eval_metrics = compute_metrics(ref_timing, pred_timing)
 
     if verbose:
