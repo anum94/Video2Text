@@ -88,12 +88,18 @@ if __name__ == '__main__':
 
     out_folder = os.path.join("logs", date_time)
     os.makedirs(out_folder, exist_ok=True)
-    if len(sys.argv) > 2:
+    if len(sys.argv) > 3:
         folder = sys.argv[1]
         n = int(sys.argv[2])
+        step = int(sys.argv[3])
+    elif len(sys.argv) > 2:
+        folder = sys.argv[1]
+        n = int(sys.argv[2])
+        step = None
     elif len(sys.argv) > 1:
         folder = sys.argv[1]
         n = None
+        step = None
     else:
         print("Usage: python main.py path/to/folder/containing/data")
         sys.exit(1)
@@ -132,8 +138,10 @@ processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 # Baseline without feedback loop
 
 num_frames_to_use = 3
-step = 1
-basaeline_utterences = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
+if step is None:
+    step = 1
+baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
+#baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step=step)
 
 
 
