@@ -37,8 +37,9 @@ def get_user_prompt(mode="baseline"):
             "of commentary focus on the following without being too verbose:" 
             "1) Identify if the provided video has any new development as compared to the already provided commentary."
             "2) Ignore the background information and refrain the describing the scenery."
-            "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>, "
-            "otherwise generate a brief commentary. ")
+            "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
+            "Previous Commentary:"
+            )
 
     return user_prompt
 
@@ -80,7 +81,10 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         else:
             pred_timing.append(True)
 
-        pred_utterences.append(pred_utterence)
+        if pred_utterence[:20].strip() == pred_utterences[-1][:20].strip():
+            pred_utterences.append("<WAIT>")
+        else:
+            pred_utterences.append(pred_utterence)
         if t % 10 == 0 and verbose:
             print(f"{t}: {pred_utterence}")
 
@@ -163,12 +167,13 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
         if t == 0:
             output_buffer_str = pred_utterence
-        if "<WAIT>" in pred_utterence:
+        if pred_utterence.strip() == "<WAIT>":
             pred_timing.append(False)
 
             t_buffer +=1
             print(t_buffer)
             print(pred_utterence)
+
 
         else:
             output_buffer_str += pred_utterence
