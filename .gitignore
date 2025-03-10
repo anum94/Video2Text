@@ -182,3 +182,7 @@ srt_translate/utils/*_formatted.txt
 srt_translate/utils/*_restored.srt
 data
 data_translated
+RaceCommentary.zip
+RaceCommentary
+logs
+.env
