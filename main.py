@@ -257,7 +257,7 @@ num_frames_to_use = 3
 max_new_tokens = 50
 if step is None:
     step = 2
-#baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
+baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
 
 
