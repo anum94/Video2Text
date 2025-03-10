@@ -38,6 +38,7 @@ def get_user_prompt(mode="baseline"):
             "1) Identify if the provided video has any new development as compared to the already provided commentary."
             "2) Ignore the background information and refrain the describing the scenery."
             "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
+            "4) If there are new developments in the provided video, then generate 1 - 2 lines of commentary."
             "Previous Commentary:"
             )
 
