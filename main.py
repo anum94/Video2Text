@@ -136,12 +136,14 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
 
         print(t)
+        print (output_buffer_str)
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=(t-step+1-t_buffer) * num_frames_per_second,
                               end_frame=(t + 1) * num_frames_per_second, format="video")
 
         if t < init_skip_frames:
             if t == 0:
                 user_prompt = get_user_prompt("feedback_loop_init")
+                max_new_tokens = 100
 
             else:
                 pred_timing.append(False)
@@ -150,6 +152,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         else:
             user_prompt = get_user_prompt("feedback_loop")
             user_prompt += output_buffer_str
+            max_new_tokens = 50
         prompt = get_messages(user_prompt=user_prompt, ICL=ICL)
 
 
@@ -162,6 +165,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             output_buffer_str = pred_utterence
         if "<WAIT>" in pred_utterence:
             pred_timing.append(False)
+
             t_buffer +=1
             print(t_buffer)
             print(pred_utterence)
