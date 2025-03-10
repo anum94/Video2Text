@@ -35,13 +35,10 @@ def get_user_prompt(mode="baseline"):
             "Your task is to first decide if the commentator should say something for the provided video interval"
             "or stay quite. If you choose to stay quite then simply generate <WAIT>, otherwise generate one or two sentences "
             "of commentary focus on the following without being too verbose:" 
-            "1)Identify the name of car diver through the legends provided and refer to cars by the name of the driver, "
-            "but don't say anything about it."
-            "2) Ignore the background information and refrain the describing the scenery. Just explain the game."
-            "3) observe the game as a professional commentator would and look for any developments while comparing to the "
-            "commentary from the previous intervals."
-            "If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>, "
-            "otherwise generate a brief commentary. \nCommentary: ")
+            "1) Identify if the provided video has any new development as compared to the already provided commentary."
+            "2) Ignore the background information and refrain the describing the scenery."
+            "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>, "
+            "otherwise generate a brief commentary. ")
 
     return user_prompt
 
@@ -251,7 +248,7 @@ max_new_tokens = 50
 if step is None:
     step = 2
 #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
-baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step=step, ICL=False)
+baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
 
 
 
