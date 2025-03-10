@@ -41,7 +41,7 @@ def get_user_prompt(mode="baseline"):
             "3) observe the game as a professional commentator would and look for any developments while comparing to the "
             "commentary from the previous intervals."
             "If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>, "
-            "otherwise generate a brief commentary. \n Previous Commentary: ")
+            "otherwise generate a brief commentary. \nCommentary: ")
 
     return user_prompt
 
@@ -145,7 +145,10 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         if t < init_skip_frames:
             if t == 0:
                 user_prompt = get_user_prompt("feedback_loop_init")
+
             else:
+                pred_timing.append(False)
+                pred_utterences.append("<WAIT>")
                 continue
         else:
             user_prompt = get_user_prompt("feedback_loop")
@@ -158,13 +161,16 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         print(pred_utterence)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
+        if t == 0:
+            output_buffer_str = pred_utterence
         if "<WAIT>" in pred_utterence:
             pred_timing.append(False)
             t_buffer +=1
             print(t_buffer)
             print(pred_utterence)
-            output_buffer_str += pred_utterence
+
         else:
+            output_buffer_str += pred_utterence
             pred_timing.append(True)
             t_buffer = 0
 
