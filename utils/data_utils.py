@@ -35,8 +35,8 @@ def read_srt(input_file_path):
         subs.append(sub)
     return subs
 
-def write_logs(out_folder, predictions):
-    out_file = os.path.join(out_folder, "logs.txt")
+def write_logs(out_folder, predictions, mode = ""):
+    out_file = os.path.join(out_folder, f"logs_{mode}.txt")
     print(f"Generation stored at {out_file}")
     with open(out_file, 'a') as the_file:
         for t, ut in enumerate(predictions):

@@ -243,6 +243,8 @@ if __name__ == '__main__':
     else:
         start = 0
         end = len(input_file_paths)
+
+
     input_file_paths = input_file_paths[start:end]
 
     if not os.path.exists(output_path):

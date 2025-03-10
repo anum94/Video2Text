@@ -18,8 +18,8 @@ def sample_frames(path, num_frames, start_frame = None, end_frame = None, format
     if end_frame is None:
         end_frame = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    if start_frame - end_frame < num_frames:
-        print ()
+    if end_frame - start_frame < num_frames:
+        start_frame = end_frame - num_frames
     interval = (end_frame - start_frame) // num_frames
     frames = []
     take_next_frame = False
