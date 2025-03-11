@@ -77,7 +77,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=False)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
-        if "<WAIT>" in pred_utterence:
+        if pred_utterence.strip() == "<WAIT>":
             pred_timing.append(False)
         else:
             pred_timing.append(True)
@@ -137,7 +137,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     pred_timing = []
     pred_utterences = []
     output_buffer_str = ""
-    t_buffer = 0
+    previous_generation = ""
     for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
 
         print(f"Timestep: {t}")
@@ -148,7 +148,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         if t < init_skip_frames:
             if t == 0:
                 user_prompt = get_user_prompt("feedback_loop_init")
-                max_new_tokens = 100
+                max_new_tokens = 200
 
             else:
                 pred_timing.append(False)
@@ -170,18 +170,15 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             output_buffer_str = pred_utterence
         if pred_utterence.strip() == "<WAIT>":
             pred_timing.append(False)
-
-            t_buffer +=1
-            print(t_buffer)
-            print(pred_utterence)
-
-
         else:
-            output_buffer_str += pred_utterence
             pred_timing.append(True)
-            t_buffer = 0
 
-        pred_utterences.append(pred_utterence)
+        if pred_utterence[:20].strip() == previous_generation[:20].strip():
+            pred_utterences.append("<WAIT>")
+        else:
+            previous_generation = pred_utterence
+            pred_utterences.append(pred_utterence)
+            output_buffer_str += pred_utterence
 
         if t % 10 == 0 and verbose:
             print(f"{t}: {pred_utterence}")
@@ -257,11 +254,12 @@ num_frames_to_use = 3
 max_new_tokens = 50
 if step is None:
     step = 2
+'''
 try:
-
     baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 except Exception as e:
     print (f"Baseline method failed: {e}")
+'''
 baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
 
 
