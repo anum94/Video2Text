@@ -199,6 +199,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     output_buffer_str = ""
     wait_count = 0
     init_str = ""
+    temp = 0
     for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
 
         print(f"Timestep: {t}")
@@ -219,8 +220,10 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         else:
             if wait_count >= int(20/step):
                 user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step, force=True)
+                temp = 1
             else:
                 user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step)
+                temp = 0.5
             user_prompt += output_buffer_str
             max_new_tokens = 75
             do_sample = False
@@ -228,7 +231,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             icl_examples = construct_icl_examples(ICL, k=2, step=step)
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
-        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = 1)
+        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
 
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
