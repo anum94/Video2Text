@@ -329,7 +329,7 @@ processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
 # Baseline without feedback loop
 
-num_frames_to_use = 5
+num_frames_to_use = 6
 max_new_tokens = 50
 if step is None:
     step = 2
