@@ -64,7 +64,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
     video_metadata = get_video_info(mp4_file)
     ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
     num_frames_per_second = video_metadata["frames_per_second"]
-
+    previous_generation = ""
     pred_utterences = []
     pred_timing = []
 
@@ -83,10 +83,11 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         else:
             pred_timing.append(True)
 
-        if pred_utterence[:20].strip() == pred_utterences[-1][:20].strip():
+        if pred_utterence.strip() == previous_generation.strip():
             pred_utterences.append("<WAIT>")
         else:
             pred_utterences.append(pred_utterence)
+            previous_generation = pred_utterence
         if t % 10 == 0 and verbose:
             print(f"{t}: {pred_utterence}")
 
