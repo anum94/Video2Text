@@ -35,11 +35,11 @@ def read_srt(input_file_path):
         subs.append(sub)
     return subs
 
-def write_logs(out_folder, predictions, mode = ""):
+def write_logs(out_folder, predictions,times, mode = ""):
     out_file = os.path.join(out_folder, f"logs_{mode}.txt")
     print(f"Generation stored at {out_file}")
     with open(out_file, 'a') as the_file:
-        for t, ut in enumerate(predictions):
+        for t, ut in zip(times, predictions):
             the_file.write(f"{t}: {ut}\n")
     return out_file
 def get_commentary_path(commentary_directory, game_path):

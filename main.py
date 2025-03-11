@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore")
 from utils.data_utils import *
 from utils.video_utils import *
 
-def get_user_prompt(mode="baseline", context="", step = 1):
+def get_user_prompt(mode="baseline", context="", step = 1, force=False):
     if mode == "baseline":
         user_prompt = ("You are a professional commentator for car racing games. You will be provided with few seconds"
                        "interval video extracted from the whole game and your task is to either generate one sentence "
@@ -28,20 +28,35 @@ def get_user_prompt(mode="baseline", context="", step = 1):
                        "initial information about the game without being too verbose. \nCommentary: ")
 
     elif mode == "feedback_loop":
-        user_prompt = (
+        if force:
+            user_prompt = (
             f"You are a professional commentator for car racing games and you are currently generating commentary for the following game: {context}"
             f"You will be provided with a short video interval depicting the state of the game at a given interval of {step} seconds along with"
-            "some text that summarizes the game before the provided time interval."
-            #"Your task is to first decide if you should say something for the provided time interval or choose to wait for some developments in the games"
-            #"If you choose to stay quite then simply generate <WAIT>, otherwise generate one or two sentences "
+            "the commentary generated for previous intervals."
             "otherwise generate one or two sentences  of commentary without being too verbose." 
             "1) Identify if the provided video has any new development as compared to the already provided commentary."
             "2) Ignore the background information and refrain the describing the scenery."
-            #"3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
             "4) If there are new developments in the provided video, then generate 1 - 2 lines of commentary."
             "As you might know, sometimes commentators stay silent for a few seconds during the game. so you don't necessarily need to say something"
 
             "Previous Commentary:"
+            )
+        else:
+            user_prompt = (
+                f"You are a professional commentator for car racing games and you are currently generating commentary for the following game: {context}"
+                f"You will be provided with a short video interval depicting the state of the game at a given interval of {step} seconds along with"
+                "some text that summarizes the game before the provided time interval."
+                # "Your task is to first decide if you should say something for the provided time interval or choose to wait for some developments in the games"
+                # "If you choose to stay quite then simply generate <WAIT>, otherwise generate one or two sentences "
+                "Your task is generate one or two sentences of commentary to describe the state of the game, if it has changed from the previously generated commentary"
+                "1) Identify if the provided video has any new development as compared to the already provided commentary."
+                "2) Ignore the background information and refrain the describing the scenery."
+                "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
+                "4) If there are new developments in the provided video, such as if a new player is in lead, or if one of the players did an "
+                "impressive move then generate 1 - 2 lines of commentary."
+                "As you might know, sometimes commentators stay silent for a few seconds during the game. so you don't necessarily need to say something"
+
+                "Previous Commentary:"
             )
 
     return user_prompt
@@ -67,6 +82,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
     num_frames_per_second = video_metadata["frames_per_second"]
     previous_generation = ""
     pred_utterences = []
+    pred_utterences_step =[]
     pred_timing = []
 
     for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
@@ -88,12 +104,13 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
             pred_utterences.append("<WAIT>")
         else:
             pred_utterences.append(pred_utterence)
+            pred_utterences_step.append(t)
             previous_generation = pred_utterence
         if t % 10 == 0 and verbose:
             print(f"{t}: {pred_utterence}")
 
     #pred_utterences = remove_repeatitions(pred_utterences)
-    out_file = write_logs(out_folder, pred_utterences, mode="baseline")
+    out_file = write_logs(out_folder, pred_utterences,pred_utterences_step, mode="baseline")
     ref_timing = [ref for ref in range(0,len(ref_timing),step)]
     eval_metrics = compute_metrics(ref_timing, pred_timing)
 
@@ -139,8 +156,9 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
     pred_timing = []
     pred_utterences = []
+    pred_utterences_step = []
     output_buffer_str = ""
-    previous_generation = ""
+    wait_count = 0
     init_str = ""
     for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
 
@@ -159,7 +177,10 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                 pred_utterences.append("<WAIT>")
                 continue
         else:
-            user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step)
+            if wait_count == int(10/step):
+                user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step, force=True)
+            else:
+                user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step)
             user_prompt += output_buffer_str
             max_new_tokens = 50
         prompt = get_messages(user_prompt=user_prompt, ICL=ICL)
@@ -173,13 +194,16 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
         if "<WAIT>" in pred_utterence:
             pred_timing.append(False)
+            wait_count +=1
         else:
             pred_timing.append(True)
             previous_generation = pred_utterence
             output_buffer_str += pred_utterence
+            wait_count = 0
             #if pred_utterence[:25].strip() == previous_generation[:25].strip():
             #    pass
         pred_utterences.append(pred_utterence)
+        pred_utterences_step.append(t)
         if t ==0:
             init_str = pred_utterence
 
@@ -187,7 +211,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             print(f"{t}: {pred_utterence}")
 
     #pred_utterences = remove_repeatitions(pred_utterences)
-    out_file = write_logs(out_folder, pred_utterences, mode = "feedback_loop")
+    out_file = write_logs(out_folder, pred_utterences,pred_utterences_step, mode = "feedback_loop")
     ref_timing = [ref for ref in range(0,len(ref_timing),step)]
     eval_metrics = compute_metrics(ref_timing, pred_timing)
 
@@ -252,7 +276,7 @@ processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
 # Baseline without feedback loop
 
-num_frames_to_use = 3
+num_frames_to_use = 5
 max_new_tokens = 50
 if step is None:
     step = 2
