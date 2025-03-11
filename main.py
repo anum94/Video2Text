@@ -172,6 +172,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             if t == 0:
                 user_prompt = get_user_prompt("feedback_loop_init")
                 max_new_tokens = 200
+                do_sample = False
 
             else:
                 pred_timing.append(False)
@@ -184,10 +185,10 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                 user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step)
             user_prompt += output_buffer_str
             max_new_tokens = 75
+            do_sample = False
         prompt = get_messages(user_prompt=user_prompt, ICL=ICL)
-
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
-        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=False, temperature=0.8)
+        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature=0.8)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         print(pred_utterence)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
