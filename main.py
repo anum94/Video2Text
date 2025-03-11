@@ -335,11 +335,11 @@ if step is None:
     step = 2
 skip_frames = 20
 
-#baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
+baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 
-#baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
+baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
 
-baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example)
+#baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example)
 
 
 
