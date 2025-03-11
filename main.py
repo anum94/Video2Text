@@ -178,14 +178,13 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                 pred_utterences.append("<WAIT>")
                 continue
         else:
-            if wait_count == int(10/step):
+            if wait_count >= int(20/step):
                 user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step, force=True)
             else:
                 user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step)
             user_prompt += output_buffer_str
             max_new_tokens = 75
         prompt = get_messages(user_prompt=user_prompt, ICL=ICL)
-
 
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=False, temperature=0.8)
@@ -200,7 +199,11 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             pred_timing.append(True)
             previous_generation = pred_utterence
             output_buffer_str += pred_utterence
-            wait_count = 0
+            if wait_count >= int(20 / step):
+                wait_count = 0
+            else:
+                previous_generation = pred_utterence
+                output_buffer_str += pred_utterence
             #if pred_utterence[:25].strip() == previous_generation[:25].strip():
             #    pass
         pred_utterences.append(pred_utterence)
