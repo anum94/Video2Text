@@ -285,7 +285,7 @@ if step is None:
     step = 2
 
 
-#baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=10)
+baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 
 baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
 
