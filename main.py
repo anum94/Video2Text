@@ -92,7 +92,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
 
-        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=False)
+        output = model.generate(**inputs_video,  do_sample=True)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
         if pred_utterence.strip() == "<WAIT>" or pred_utterence.strip() == "<WAIT> The provided video interval shows no new developments compared to the already provided commentary. Therefore, I will stay quiet and not generate any commentary for this interval.":
@@ -182,12 +182,12 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             else:
                 user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step)
             user_prompt += output_buffer_str
-            max_new_tokens = 50
+            max_new_tokens = 75
         prompt = get_messages(user_prompt=user_prompt, ICL=ICL)
 
 
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
-        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=False)
+        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=True)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         print(pred_utterence)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
