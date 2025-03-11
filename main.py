@@ -1,4 +1,5 @@
-from sympy.physics.units import temperature
+import os.path
+import random
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
 from datetime import datetime
@@ -31,8 +32,8 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
     elif mode == "feedback_loop":
         if force:
             user_prompt = (
-            f"You are a professional commentator for car racing games and you are currently generating commentary for the following game: {context}"
-            f"You will be provided with a short video interval depicting the state of the game at a given interval of {step} seconds along with"
+            f"You are a professional commentator for car racing games and you are currently generating commentary for game with following description. Game Description: {context}"
+            f"You will be provided with a short video interval depicting the state of the game at a given interval of few seconds along with"
             "the commentary generated for previous intervals."
             "otherwise generate one or two sentences  of commentary without being too verbose." 
             "1) Identify if the provided video has any new development as compared to the already provided commentary."
@@ -44,8 +45,8 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
             )
         else:
             user_prompt = (
-                f"You are a professional commentator for car racing games and you are currently generating commentary for the following game: {context}"
-                f"You will be provided with a short video interval depicting the state of the game at a given interval of {step} seconds along with"
+                f"You are a professional commentator for car racing games and you are currently generating commentary for game with following description. Game Description: {context}"
+                f"\nYou will be provided with a short video interval depicting the state of the game at a given interval of few seconds along with"
                 "some text that summarizes the game before the provided time interval."
                 # "Your task is to first decide if you should say something for the provided time interval or choose to wait for some developments in the games"
                 # "If you choose to stay quite then simply generate <WAIT>, otherwise generate one or two sentences "
@@ -65,11 +66,11 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
 
 def get_utterence_timing(ground_truth,metadata):
     utterence_timing = [False] * int(metadata.get("duration"))
-    utterences = []
+    utterences = [""] * int(metadata.get("duration"))
     for gt in ground_truth:
         i = srt_time_to_seconds(gt.start)
         utterence_timing[i] = True
-        utterences.append(gt.text)
+        utterences[i] = gt.text
     return utterences, utterence_timing
 
 def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False):
@@ -96,7 +97,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         output = model.generate(**inputs_video,  do_sample=False)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
-        if pred_utterence.strip() == "<WAIT>" or pred_utterence.strip() == "<WAIT> The provided video interval shows no new developments compared to the already provided commentary. Therefore, I will stay quiet and not generate any commentary for this interval.":
+        if "<WAIT>" in pred_utterence:
             pred_timing.append(False)
         else:
             pred_timing.append(True)
@@ -123,7 +124,6 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
 def get_messages(user_prompt, ICL = False,):
     if ICL:
-
         conversation = [
             {
 
@@ -148,6 +148,44 @@ def get_messages(user_prompt, ICL = False,):
 
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
     return prompt
+def construct_icl_examples(example, k=2, step=1,num_frames_to_use = 5,skip_frames = 20):
+
+    transcriptions = read_srt(example['transcription'])
+    video_metadata = get_video_info(mp4_file)
+    ref_utterences, ref_timing = get_utterence_timing(transcriptions, video_metadata)
+    num_frames_per_second = video_metadata["frames_per_second"]
+
+    # get positive and negative examples
+    t1 = random.randint(0,len(ref_timing))
+    while ref_timing[t1] != True:
+        t1 = random.randint(0,len(ref_timing))
+    t2 = random.randint(0,len(ref_timing))
+    while ref_timing[t2] != False:
+        t2 = random.randint(0,len(ref_timing))
+
+    init_str = " ".join(ref_utterences[:skip_frames])
+    output_buffer_str = " ".join(ref_utterences[:t1])
+    user_prompt_t1 = get_user_prompt("feedback_loop", context=init_str, step=step)
+    user_prompt_t1 += output_buffer_str
+    generation_t1 = ref_utterences[t1]
+    video_t1 = sample_frames(mp4_file, num_frames_to_use, start_frame=(t1 - step + 1) * num_frames_per_second,
+                          end_frame=(t1 + 1) * num_frames_per_second, format="video")
+
+    generate_example = {"video": video_t1, "prompt": user_prompt_t1, "generation": generation_t1}
+
+    video_t2 = sample_frames(mp4_file, num_frames_to_use, start_frame=(t2 - step + 1) * num_frames_per_second,
+                             end_frame=(t2 + 1) * num_frames_per_second, format="video")
+    init_str = "".join(ref_utterences[:skip_frames])
+    output_buffer_str = "".join(ref_utterences[:t2])
+    user_prompt_t2 = get_user_prompt("feedback_loop", context=init_str, step=step)
+    user_prompt_t2 += output_buffer_str
+    generation_t2 = "<WAIT>"
+
+    wait_example = {"video": video_t2, "prompt": user_prompt_t2, "generation": generation_t2}
+
+    return (generate_example, wait_example)
+
+
 def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False,init_skip_frames=5, ICL = False):
 
     ground_truth = read_srt(transcription_file)
@@ -186,12 +224,15 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             user_prompt += output_buffer_str
             max_new_tokens = 75
             do_sample = False
-        prompt = get_messages(user_prompt=user_prompt, ICL=ICL)
+        if ICL:
+            icl_examples = construct_icl_examples(ICL, k=2, step=step)
+        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature=0.8)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
-        print(pred_utterence)
+
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
+        print(pred_utterence)
 
         if "<WAIT>" in pred_utterence:
             pred_timing.append(False)
@@ -257,7 +298,7 @@ commentary_directory = os.path.join(folder,commentary_directory)
 all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video_directory) if os.path.isdir(os.path.join(video_directory, name))]
 if n is None:
     n = len(all_game_path)
-for game_path in all_game_path[:n]:
+for i, game_path in enumerate(all_game_path[:n]):
     transcription_file = get_commentary_path(commentary_directory,game_path)
     if transcription_file is not None:
         mp4_file = [os.path.join(game_path,file) for file in os.listdir(game_path) if
@@ -265,15 +306,22 @@ for game_path in all_game_path[:n]:
     else:
         print (f"kyakkan commentary not available for game: {game_path}")
         continue
-
+icl_path = os.path.join(video_directory,
+                           "AC_120221-180622_R_ks_audi_r8_plus_ks_nurburgring_layout_sprint_a"
+                           )
+icl_mp4_file = mp4_file = [os.path.join(icl_path,file)
+                           for file in os.listdir(icl_path) if
+                     file.endswith('.mp4') and os.path.isfile(os.path.join(icl_path, file)) and "客観" in file][0]
+icl_transcription_file = transcription_file = get_commentary_path(commentary_directory,icl_path)
+icl_example = {'mp4_file':icl_mp4_file,
+               'transcription': icl_transcription_file}
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
 
-
-model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-        model_id,
-        torch_dtype=torch.float16,
-        low_cpu_mem_usage=True,
-    ).to(0)
+#model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+#        model_id,
+#        torch_dtype=torch.float16,
+#        low_cpu_mem_usage=True,
+#    ).to(0)
 processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
 
@@ -283,12 +331,13 @@ num_frames_to_use = 5
 max_new_tokens = 50
 if step is None:
     step = 2
+skip_frames = 20
 
+#baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 
-baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
+#baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
 
-baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
-
+baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example)
 
 
 
