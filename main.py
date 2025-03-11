@@ -32,14 +32,15 @@ def get_user_prompt(mode="baseline", context="", step = 1):
             f"You are a professional commentator for car racing games and you are currently generating commentary for the following game: {context}"
             f"You will be provided with a short video interval depicting the state of the game at a given interval of {step} seconds along with"
             "some text that summarizes the game before the provided time interval."
-            "As you might know, sometimes commentators stay silent for a few seconds during the game."
-            "Your task is to first decide if you should say something for the provided time interval or choose to wait for some developments in the games"
-            "If you choose to stay quite then simply generate <WAIT>, otherwise generate one or two sentences "
-            "of commentary without being too verbose." 
+            #"Your task is to first decide if you should say something for the provided time interval or choose to wait for some developments in the games"
+            #"If you choose to stay quite then simply generate <WAIT>, otherwise generate one or two sentences "
+            "otherwise generate one or two sentences  of commentary without being too verbose." 
             "1) Identify if the provided video has any new development as compared to the already provided commentary."
             "2) Ignore the background information and refrain the describing the scenery."
             "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
             "4) If there are new developments in the provided video, then generate 1 - 2 lines of commentary."
+            "As you might know, sometimes commentators stay silent for a few seconds during the game. so you don't necessarily need to say something"
+
             "Previous Commentary:"
             )
 
@@ -257,7 +258,7 @@ if step is None:
     step = 2
 
 
-baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=10)
+#baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=10)
 
 baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
 
