@@ -1,5 +1,7 @@
 import os.path
 import random
+
+from sympy.physics.units import temperature
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
 from datetime import datetime
@@ -94,7 +96,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
 
-        output = model.generate(**inputs_video,  do_sample=False)
+        output = model.generate(**inputs_video,  do_sample=False, temperature = 1)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
         if "<WAIT>" in pred_utterence:
@@ -317,11 +319,11 @@ icl_example = {'mp4_file':icl_mp4_file,
                'transcription': icl_transcription_file}
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
 
-#model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-#        model_id,
-#        torch_dtype=torch.float16,
-#        low_cpu_mem_usage=True,
-#    ).to(0)
+model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+        model_id,
+        torch_dtype=torch.float16,
+        low_cpu_mem_usage=True,
+    ).to(0)
 processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
 
