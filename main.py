@@ -228,7 +228,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             icl_examples = construct_icl_examples(ICL, k=2, step=step)
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
-        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature=0.8, temperature = 1)
+        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = 1)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
 
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
