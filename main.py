@@ -229,6 +229,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             do_sample = False
         if ICL:
             icl_examples = construct_icl_examples(ICL, k=2, step=step)
+        else:
+            icl_examples = False
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
