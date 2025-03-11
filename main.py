@@ -197,8 +197,6 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             wait_count +=1
         else:
             pred_timing.append(True)
-            previous_generation = pred_utterence
-            output_buffer_str += pred_utterence
             if wait_count >= int(20 / step):
                 wait_count = 0
             else:
