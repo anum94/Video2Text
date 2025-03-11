@@ -77,7 +77,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=False)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
-        if pred_utterence.strip() == "<WAIT>":
+        if pred_utterence.strip() == "<WAIT>" or pred_utterence.strip() == "<WAIT> The provided video interval shows no new developments compared to the already provided commentary. Therefore, I will stay quiet and not generate any commentary for this interval.":
             pred_timing.append(False)
         else:
             pred_timing.append(True)
@@ -168,12 +168,12 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
         if t == 0:
             output_buffer_str = pred_utterence
-        if pred_utterence.strip() == "<WAIT>":
+        if pred_utterence.strip() == "<WAIT>" or pred_utterence.strip() == "<WAIT> The provided video interval shows no new developments compared to the already provided commentary. Therefore, I will stay quiet and not generate any commentary for this interval.":
             pred_timing.append(False)
         else:
             pred_timing.append(True)
 
-        if pred_utterence[:20].strip() == previous_generation[:20].strip():
+        if pred_utterence[:25].strip() == previous_generation[:25].strip():
             pred_utterences.append("<WAIT>")
         else:
             previous_generation = pred_utterence
@@ -255,10 +255,10 @@ max_new_tokens = 50
 if step is None:
     step = 2
 
-try:
-    baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=10)
-except Exception as e:
-    print (f"Baseline method failed: {e}")
+#try:
+#    baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=10)
+#except Exception as e:
+#    print (f"Baseline method failed: {e}")
 
 baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
 
