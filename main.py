@@ -37,7 +37,7 @@ def get_user_prompt(mode="baseline", context="", step = 1):
             "otherwise generate one or two sentences  of commentary without being too verbose." 
             "1) Identify if the provided video has any new development as compared to the already provided commentary."
             "2) Ignore the background information and refrain the describing the scenery."
-            "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
+            #"3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
             "4) If there are new developments in the provided video, then generate 1 - 2 lines of commentary."
             "As you might know, sometimes commentators stay silent for a few seconds during the game. so you don't necessarily need to say something"
 
