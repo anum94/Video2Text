@@ -92,8 +92,8 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
             print(f"{t}: {pred_utterence}")
 
     #pred_utterences = remove_repeatitions(pred_utterences)
-    out_file = write_logs(out_folder, pred_utterences)
-
+    out_file = write_logs(out_folder, pred_utterences, mode="baseline")
+    ref_timing = [ref for ref in range(0,len(ref_timing),step)]
     eval_metrics = compute_metrics(ref_timing, pred_timing)
 
     if verbose:
@@ -188,7 +188,6 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     #pred_utterences = remove_repeatitions(pred_utterences)
     out_file = write_logs(out_folder, pred_utterences, mode = "feedback_loop")
     ref_timing = [ref for ref in range(0,len(ref_timing),step)]
-    print(len(ref_timing), len(pred_timing))
     eval_metrics = compute_metrics(ref_timing, pred_timing)
 
     if verbose:
@@ -260,7 +259,7 @@ if step is None:
 
 baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=10)
 
-#baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
+baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
 
 
 
