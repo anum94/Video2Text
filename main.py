@@ -1,3 +1,4 @@
+from sympy.physics.units import temperature
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
 from datetime import datetime
@@ -92,7 +93,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
 
-        output = model.generate(**inputs_video,  do_sample=True)
+        output = model.generate(**inputs_video,  do_sample=False)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
         if pred_utterence.strip() == "<WAIT>" or pred_utterence.strip() == "<WAIT> The provided video interval shows no new developments compared to the already provided commentary. Therefore, I will stay quiet and not generate any commentary for this interval.":
@@ -187,7 +188,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
 
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
-        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=True)
+        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=False, temperature=0.8)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         print(pred_utterence)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
