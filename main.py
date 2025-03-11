@@ -1,7 +1,5 @@
 import os.path
 import random
-
-from sympy.physics.units import temperature
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
 from datetime import datetime
