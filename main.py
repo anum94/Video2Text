@@ -139,6 +139,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     pred_utterences = []
     output_buffer_str = ""
     previous_generation = ""
+    init_str = ""
     for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
 
         print(f"Timestep: {t}")
@@ -156,7 +157,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                 pred_utterences.append("<WAIT>")
                 continue
         else:
-            user_prompt = get_user_prompt("feedback_loop")
+            user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step)
             user_prompt += output_buffer_str
             max_new_tokens = 50
         prompt = get_messages(user_prompt=user_prompt, ICL=ICL)
@@ -177,10 +178,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             #if pred_utterence[:25].strip() == previous_generation[:25].strip():
             #    pass
         pred_utterences.append(pred_utterence)
-
-
-
-
+        if t ==0:
+            init_str = pred_utterence
 
         if t % 10 == 0 and verbose:
             print(f"{t}: {pred_utterence}")
