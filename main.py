@@ -129,10 +129,41 @@ def get_messages(user_prompt, ICL = False,):
 
                 "role": "user",
                 "content": [
+                    {"type": "text", "text": ICL[0]['prompt']},
+                    {"type": "video"},
+                ],
+            },
+            {
+
+                "role": "assistant",
+                "content": [
+                    {"type": "text", "text": ICL[0]['generation']},
+
+                ],
+            },
+            {
+            "role": "user",
+        "content": [
+            {"type": "text", "text": ICL[1]['prompt']},
+            {"type": "video"},
+        ],
+        },
+        {
+
+            "role": "assistant",
+            "content": [
+                {"type": "text", "text": ICL[1]['generation']},
+            ],
+        },
+            {
+
+                "role": "user",
+                "content": [
                     {"type": "text", "text": user_prompt},
                     {"type": "video"},
                 ],
             },
+
         ]
     else:
         conversation = [
@@ -148,7 +179,7 @@ def get_messages(user_prompt, ICL = False,):
 
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
     return prompt
-def construct_icl_examples(example, k=2, step=1,num_frames_to_use = 5,skip_frames = 20):
+def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_frames = 20,):
 
     transcriptions = read_srt(example['transcription'])
     video_metadata = get_video_info(mp4_file)
@@ -156,12 +187,18 @@ def construct_icl_examples(example, k=2, step=1,num_frames_to_use = 5,skip_frame
     num_frames_per_second = video_metadata["frames_per_second"]
 
     # get positive and negative examples
-    t1 = random.randint(0,len(ref_timing))
+    if t <= skip_frames:
+        window = skip_frames
+        start_window = 0
+    else:
+        window = len(ref_timing)
+        start_window = skip_frames
+    t1 = random.randint(start_window,window)
     while ref_timing[t1] != True:
-        t1 = random.randint(0,len(ref_timing))
-    t2 = random.randint(0,len(ref_timing))
+        t1 = random.randint(start_window,window)
+    t2 = random.randint(start_window,window)
     while ref_timing[t2] != False:
-        t2 = random.randint(0,len(ref_timing))
+        t2 = random.randint(start_window,window)
 
     init_str = " ".join(ref_utterences[:skip_frames])
     output_buffer_str = " ".join(ref_utterences[:t1])
@@ -228,11 +265,13 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             max_new_tokens = 75
             do_sample = False
         if ICL:
-            icl_examples = construct_icl_examples(ICL, k=2, step=step)
+            icl_examples = construct_icl_examples(ICL, k=2, step=step, t=t)
+            videos = [icl_examples[0]['video'], icl_examples[1]['video'], video]
         else:
             icl_examples = False
+            videos = [video]
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
-        inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
+        inputs_video = processor(text=prompt, videos=videos, padding=True, return_tensors="pt").to(model.device)
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
 
@@ -318,15 +357,18 @@ icl_mp4_file = mp4_file = [os.path.join(icl_path,file)
                            for file in os.listdir(icl_path) if
                      file.endswith('.mp4') and os.path.isfile(os.path.join(icl_path, file)) and "客観" in file][0]
 icl_transcription_file = transcription_file = get_commentary_path(commentary_directory,icl_path)
-icl_example = {'mp4_file':icl_mp4_file,
+icl_example_paths = {'mp4_file':icl_mp4_file,
                'transcription': icl_transcription_file}
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
 
+'''
 model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         model_id,
         torch_dtype=torch.float16,
         low_cpu_mem_usage=True,
     ).to(0)
+    '''
+model = None
 processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
 
@@ -338,11 +380,11 @@ if step is None:
     step = 2
 skip_frames = 20
 
-baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
+#baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 
-baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
+#baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
 
-#baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example)
+baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example_paths)
 
 
 
