@@ -265,13 +265,13 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             max_new_tokens = 75
             do_sample = False
         if ICL:
-            icl_examples = construct_icl_examples(ICL, k=2, step=step, t=t)
-            videos = [icl_examples[0]['video'], np.array(), icl_examples[1]['video'], np.array(), video]
+            icl_examples = construct_icl_examples(ICL, k=2, step=step, t=t, num_frames_to_use=num_frames_to_use)
+            videos = [icl_examples[0]['video'], icl_examples[1]['video'], video]
         else:
             icl_examples = False
             videos = [video]
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
-        inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt").to(model.device)
+        inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt")#.to(model.device)
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
 
@@ -361,14 +361,13 @@ icl_example_paths = {'mp4_file':icl_mp4_file,
                'transcription': icl_transcription_file}
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
 
-'''
+
 model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         model_id,
         torch_dtype=torch.float16,
         low_cpu_mem_usage=True,
     ).to(0)
-    '''
-model = None
+
 processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
 
@@ -377,7 +376,7 @@ processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 num_frames_to_use = 6
 max_new_tokens = 50
 if step is None:
-    step = 2
+    step = 1
 skip_frames = 20
 
 #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
