@@ -266,7 +266,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             do_sample = False
         if ICL:
             icl_examples = construct_icl_examples(ICL, k=2, step=step, t=t)
-            videos = [icl_examples[0]['video'], icl_examples[1]['video'], video]
+            videos = [icl_examples[0]['video'], np.array(), icl_examples[1]['video'], np.array(), video]
         else:
             icl_examples = False
             videos = [video]
