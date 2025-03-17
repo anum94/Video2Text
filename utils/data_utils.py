@@ -39,6 +39,7 @@ def read_srt(input_file_path):
 def write_logs(out_folder, predictions,times, eval_metrics, mode = ""):
 
     out_file = os.path.join(out_folder, f'{mode}.json')
+    print(eval_metrics)
     with open(out_file, 'w') as f:
         json.dump(eval_metrics, f)
 
