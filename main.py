@@ -339,14 +339,49 @@ if __name__ == '__main__':
         print("Usage: python main.py path/to/folder/containing/data")
         sys.exit(1)
 
-
+# define directory paths
 video_directory = "recordings"
 video_directory = os.path.join(folder,video_directory)
 
 commentary_directory = "transcriptions_whole_data_english"
 commentary_directory = os.path.join(folder,commentary_directory)
 
+# define path for icl example
+icl_path = os.path.join(video_directory,
+                           "AC_120221-180622_R_ks_audi_r8_plus_ks_nurburgring_layout_sprint_a"
+                           )
+icl_mp4_file = mp4_file = [os.path.join(icl_path,file)
+                           for file in os.listdir(icl_path) if
+                     file.endswith('.mp4') and os.path.isfile(os.path.join(icl_path, file)) and "客観" in file][0]
+icl_transcription_file = transcription_file = get_commentary_path(commentary_directory,icl_path)
+icl_example_paths = {'mp4_file':icl_mp4_file,
+               'transcription': icl_transcription_file}
 
+#define hp
+max_new_tokens = 50
+if step is None:
+    step = 1
+skip_frames = 20
+
+num_frames_to_use = {1:1, 2:2, 3:3, 4:4,5:5, 10:10}
+num_frames_to_use = num_frames_to_use[step]
+
+#define model
+
+model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
+model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
+
+
+model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+        model_id,
+        torch_dtype=torch.float16,
+        low_cpu_mem_usage=True,
+    ).to(0)
+
+#model = None
+processor = LlavaNextVideoProcessor.from_pretrained(model_id)
+
+# iterate over all samples
 all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video_directory) if os.path.isdir(os.path.join(video_directory, name))]
 if n is None:
     n = len(all_game_path)
@@ -358,47 +393,17 @@ for i, game_path in enumerate(all_game_path[:n]):
     else:
         print (f"kyakkan commentary not available for game: {game_path}")
         continue
-icl_path = os.path.join(video_directory,
-                           "AC_120221-180622_R_ks_audi_r8_plus_ks_nurburgring_layout_sprint_a"
-                           )
-icl_mp4_file = mp4_file = [os.path.join(icl_path,file)
-                           for file in os.listdir(icl_path) if
-                     file.endswith('.mp4') and os.path.isfile(os.path.join(icl_path, file)) and "客観" in file][0]
-icl_transcription_file = transcription_file = get_commentary_path(commentary_directory,icl_path)
-icl_example_paths = {'mp4_file':icl_mp4_file,
-               'transcription': icl_transcription_file}
-model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
-model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
 
-model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-        model_id,
-        torch_dtype=torch.float16,
-        low_cpu_mem_usage=True,
-    ).to(0)
+    # Baseline without feedback loop
+    sample_name = os.path.dirname(mp4_file).split('/')[-1]
+    out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
+    os.makedirs(out_folder, exist_ok=True)
 
-#model = None
-processor = LlavaNextVideoProcessor.from_pretrained(model_id)
+    baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 
+    feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=False)
 
-# Baseline without feedback loop
-
-
-max_new_tokens = 50
-if step is None:
-    step = 1
-skip_frames = 20
-
-num_frames_to_use = {1:1, 2:2, 3:3, 4:4,5:5, 10:10}
-num_frames_to_use = num_frames_to_use[step]
-sample_name = os.path.dirname(mp4_file).split('/')[-1]
-out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
-os.makedirs(out_folder, exist_ok=True)
-
-baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
-
-feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=False)
-
-icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example_paths)
+    icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example_paths)
 
 
 
