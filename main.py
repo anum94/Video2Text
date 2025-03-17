@@ -355,14 +355,14 @@ icl_example_paths = {'mp4_file':icl_mp4_file,
                'transcription': icl_transcription_file}
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
 
-'''
+
 model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         model_id,
         torch_dtype=torch.float16,
         low_cpu_mem_usage=True,
     ).to(0)
-'''
-model = None
+
+#model = None
 processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
 
