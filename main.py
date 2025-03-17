@@ -13,51 +13,38 @@ from utils.video_utils import *
 
 def get_user_prompt(mode="baseline", context="", step = 1, force=False):
     if mode == "baseline":
-        user_prompt = ("You are a professional commentator for car racing games. You will be provided with few seconds"
-                       "interval video extracted from the whole game and your task is to either generate one sentence "
-                       "regarding the current state of the game or generate a <WAIT> if there is no developments in the game. "
-                       "You should focus on the following without being too verbose: "
-                       "1)Identify the name of car diver through the legends provided and refer to cars by the name of the driver."
-                       "2) observe the game as a professional commentator would and decribe any developments."
-                       "3) Ignore the background information and refrain the describing the scenery. Just explain the game.")
+        user_prompt = ("You are a professional commentator for car racing games.You will be provided with a"
+                       " video interval extracted from the whole game and your task is generate brief Commentary."
+                       "If there is no developments in the game, then generate <WAIT> instead of commentary."
+                       "1) Identify the name of car diver through the legends provided and refer to cars by the name of the driver."
+                       "2) Ignore the background information and refrain the describing the scenery."
+                       "3) observe the game and briefly describe any developments.")
 
     elif mode == "feedback_loop_init":
         user_prompt = ("You are a professional commentator for car racing games. You will be provided with a video interval"
-                       "which represents the beginning of a race. Your task is to generate one to two sentences of commentary "
-                       "which describe the game in terms of number of players, their names and their cars. You should: "
-                       "1)Identify the name of car diver through the legends provided and refer to cars by the name of the driver."
-                       "2) Ignore the background information and refrain the describing the scenery. Just provide some brief"
-                       "initial information about the game without being too verbose. \nCommentary: ")
+                       "which represents the start of a race. Your task is to generate one sentences of commentary. "
+                       "1) You should identify the number of players and their names along with cars. "
+                       "2) Ignore the background information and refrain the describing the scenery."
+                       "3) Initial information about the game without being too verbose."
+                       )
 
     elif mode == "feedback_loop":
         if force:
-            user_prompt = (
-            f"You are a professional commentator for car racing games and you are currently generating commentary for game with following description. Game Description: {context}"
-            f"You will be provided with a short video interval depicting the state of the game at a given interval of few seconds along with"
-            "the commentary generated for previous intervals."
-            "otherwise generate one or two sentences  of commentary without being too verbose." 
-            "1) Identify if the provided video has any new development as compared to the already provided commentary."
-            "2) Ignore the background information and refrain the describing the scenery."
-            "4) If there are new developments in the provided video, then generate 1 sentence of commentary."
-            "As you might know, sometimes commentators stay silent for a few seconds during the game. so you don't necessarily need to say something"
-
-            "Previous Commentary:"
+            user_prompt = ("You are a professional commentator for car racing games.You will be provided with a"
+                           " video interval extracted from the whole game and your task is generate brief Commentary."
+            "1) Ignore the background information and refrain the describing the scenery."
+            "2) Do not regenerate information that is already part of the Previous Commentary."
+            "3) Identify new developments in the provided video as compared to previous commentary, then generate 1 sentence of commentary."
+            "Previous Commentary: "
             )
         else:
-            user_prompt = (
-                f"You are a professional commentator for car racing games and you are currently generating commentary for game with following description. Game Description: {context}"
-                f"\nYou will be provided with a short video interval depicting the state of the game at a given interval of few seconds along with"
-                "some text that summarizes the game before the provided time interval."
-                # "Your task is to first decide if you should say something for the provided time interval or choose to wait for some developments in the games"
-                # "If you choose to stay quite then simply generate <WAIT>, otherwise generate one or two sentences "
-                "Your task is generate one sentence of commentary to describe the state of the game, if it has changed from the previously generated commentary"
+            user_prompt = ("You are a professional commentator for car racing games.You will be provided with a"
+                           " video interval extracted from the whole game and your task is generate brief Commentary."
                 "1) Identify if the provided video has any new development as compared to the already provided commentary."
                 "2) Ignore the background information and refrain the describing the scenery."
                 "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
                 "4) If there are new developments in the provided video, such as if a new player is in lead, or if one of the players did an "
-                "impressive move then generate 1 - 2 lines of commentary."
-                "As you might know, sometimes commentators stay silent for a few seconds during the game. so you don't necessarily need to say something"
-
+                "impressive move then generate 1 line of commentary to describe the change."
                 "Previous Commentary:"
             )
 
