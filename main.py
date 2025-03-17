@@ -79,15 +79,13 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * num_frames_per_second,
                               end_frame=(t + 1) * num_frames_per_second, format="video")
 
-        inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
+        inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt",
+                                 max_length = 8192).to(model.device)
 
         output = model.generate(**inputs_video,  do_sample=False, max_new_tokens=50)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
-        print (pred_utterence)
         pred_utterence = pred_utterence.split(split_word)[-1]
-        print(pred_utterence)
         pred_utterence = extract_until_last_complete_sentence(pred_utterence)
-        print(pred_utterence)
         if "WAIT" in pred_utterence:
             pred_timing.append(False)
         else:
@@ -265,7 +263,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             icl_examples = False
             videos = [video]
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
-        inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt").to(model.device)
+        inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
+                                 max_length=8192).to(model.device)
 
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
