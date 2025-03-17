@@ -41,7 +41,6 @@ def read_srt(input_file_path):
 def write_logs(out_folder, predictions,times, eval_metrics, mode = ""):
 
     out_file = os.path.join(out_folder, f'{mode}.json')
-    print(eval_metrics)
     with open(out_file, 'w') as f:
         json.dump(eval_metrics, f)
 
@@ -85,7 +84,6 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
     rouge = r_scorer.score(ref_commentary, pred_commentary)
 
     BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights=(0.5, 0.5))
-    print(BLEUscore)
 
 
     res =  {"correlation":correlations.count(1), "rouge": rouge, "blue": BLEUscore,  "ref_timing": list(ref_timing),

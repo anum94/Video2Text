@@ -229,8 +229,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     temp = 0
     for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
 
-        print(f"Timestep: {t}")
-        print (f"Output Buffer: {output_buffer_str}")
+        #print(f"Timestep: {t}")
+        #print (f"Output Buffer: {output_buffer_str}")
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=(t-step+1) * num_frames_per_second,
                               end_frame=(t + 1) * num_frames_per_second, format="video")
 
