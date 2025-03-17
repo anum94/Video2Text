@@ -189,10 +189,10 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
     # get positive and negative examples
     if t <= skip_frames:
         window = skip_frames
-        start_window = 0
     else:
-        window = len(ref_timing)
-        start_window = skip_frames
+        window = step
+    start_window = skip_frames
+
     t1 = random.randint(start_window,window)
     while ref_timing[t1] != True:
         t1 = random.randint(start_window,window)
@@ -379,9 +379,9 @@ if step is None:
     step = 1
 skip_frames = 20
 
-#baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
+baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 
-#baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
+baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
 
 baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example_paths)
 
