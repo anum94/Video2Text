@@ -368,7 +368,7 @@ icl_transcription_file = transcription_file = get_commentary_path(commentary_dir
 icl_example_paths = {'mp4_file':icl_mp4_file,
                'transcription': icl_transcription_file}
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
-
+model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
 
 model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         model_id,
@@ -382,14 +382,16 @@ processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
 # Baseline without feedback loop
 
-num_frames_to_use = 6
+
 max_new_tokens = 50
 if step is None:
     step = 1
 skip_frames = 20
 
+num_frames_to_use = {1:2, 2:2, 3:3, 4:3,5:3, 10:6}
+num_frames_to_use = num_frames_to_use[step]
 sample_name = os.path.dirname(mp4_file).split('/')[-1]
-out_folder = os.path.join(folder, sample_name, f"step_{step}")
+out_folder = os.path.join(folder, sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
 os.makedirs(out_folder, exist_ok=True)
 
 baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)

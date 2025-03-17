@@ -1,32 +1,52 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+import glob
+import json
+def get_json_files(directory):
+    # Use glob to find all .json files in the specified directory
+    json_files = glob.glob(os.path.join(directory, '*.json'))
+    return json_files
+logs_folder = "/Users/anumafzal/PycharmProjects/video2Text/logs/step_5"
+logs = get_json_files(logs_folder)
+for log in logs:
+    with open(log, 'r') as file:
+        data = json.load(file)
+    print (f"File: {log}")
+    print (f"ROUGE: {data['rouge']}")
+    print(f"BLUE: {data['blue']}")
+    pred_timing = data['pred_timing']
+    ref_timing = data['ref_timing']
 
-logs_folder = "/Users/anumafzal/PycharmProjects/video2Text/logs/step_1"
-# Define the lists
-L1 = [True, False, False, False]
-L2 = [False, True, True, False]
+    # Convert to integers for plotting
+    pred_timing = np.array(pred_timing).astype(int)
+    ref_timing = np.array(ref_timing).astype(int)
 
-# Convert to integers for plotting
-L1_int = np.array(L1).astype(int)
-L2_int = np.array(L2).astype(int)
+    # Define the indices for the x-axis
+    x = np.arange(len(pred_timing))
 
-# Define the indices for the x-axis
-x = np.arange(len(L1))
+    # Plot the lists
+    fig, axs = plt.subplots(2, 1, figsize=(8, 6))
+    axs[0].plot(x, pred_timing, marker='o', label='pred_timing', linestyle='-', color='b')
+    axs[0].set_title('')
+    axs[0].legend()
 
-# Plot the lists
-plt.figure(figsize=(8, 2))
-plt.plot(x, L1_int, marker='o', label='L1', linestyle='-', color='b')
-plt.plot(x, L2_int, marker='s', label='L2', linestyle='--', color='r')
 
-# Add labels and legend
-plt.yticks([0, 1], ['False', 'True'])
-plt.xticks(x)
-plt.xlabel('Index')
-plt.title('Element-wise Plot')
-plt.legend()
 
-# Show grid
-plt.grid(axis='y', linestyle='--', alpha=0.7)
+    axs[1].plot(x, ref_timing, marker='o', label='ref_timing', linestyle='-', color='g')
+    axs[1].set_title('')
+    axs[1].legend()
 
-# Show the plot
-plt.show()
+    # Add labels and legend
+    #plt.yticks([0, 1], ['False', 'True'])
+    #plt.xticks(x)
+
+
+    plt.title(f"{os.path.basename(log).replace('.json', '')}_{logs_folder.split('/')[-1]}")
+    plt.legend()
+
+    # Show grid
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+    # Show the plot
+    plt.show()
