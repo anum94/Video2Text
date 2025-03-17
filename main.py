@@ -380,7 +380,7 @@ sample_name = os.path.dirname(mp4_file).split('/')[-1]
 out_folder = os.path.join(folder, sample_name)
 os.makedirs(out_folder, exist_ok=True)
 
-baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
+#baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 
 feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=False)
 
