@@ -81,7 +81,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt").to(model.device)
 
-        output = model.generate(**inputs_video,  do_sample=False, max_new_tokens=100)
+        output = model.generate(**inputs_video,  do_sample=False, max_new_tokens=50)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
         if "<WAIT>" in pred_utterence:
@@ -176,9 +176,10 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
     # get positive and negative examples
     if t <= skip_frames:
         window = skip_frames
+        start_window = 0
     else:
-        window = step
-    start_window = skip_frames
+        window = video_metadata['duration']
+        start_window = skip_frames
 
     t1 = random.randint(start_window,window)
     while ref_timing[t1] != True:
@@ -247,7 +248,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                 temp = 1
             else:
                 user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step)
-                temp = 0.5
+                temp = 1
             user_prompt += output_buffer_str
             max_new_tokens = 25
             do_sample = False
@@ -354,13 +355,14 @@ icl_example_paths = {'mp4_file':icl_mp4_file,
                'transcription': icl_transcription_file}
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
 
-
+'''
 model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         model_id,
         torch_dtype=torch.float16,
         low_cpu_mem_usage=True,
     ).to(0)
-
+'''
+model = None
 processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
 
@@ -372,9 +374,9 @@ if step is None:
     step = 1
 skip_frames = 20
 
-baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
+#baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 
-feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=False)
+#feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=False)
 
 icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example_paths)
 
