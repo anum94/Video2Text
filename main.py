@@ -60,7 +60,7 @@ def get_utterence_timing(ground_truth,metadata):
         utterences[i] = gt.text
     return utterences, utterence_timing
 
-def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False):
+def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False, split_word = "ASSISTANT:", ):
 
     user_prompt = get_user_prompt("baseline")
     prompt = get_messages(user_prompt, ICL=False)
@@ -84,11 +84,11 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         output = model.generate(**inputs_video,  do_sample=False, max_new_tokens=50)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         print (pred_utterence)
-        pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
+        pred_utterence = pred_utterence.split(split_word)[-1]
         print(pred_utterence)
         pred_utterence = extract_until_last_complete_sentence(pred_utterence)
         print(pred_utterence)
-        if "<WAIT>" in pred_utterence:
+        if "WAIT" in pred_utterence:
             pred_timing.append(False)
         else:
             pred_timing.append(True)
@@ -216,7 +216,8 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
     return (generate_example, wait_example)
 
 
-def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False,init_skip_frames=5, ICL = False):
+def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False,init_skip_frames=5,
+                           ICL = False, split_word = "ASSISTANT:"):
 
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
@@ -268,12 +269,12 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
-        pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
+        pred_utterence = pred_utterence.split(split_word)[-1]
         pred_utterence = extract_until_last_complete_sentence(pred_utterence)
         print(pred_utterence)
 
 
-        if "<WAIT>" in pred_utterence:
+        if "WAIT" in pred_utterence:
             pred_timing.append(False)
             wait_count +=1
         else:
@@ -372,7 +373,9 @@ num_frames_to_use = num_frames_to_use[step]
 #define model
 
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
+split_word = "ASSISTANT:"
 model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
+split_word = "<|im_start|> assistant"
 
 
 model = LlavaNextVideoForConditionalGeneration.from_pretrained(
@@ -402,11 +405,14 @@ for i, game_path in enumerate(all_game_path[:n]):
     out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
     os.makedirs(out_folder, exist_ok=True)
 
-    baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
+    baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-    feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=False)
+    feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                      init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
 
-    icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example_paths)
+    icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                          init_skip_frames=skip_frames, step=step,
+                                                          ICL=icl_example_paths, split_word = split_word)
 
 
 
