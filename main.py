@@ -322,7 +322,7 @@ def extract_until_last_complete_sentence(paragraph):
 if __name__ == '__main__':
     date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
 
-    folder = os.path.join("logs", date_time)
+    my_folder = os.path.join("logs", date_time)
     if len(sys.argv) > 3:
         folder = sys.argv[1]
         n = int(sys.argv[2])
@@ -388,10 +388,10 @@ if step is None:
     step = 1
 skip_frames = 20
 
-num_frames_to_use = {1:2, 2:2, 3:3, 4:3,5:3, 10:6}
+num_frames_to_use = {1:1, 2:2, 3:3, 4:4,5:5, 10:10}
 num_frames_to_use = num_frames_to_use[step]
 sample_name = os.path.dirname(mp4_file).split('/')[-1]
-out_folder = os.path.join(folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
+out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
 os.makedirs(out_folder, exist_ok=True)
 
 baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
