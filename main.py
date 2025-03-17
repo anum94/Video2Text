@@ -177,10 +177,10 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
 
     # get positive and negative examples
     if t <= skip_frames:
-        window = skip_frames
+        window = skip_frames -1
         start_window = 0
     else:
-        window = video_metadata['duration']
+        window = video_metadata['duration'] -1
         start_window = skip_frames
 
     t1 = random.randint(start_window,window)
