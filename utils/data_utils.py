@@ -1,5 +1,3 @@
-from statistics import correlation
-
 import pysrt
 import os
 import nltk
