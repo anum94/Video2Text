@@ -38,7 +38,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
             "otherwise generate one or two sentences  of commentary without being too verbose." 
             "1) Identify if the provided video has any new development as compared to the already provided commentary."
             "2) Ignore the background information and refrain the describing the scenery."
-            "4) If there are new developments in the provided video, then generate 1 - 2 lines of commentary."
+            "4) If there are new developments in the provided video, then generate 1 sentence of commentary."
             "As you might know, sometimes commentators stay silent for a few seconds during the game. so you don't necessarily need to say something"
 
             "Previous Commentary:"
@@ -50,7 +50,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                 "some text that summarizes the game before the provided time interval."
                 # "Your task is to first decide if you should say something for the provided time interval or choose to wait for some developments in the games"
                 # "If you choose to stay quite then simply generate <WAIT>, otherwise generate one or two sentences "
-                "Your task is generate one or two sentences of commentary to describe the state of the game, if it has changed from the previously generated commentary"
+                "Your task is generate one sentence of commentary to describe the state of the game, if it has changed from the previously generated commentary"
                 "1) Identify if the provided video has any new development as compared to the already provided commentary."
                 "2) Ignore the background information and refrain the describing the scenery."
                 "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
@@ -247,7 +247,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         if t < init_skip_frames:
             if t == 0:
                 user_prompt = get_user_prompt("feedback_loop_init")
-                max_new_tokens = 200
+                max_new_tokens = 100
                 do_sample = False
 
             else:
@@ -262,7 +262,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                 user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step)
                 temp = 0.5
             user_prompt += output_buffer_str
-            max_new_tokens = 75
+            max_new_tokens = 25
             do_sample = False
         if ICL:
             icl_examples = construct_icl_examples(ICL, k=2, step=step, t=t, num_frames_to_use=num_frames_to_use)
@@ -274,7 +274,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt").to(model.device)
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
-        print(pred_utterence)
+        #print(pred_utterence)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
 
 
@@ -299,7 +299,12 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             print(f"{t}: {pred_utterence}")
 
     #pred_utterences = remove_repeatitions(pred_utterences)
-    out_file = write_logs(out_folder, pred_utterences,pred_utterences_step, mode = "feedback_loop")
+    if ICL is False:
+        mode = "feedback_loop"
+    else:
+        mode = "icl_feedback_loop"
+
+    out_file = write_logs(out_folder, pred_utterences,pred_utterences_step, mode = mode)
     ref_timing = [ref for ref in range(0,len(ref_timing),step)]
     eval_metrics = compute_metrics(ref_timing, pred_timing)
 
@@ -381,9 +386,9 @@ skip_frames = 20
 
 baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 
-baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=10, step=step, ICL=False)
+feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=False)
 
-baseline_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example_paths)
+icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, init_skip_frames=skip_frames, step=step, ICL=icl_example_paths)
 
 
 
