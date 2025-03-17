@@ -364,7 +364,7 @@ model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         low_cpu_mem_usage=True,
     ).to(0)
 
-model = None
+#model = None
 processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
 
