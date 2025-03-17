@@ -391,7 +391,7 @@ skip_frames = 20
 num_frames_to_use = {1:2, 2:2, 3:3, 4:3,5:3, 10:6}
 num_frames_to_use = num_frames_to_use[step]
 sample_name = os.path.dirname(mp4_file).split('/')[-1]
-out_folder = os.path.join(folder, sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
+out_folder = os.path.join(folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
 os.makedirs(out_folder, exist_ok=True)
 
 baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
