@@ -8,3 +8,4 @@ openai
 pysrt
 sentencepiece
 wandb
+rouge_score

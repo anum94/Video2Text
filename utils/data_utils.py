@@ -2,6 +2,7 @@ import pysrt
 import os
 from sklearn.metrics import confusion_matrix
 import json
+from rouge_score import rouge_scorer
 def srt_time_to_seconds(srt_time):
     # Split the time string by colon and comma
     try:
@@ -73,9 +74,15 @@ def remove_repeatitions(utterences):
     return pred_utterences_cleaned
 
 
-def compute_metrics(ref_timing, pred_timing, mode = "results"):
+def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
     cm = confusion_matrix(ref_timing, pred_timing)
-    res =  {"confusion_matrix": cm, "correlation":correlations.count(1), "ref_timing": list(ref_timing),
+
+    pred_commentary = " ".join(pred_utterences)
+    ref_commentary = " ".join(ref_utterences)
+    scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+
+
+    res =  {"confusion_matrix": cm, "correlation":correlations.count(1), "rouge": scorer, "ref_timing": list(ref_timing),
             "pred_timing": list(pred_timing)}
     return res

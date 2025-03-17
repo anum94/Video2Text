@@ -101,7 +101,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
     #pred_utterences = remove_repeatitions(pred_utterences)
 
     ref_timing = [ref for ref in range(0,len(ref_timing),step)]
-    eval_metrics = compute_metrics(ref_timing, pred_timing)
+    eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences)
     out_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode="baseline")
 
     if verbose:
@@ -297,7 +297,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         mode = "icl_feedback_loop"
 
     ref_timing = [ref_timing[ref] for ref in range(0,len(ref_timing),step)]
-    eval_metrics = compute_metrics(ref_timing, pred_timing, mode=  mode)
+
+    eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences)
     out_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode="baseline")
 
     if verbose:
