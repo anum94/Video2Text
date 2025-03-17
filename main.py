@@ -300,7 +300,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     ref_timing = [ref_timing[ref] for ref in range(0,len(ref_timing),step)]
 
     eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences)
-    out_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode="baseline")
+    out_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode=mode)
 
     if verbose:
         print(eval_metrics)
@@ -315,7 +315,7 @@ def extract_until_last_complete_sentence(paragraph):
 
     # If no period is found, return the whole paragraph
     if last_period_pos == -1:
-        return paragraph
+        return paragraph + ". "
 
     # Extract text till the last period
     return paragraph[:last_period_pos + 1]
