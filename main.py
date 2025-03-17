@@ -84,6 +84,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         output = model.generate(**inputs_video,  do_sample=False, max_new_tokens=50)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
+        pred_utterence = extract_until_last_complete_sentence(pred_utterence)
         if "<WAIT>" in pred_utterence:
             pred_timing.append(False)
         else:

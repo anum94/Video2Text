@@ -83,6 +83,6 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
     scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
 
 
-    res =  {"confusion_matrix": cm, "correlation":correlations.count(1), "rouge": scorer, "ref_timing": list(ref_timing),
+    res =  {"confusion_matrix": list(cm), "correlation":correlations.count(1), "rouge": scorer, "ref_timing": list(ref_timing),
             "pred_timing": list(pred_timing)}
     return res
