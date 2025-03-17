@@ -264,14 +264,9 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
-        print(pred_utterence)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
-        print (pred_utterence)
-        pred_utterence = pred_utterence.split('\n')
+        pred_utterence = extract_until_last_complete_sentence(pred_utterence)
         print(pred_utterence)
-        pred_utterence = pred_utterence[0:-2]
-        print(pred_utterence)
-        pred_utterence = "\n".join(pred_utterence)
 
 
         if "<WAIT>" in pred_utterence:
@@ -312,6 +307,16 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     return pred_utterences
 
 
+def extract_until_last_complete_sentence(paragraph):
+    # Find the position of the last period in the text
+    last_period_pos = paragraph.rfind('.')
+
+    # If no period is found, return the whole paragraph
+    if last_period_pos == -1:
+        return paragraph
+
+    # Extract text till the last period
+    return paragraph[:last_period_pos + 1]
 if __name__ == '__main__':
     date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
 
