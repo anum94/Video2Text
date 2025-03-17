@@ -1,5 +1,6 @@
 import pysrt
 import os
+import nltk
 from sklearn.metrics import confusion_matrix
 import json
 from rouge_score import rouge_scorer
@@ -80,9 +81,13 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
 
     pred_commentary = " ".join(pred_utterences)
     ref_commentary = " ".join(ref_utterences)
-    scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+    r_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+    rouge = r_scorer.score(ref_commentary, pred_commentary)
+
+    BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights=(0.5, 0.5))
+    print(BLEUscore)
 
 
-    res =  {"correlation":correlations.count(1), "rouge": scorer, "ref_timing": list(ref_timing),
+    res =  {"correlation":correlations.count(1), "rouge": rouge, "blue": BLEUscore,  "ref_timing": list(ref_timing),
             "pred_timing": list(pred_timing)}
     return res

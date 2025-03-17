@@ -9,3 +9,4 @@ pysrt
 sentencepiece
 wandb
 rouge_score
+nltk
