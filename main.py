@@ -264,6 +264,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
+        print(pred_utterence)
         pred_utterence = pred_utterence.split("ASSISTANT:")[-1]
         print (pred_utterence)
         pred_utterence = pred_utterence.split('\n')
