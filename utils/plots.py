@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+logs_folder = "/Users/anumafzal/PycharmProjects/video2Text/logs/step_1"
 # Define the lists
 L1 = [True, False, False, False]
 L2 = [False, True, True, False]

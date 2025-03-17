@@ -1,3 +1,5 @@
+from statistics import correlation
+
 import pysrt
 import os
 import nltk
@@ -86,6 +88,6 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
     BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights=(0.5, 0.5))
 
 
-    res =  {"correlation":correlations.count(1), "rouge": rouge, "blue": BLEUscore,  "ref_timing": list(ref_timing),
+    res =  {"correlation":(correlations.count(1))/len(correlations), "rouge": rouge, "blue": BLEUscore,  "ref_timing": list(ref_timing),
             "pred_timing": list(pred_timing)}
     return res
