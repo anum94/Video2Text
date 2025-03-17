@@ -30,16 +30,16 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
 
     elif mode == "feedback_loop":
         if force:
-            user_prompt = ("You are a professional commentator for car racing games.You will be provided with a"
-                           " video interval extracted from the whole game and your task is generate brief Commentary."
+            user_prompt = ("You are a professional commentator for car racing games. You will be provided with few frames"
+                           " from an on-going game and your task is generate brief Commentary."
             "1) Ignore the background information and refrain the describing the scenery."
             "2) Do not regenerate information that is already part of the Previous Commentary."
             "3) Identify new developments in the provided video as compared to previous commentary, then generate 1 sentence of commentary."
             "Previous Commentary: "
             )
         else:
-            user_prompt = ("You are a professional commentator for car racing games.You will be provided with a"
-                           " video interval extracted from the whole game and your task is generate brief Commentary."
+            user_prompt = ("You are a professional commentator for car racing games.You will be provided with few frames"
+                           "from an ongoing game and your task is generate brief Commentary for it."
                 "1) Identify if the provided video has any new development as compared to the already provided commentary."
                 "2) Ignore the background information and refrain the describing the scenery."
                 "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
