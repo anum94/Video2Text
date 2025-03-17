@@ -75,6 +75,6 @@ def remove_repeatitions(utterences):
 def compute_metrics(ref_timing, pred_timing, mode = "results"):
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
     cm = confusion_matrix(ref_timing, pred_timing)
-    res =  {"confusion_matrix": cm, "correlation":correlations.count(1), "ref_timing": ref_timing,
-            "pred_timing": pred_timing}
+    res =  {"confusion_matrix": cm, "correlation":correlations.count(1), "ref_timing": list(ref_timing),
+            "pred_timing": list(pred_timing)}
     return res
