@@ -99,9 +99,10 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
             print(f"{t}: {pred_utterence}")
 
     #pred_utterences = remove_repeatitions(pred_utterences)
-    out_file = write_logs(out_folder, pred_utterences,pred_utterences_step, mode="baseline")
+
     ref_timing = [ref for ref in range(0,len(ref_timing),step)]
     eval_metrics = compute_metrics(ref_timing, pred_timing)
+    out_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode="baseline")
 
     if verbose:
         print(eval_metrics)
@@ -293,9 +294,9 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     else:
         mode = "icl_feedback_loop"
 
-    out_file = write_logs(out_folder, pred_utterences,pred_utterences_step, mode = mode)
     ref_timing = [ref for ref in range(0,len(ref_timing),step)]
-    eval_metrics = compute_metrics(ref_timing, pred_timing)
+    eval_metrics = compute_metrics(ref_timing, pred_timing, mode=  mode, sample_name = sample_name)
+    out_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode="baseline")
 
     if verbose:
         print(eval_metrics)
@@ -307,8 +308,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 if __name__ == '__main__':
     date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
 
-    out_folder = os.path.join("logs", date_time)
-    os.makedirs(out_folder, exist_ok=True)
+    folder = os.path.join("logs", date_time)
     if len(sys.argv) > 3:
         folder = sys.argv[1]
         n = int(sys.argv[2])
@@ -362,7 +362,7 @@ model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         low_cpu_mem_usage=True,
     ).to(0)
 
-#model = None
+model = None
 processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
 
@@ -373,6 +373,10 @@ max_new_tokens = 50
 if step is None:
     step = 1
 skip_frames = 20
+
+sample_name = os.path.dirname(mp4_file).split('/')[-1]
+out_folder = os.path.join(folder, sample_name)
+os.makedirs(out_folder, exist_ok=True)
 
 baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step)
 

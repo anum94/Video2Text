@@ -1,6 +1,7 @@
 import pysrt
 import os
 from sklearn.metrics import confusion_matrix
+import json
 def srt_time_to_seconds(srt_time):
     # Split the time string by colon and comma
     try:
@@ -35,7 +36,12 @@ def read_srt(input_file_path):
         subs.append(sub)
     return subs
 
-def write_logs(out_folder, predictions,times, mode = ""):
+def write_logs(out_folder, predictions,times, eval_metrics, mode = ""):
+
+    out_file = os.path.join(out_folder, f'{mode}.json')
+    with open(out_file, 'w') as f:
+        json.dump(eval_metrics, f)
+
     out_file = os.path.join(out_folder, f"logs_{mode}.txt")
     print(f"Generation stored at {out_file}")
     with open(out_file, 'a') as the_file:
@@ -66,7 +72,9 @@ def remove_repeatitions(utterences):
     return pred_utterences_cleaned
 
 
-def compute_metrics(ref_timing, pred_timing):
+def compute_metrics(ref_timing, pred_timing, mode = "results"):
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
     cm = confusion_matrix(ref_timing, pred_timing)
-    return {"confusion_matrix": cm, "correlation":correlations.count(1)}
+    res =  {"confusion_matrix": cm, "correlation":correlations.count(1), "ref_timing": ref_timing,
+            "pred_timing": pred_timing}
+    return res
