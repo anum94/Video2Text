@@ -51,7 +51,7 @@ def read_srt(input_file_path):
         subs.append(sub)
     return subs
 
-def write_logs(out_folder, predictions,times, eval_metrics, mode = ""):
+def write_logs(out_folder, predictions,times, eval_metrics, mode, talking_speed_sample=None):
 
     out_file = os.path.join(out_folder, f'{mode}.json')
     with open(out_file, 'w') as f:
@@ -63,6 +63,8 @@ def write_logs(out_folder, predictions,times, eval_metrics, mode = ""):
         for t, ut in zip(times, predictions):
             ut = ut.replace("\n", "")
             the_file.write(f"{t}: {ut}\n")
+
+    convert_text_to_srt(out_file, talking_speed_sample)
     return out_file
 def get_commentary_path(commentary_directory, game_path):
     game_path = os.path.basename(game_path)
