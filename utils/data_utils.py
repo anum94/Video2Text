@@ -127,7 +127,6 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
         utterances = []
         with open(file_path, 'r') as file:
             lines = file.readlines()
-        print (lines)
         for line in lines:
             l = line.split(':')
             t = int(l[0])
@@ -154,6 +153,8 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
                 srt_file.write("\n")
 
         print(f"SRT file '{srt_filename}' created successfully.")
+        test = read_srt(srt_filename)
+        print (test)
 
 
 
