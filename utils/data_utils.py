@@ -2,7 +2,6 @@ import numpy as np
 import pysrt
 import os
 import nltk
-from pandas.io.common import file_path_to_url
 from sklearn.metrics import confusion_matrix
 import json
 from rouge_score import rouge_scorer
