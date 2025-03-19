@@ -7,7 +7,7 @@ def get_json_files(directory):
     # Use glob to find all .json files in the specified directory
     json_files = glob.glob(os.path.join(directory, '*.json'))
     return json_files
-logs_folder = "/Users/anumafzal/PycharmProjects/video2Text/logs/step_5"
+logs_folder = "/Users/anumafzal/PycharmProjects/video2Text/logs/llava-hf_LLaVA-NeXT-Video-7B-hf/step_5"
 logs = get_json_files(logs_folder)
 for log in logs:
     with open(log, 'r') as file:
