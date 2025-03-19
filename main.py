@@ -105,7 +105,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
     ref_timing = [ref_timing[ref] for ref in range(0,len(ref_timing),step)]
     eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences)
-    out_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode="baseline")
+    out_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode="baseline", talking_speed_sample=icl_transcription_file)
 
     if verbose:
         print(eval_metrics)
