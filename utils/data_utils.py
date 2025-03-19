@@ -115,7 +115,8 @@ def estimate_talking_speed(sample_file):
     for utterence in sample_commentary:
         time_to_speak = srt_time_to_seconds(utterence.duration, ms = True)
         num_of_words = len(utterence.text.split())
-        words_per_second.append(float(num_of_words/time_to_speak))
+        if time_to_speak != 0:
+            words_per_second.append(float(num_of_words/time_to_speak))
 
     return np.mean(words_per_second)
 
