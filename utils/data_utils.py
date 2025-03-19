@@ -158,7 +158,6 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
 
         print(f"SRT file '{srt_filename}' created successfully.")
         test = read_srt(srt_filename)
-        print (test)
 
 
 
