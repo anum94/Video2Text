@@ -5,7 +5,7 @@ import nltk
 from sklearn.metrics import confusion_matrix
 import json
 from rouge_score import rouge_scorer
-def srt_time_to_seconds(srt_time):
+def srt_time_to_seconds(srt_time, ms = False):
     # Split the time string by colon and comma
     try:
         hours, minutes, seconds, milliseconds  = srt_time.hours, srt_time.minutes, srt_time.seconds, srt_time.milliseconds
@@ -13,7 +13,10 @@ def srt_time_to_seconds(srt_time):
         hours = int(hours)
         minutes = int(minutes)
         seconds = int(seconds)
-        milliseconds = 0 #float(milliseconds)
+        if ms:
+            milliseconds = float(milliseconds)
+        else:
+            milliseconds = 0
 
         # Calculate the total seconds
         total_seconds = (
@@ -110,7 +113,7 @@ def estimate_talking_speed(sample_file):
     sample_commentary = read_srt(sample_file)
     words_per_second = []
     for utterence in sample_commentary:
-        time_to_speak = float(srt_time_to_seconds(utterence.duration))
+        time_to_speak = srt_time_to_seconds(utterence.duration, ms = True)
         num_of_words = len(utterence.text.split())
         words_per_second.append(float(num_of_words/time_to_speak))
 
