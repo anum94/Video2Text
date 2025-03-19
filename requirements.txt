@@ -1,6 +1,6 @@
 transformers
 torch
-flash_attn
+#flash_attn
 accelerate
 pillow
 opencv-python
