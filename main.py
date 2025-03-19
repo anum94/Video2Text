@@ -374,8 +374,8 @@ num_frames_to_use = num_frames_to_use[step]
 
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
 split_word = "ASSISTANT:"
-model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
-split_word = "<|im_start|> assistant"
+#model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
+#split_word = "<|im_start|> assistant"
 
 
 model = LlavaNextVideoForConditionalGeneration.from_pretrained(
@@ -407,12 +407,12 @@ for i, game_path in enumerate(all_game_path[:n]):
 
     baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-    feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                      init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
+    #feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+    #                                                  init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
 
-    icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                          init_skip_frames=skip_frames, step=step,
-                                                          ICL=icl_example_paths, split_word = split_word)
+    #icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+    #                                                      init_skip_frames=skip_frames, step=step,
+    #                                                      ICL=icl_example_paths, split_word = split_word)
 
 
 
