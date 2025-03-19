@@ -374,8 +374,8 @@ num_frames_to_use = num_frames_to_use[step]
 
 model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
 split_word = "ASSISTANT:"
-#model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
-#split_word = "<|im_start|> assistant"
+model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
+split_word = "<|im_start|> assistant"
 
 
 model = LlavaNextVideoForConditionalGeneration.from_pretrained(
