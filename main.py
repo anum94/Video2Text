@@ -34,8 +34,9 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                            " from an on-going game and your task is generate brief Commentary."
             "1) Ignore the background information and refrain the describing the scenery."
             "2) Do not regenerate information that is already part of the Previous Commentary."
-            "3) Identify new developments in the provided video as compared to previous commentary, then generate 1 sentence of commentary."
-            "Previous Commentary: "
+            "3) Identify new developments if any, in the provided video as compared to previous commentary, then generate 1 sentence of commentary."
+            "If nothing has change, then just say that and describe the state of the game in the provided video."
+            "Previous generated Commentary: "
             )
         else:
             user_prompt = ("You are a professional commentator for car racing games.You will be provided with few frames"
@@ -44,8 +45,8 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                 "2) Ignore the background information and refrain the describing the scenery."
                 "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
                 "4) If there are new developments in the provided video, such as if a new player is in lead, or if one of the players did an "
-                "impressive move then generate 1 line of commentary to describe the change."
-                "Previous Commentary:"
+                "impressive move, or if two players are competing strongly, then generate 1 line of commentary to describe it."
+                "Previous generated Commentary:"
             )
 
     return user_prompt
@@ -270,7 +271,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
         pred_utterence = extract_until_last_complete_sentence(pred_utterence)
-        print(pred_utterence)
+        #print(pred_utterence)
 
 
         if "WAIT" in pred_utterence:
