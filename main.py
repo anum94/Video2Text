@@ -360,11 +360,12 @@ model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
 split_word = "<|im_start|> assistant"
 
 
-#model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-#        model_id,
-#        torch_dtype=torch.float16,
-#        low_cpu_mem_usage=True,
-#    ).to(0)
+model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+        model_id,
+        torch_dtype=torch.float16,
+        low_cpu_mem_usage=True,
+    load_in_4bit=True,
+    ).to(0)
 
 #model = None
 processor = LlavaNextVideoProcessor.from_pretrained(model_id)
