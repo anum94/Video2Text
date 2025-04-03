@@ -92,6 +92,32 @@ def remove_repeatitions(utterences):
     return pred_utterences_cleaned
 
 
+def flatten_2d_dict(in_dict:dict)->dict:
+  out_dict = dict()
+  for key, value in in_dict.items():
+    for v, k  in zip(value, ["p", "r", "f1"]):
+      out_dict[f"{key}_{k}"] = v
+
+  return out_dict
+
+def compute_10_percent_rouge(ref_commentary, pred_commentary):
+    rouge_dict = {}
+    r_scorer = rouge_scorer.RougeScorer(['rouge1'], use_stemmer=True)
+    num_samples = len(pred_commentary)
+    step = int(num_samples * 0.1) if num_samples > 10 else 1
+    for i in range(1, num_samples, step):
+        start = (i-1) * step
+        end = i * step
+        if end > num_samples:
+            end = num_samples
+        pred = " ".join(pred_commentary[start:end])
+        ref = " ".join(ref_commentary[start:end])
+
+        rouge = r_scorer.score(ref, pred)
+        rouge_dict[f"rouge_{i}0%"] = flatten_2d_dict(rouge)
+    return rouge_dict
+
+
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
     cm = confusion_matrix(ref_timing, pred_timing)
@@ -101,11 +127,12 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
     r_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
     rouge = r_scorer.score(ref_commentary, pred_commentary)
 
+    rouge_intervals = compute_10_percent_rouge
     BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights=(0.5, 0.5))
 
 
-    res =  {"correlation":(correlations.count(1))/len(correlations), "rouge": rouge, "blue": BLEUscore,  "ref_timing": list(ref_timing),
-            "pred_timing": list(pred_timing)}
+    res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE": flatten_2d_dict(rouge), "BLEU": BLEUscore,  "ref_timing": list(ref_timing),
+            "pred_timing": list(pred_timing), "ROUGE_10%": rouge_intervals}
     return res
 
 

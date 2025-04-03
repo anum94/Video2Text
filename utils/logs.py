@@ -1,0 +1,89 @@
+import os
+import wandb
+from typing import List
+from dotenv import load_dotenv
+import numpy as np
+load_dotenv()
+import matplotlib.pyplot as plt
+def wandb_setup():
+
+    wandb_token_key: str = "WANDB_TOKEN"
+
+    # wandb setup
+    wandb_tok = os.environ.get(wandb_token_key)
+    assert wandb_tok and wandb_tok != "<wb_token>", "Wandb token is not defined"
+    wandb.login( key=wandb_tok)
+
+def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_output:tuple,  config):
+    project_name = "CommGen"
+    entity = "anum-afzal-technical-university-of-munich"
+    wandb_setup()
+    wandb_mode = "online"
+
+    wandb.init(project=project_name, entity=entity, config=config, name=run_name,
+           mode=wandb_mode)
+
+    b_eval_metrics = baseline_output[2]
+    b_pred_timing =b_eval_metrics["pred_timing"]
+    ref_timing = b_eval_metrics["ref_timing"]
+
+    f_eval_metrics = feedback_output[2]
+    f_pred_timing = f_eval_metrics["pred_timing"]
+
+    i_eval_metrics = icl_output[2]
+    i_pred_timing = i_eval_metrics["pred_timing"]
+
+
+    metrics_columns = (
+            ["model_name", "# frame", "step"] +
+                       [f"b_{key}" for key in b_eval_metrics.keys()] +
+                       [f"b_{key}" for key in f_eval_metrics.keys()] +
+                       [f"b_{key}" for key in i_eval_metrics.keys()]
+    )
+
+    metrics_data = (
+            [config['model'], config['# frame'], config['step']] +
+                    list(b_eval_metrics.values()) +
+                    list(f_eval_metrics.values()) +
+                    list(i_eval_metrics.values())
+                    )
+    table = wandb.Table(columns=metrics_columns,data = [metrics_data] )
+    wandb.log({"metrics_table": table}, commit=True)
+
+
+    b_pred_timing = np.array(b_pred_timing).astype(int)
+    f_pred_timing = np.array(f_pred_timing).astype(int)
+    i_pred_timing = np.array(i_pred_timing).astype(int)
+    ref_timing = np.array(ref_timing).astype(int)
+
+    # Define the indices for the x-axis
+    x = np.arange(len(b_pred_timing))
+
+    # Plot the lists
+    fig, axs = plt.subplots(2, 2, figsize=(16, 12))
+    axs[0,0].plot(x, b_pred_timing, marker='o', label='b_pred_timing', linestyle='-', color='b')
+    axs[0,0].legend()
+
+    axs[0,1].plot(x, ref_timing, marker='o', label='ref_timing', linestyle='-', color='g')
+    axs[0,1].legend()
+
+    axs[1,0].plot(x, f_pred_timing, marker='o', label='feedback_pred_timing', linestyle='-', color='r')
+    axs[1,0].legend()
+
+
+    axs[1,1].plot(x, i_pred_timing, marker='o', label='icl_pred_timing', linestyle='-', color='y')
+    axs[1,1].legend()
+
+
+
+    # Add labels and legend
+    # plt.yticks([0, 1], ['False', 'True'])
+    # plt.xticks(x)
+
+    plt.title(f"{run_name}")
+    plt.legend()
+
+    # Show grid
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    wandb.log({"plot": wandb.Image(fig)})
+    wandb.finish()

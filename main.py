@@ -7,7 +7,7 @@ import torch
 import sys
 import warnings
 warnings.filterwarnings("ignore")
-
+from utils.logs import *
 from utils.data_utils import *
 from utils.video_utils import *
 
@@ -111,41 +111,34 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         print(eval_metrics)
         print(f"Complete Commentary: {pred_utterences}")
 
-    return pred_utterences
+    return pred_utterences, pred_utterences_step, eval_metrics
 
-def get_messages(user_prompt, ICL = False,):
+def get_messages(user_prompt, ICL = False, k = 2 ):
+    conversation = []
     if ICL:
-        conversation = [
+        for icl_number in k:
+            # add user text
+            conversation.append(
             {
 
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": ICL[0]['prompt']},
+                    {"type": "text", "text": ICL[icl_number]['prompt']},
                     {"type": "video"},
                 ],
-            },
-            {
+            })
+            # add assistant text
+            conversation.append(
+                {
 
-                "role": "assistant",
-                "content": [
-                    {"type": "text", "text": ICL[0]['generation']},
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": ICL[icl_number]['generation']},
+                        {"type": "video"},
+                    ],
+                })
 
-                ],
-            },
-            {
-            "role": "user",
-        "content": [
-            {"type": "text", "text": ICL[1]['prompt']},
-            {"type": "video"},
-        ],
-        },
-        {
-
-            "role": "assistant",
-            "content": [
-                {"type": "text", "text": ICL[1]['generation']},
-            ],
-        },
+    conversation.append([
             {
 
                 "role": "user",
@@ -154,19 +147,7 @@ def get_messages(user_prompt, ICL = False,):
                     {"type": "video"},
                 ],
             },
-
-        ]
-    else:
-        conversation = [
-            {
-
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": user_prompt},
-                    {"type": "video"},
-                ],
-            },
-        ]
+        ])
 
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True, padding=True)
     return prompt
@@ -310,7 +291,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         print(eval_metrics)
         print(f"Complete Commentary: {pred_utterences}")
 
-    return pred_utterences
+    return pred_utterences, pred_utterences_step, eval_metrics
 
 
 def extract_until_last_complete_sentence(paragraph):
@@ -325,6 +306,7 @@ def extract_until_last_complete_sentence(paragraph):
     return paragraph[:last_period_pos + 1]
 if __name__ == '__main__':
     date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
+    wandb_setup()
 
     my_folder = os.path.join("logs", date_time)
     if len(sys.argv) > 3:
@@ -340,7 +322,7 @@ if __name__ == '__main__':
         n = None
         step = None
     else:
-        print("Usage: python main.py path/to/folder/containing/data")
+        print("Usage: python main.py path/to/folder/containing/data" )
         sys.exit(1)
 
 # define directory paths
@@ -378,11 +360,11 @@ model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
 split_word = "<|im_start|> assistant"
 
 
-model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-        model_id,
-        torch_dtype=torch.float16,
-        low_cpu_mem_usage=True,
-    ).to(0)
+#model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+#        model_id,
+#        torch_dtype=torch.float16,
+#        low_cpu_mem_usage=True,
+#    ).to(0)
 
 #model = None
 processor = LlavaNextVideoProcessor.from_pretrained(model_id)
@@ -413,6 +395,35 @@ for i, game_path in enumerate(all_game_path[:n]):
     icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                           init_skip_frames=skip_frames, step=step,
                                                           ICL=icl_example_paths, split_word = split_word)
+    '''
+    # test code for pushing to weights and biases
+    my_folder = "logs/2025-03-19_11-46-21/llava-hf_LLaVA-NeXT-Video-7B-hf/AC_100221-115136_R_ks_porsche_cayenne_mugello_/step_1_frames-used_1"
+    with open(os.path.join(my_folder, "baseline.json"), 'r') as openfile:
+        # Reading from json file
+        baseline_json = json.load(openfile)
+    timestamps = []
+    utterances = []
+    with open(os.path.join(my_folder, "logs_baseline.txt"), 'r') as file:
+        lines = file.readlines()
+    for line in lines:
+        l = line.split(':')
+        t = int(l[0])
+        ut = str(l[1]).strip()
+        timestamps.append(t)
+        utterances.append(ut)
+
+    baseline_generation = utterances, timestamps, baseline_json
+    feedback_loop_generation = utterances, timestamps, baseline_json
+    icl_feedback_loop_generation = utterances, timestamps, baseline_json
+    '''
+    run_name = f"{sample_name}"
+    config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name,
+              }
+
+    write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
+                icl_output = icl_feedback_loop_generation, config=config,
+                )
+
 
 
 
