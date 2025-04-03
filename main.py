@@ -334,7 +334,7 @@ commentary_directory = os.path.join(folder,commentary_directory)
 
 # define path for icl example
 icl_path = os.path.join(video_directory,
-                           "AC_120221-180622_R_ks_audi_r8_plus_ks_nurburgring_layout_sprint_a"
+                           "AC_150221-130155_R_ks_porsche_macan_mugello_"
                            )
 icl_mp4_file = mp4_file = [os.path.join(icl_path,file)
                            for file in os.listdir(icl_path) if
