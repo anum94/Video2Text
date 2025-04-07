@@ -187,8 +187,20 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
         test = read_srt(srt_filename)
 
 
+def rename_mp4_files(directory):
+    for dirpath, _, filenames in os.walk(directory):
+        for filename in filenames:
+            if filename.endswith('.mp4'):
+                # Customize your new name pattern as needed
+                new_name = f"{filename.replace('%E5%AE%A2%E8%A6%B3', '客観')}"
 
+                # Construct full file paths
+                old_file = os.path.join(dirpath, filename)
+                new_file = os.path.join(dirpath, new_name)
 
+                # Rename the file
+                os.rename(old_file, new_file)
+                print(f'Renamed: {old_file} to {new_file}')
 
-#convert_text_to_srt(
-#    file_path="../logs/llava-hf_LLaVA-NeXT-Video-34B-hf/AC_100221-115136_R_ks_porsche_cayenne_mugello_/step_1_frames-used_1/logs_feedback_loop.txt")
+#dir = "../RaceCommentary/recordings/"
+#rename_mp4_files(dir)

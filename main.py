@@ -1,5 +1,6 @@
 import os.path
 import random
+
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
 from datetime import datetime
@@ -10,7 +11,7 @@ warnings.filterwarnings("ignore")
 from utils.logs import *
 from utils.data_utils import *
 from utils.video_utils import *
-
+import argparse
 def get_user_prompt(mode="baseline", context="", step = 1, force=False):
     if mode == "baseline":
         user_prompt = ("You are a professional commentator for car racing games.You will be provided with a"
@@ -113,10 +114,10 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
     return pred_utterences, pred_utterences_step, eval_metrics
 
-def get_messages(user_prompt, ICL = False, k = 2 ):
+def get_messages(user_prompt, ICL = False ):
     conversation = []
     if ICL:
-        for icl_number in k:
+        for icl_number in range(len(ICL)):
             # add user text
             conversation.append(
             {
@@ -152,52 +153,58 @@ def get_messages(user_prompt, ICL = False, k = 2 ):
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True, padding=True)
     return prompt
 def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_frames = 20,):
-
+    icl_examples = []
     transcriptions = read_srt(example['transcription'])
     video_metadata = get_video_info(mp4_file)
     ref_utterences, ref_timing = get_utterence_timing(transcriptions, video_metadata)
     num_frames_per_second = video_metadata["frames_per_second"]
 
-    # get positive and negative examples
-    if t <= skip_frames:
-        window = skip_frames -1
-        start_window = 0
-    else:
-        window = video_metadata['duration'] -1
-        start_window = skip_frames
+    k_pair = int(k/2) if (k/2) >1 else 1
+    for i in range(len(k_pair)):
 
-    t1 = random.randint(start_window,window)
-    while ref_timing[t1] != True:
+        # get positive and negative examples
+        if t <= skip_frames:
+            window = skip_frames -1
+            start_window = 0
+        else:
+            window = video_metadata['duration'] -1
+            start_window = skip_frames
+
         t1 = random.randint(start_window,window)
-    t2 = random.randint(start_window,window)
-    while ref_timing[t2] != False:
+        while ref_timing[t1] != True:
+            t1 = random.randint(start_window,window)
         t2 = random.randint(start_window,window)
+        while ref_timing[t2] != False:
+            t2 = random.randint(start_window,window)
 
-    init_str = " ".join(ref_utterences[:skip_frames])
-    output_buffer_str = " ".join(ref_utterences[:t1])
-    user_prompt_t1 = get_user_prompt("feedback_loop", context=init_str, step=step)
-    user_prompt_t1 += output_buffer_str
-    generation_t1 = ref_utterences[t1]
-    video_t1 = sample_frames(mp4_file, num_frames_to_use, start_frame=(t1 - step + 1) * num_frames_per_second,
-                          end_frame=(t1 + 1) * num_frames_per_second, format="video")
+        init_str = " ".join(ref_utterences[:skip_frames])
+        output_buffer_str = " ".join(ref_utterences[:t1])
+        user_prompt_t1 = get_user_prompt("feedback_loop", context=init_str, step=step)
+        user_prompt_t1 += output_buffer_str
+        generation_t1 = ref_utterences[t1]
+        video_t1 = sample_frames(mp4_file, num_frames_to_use, start_frame=(t1 - step + 1) * num_frames_per_second,
+                              end_frame=(t1 + 1) * num_frames_per_second, format="video")
 
-    generate_example = {"video": video_t1, "prompt": user_prompt_t1, "generation": generation_t1}
+        generate_example = {"video": video_t1, "prompt": user_prompt_t1, "generation": generation_t1}
 
-    video_t2 = sample_frames(mp4_file, num_frames_to_use, start_frame=(t2 - step + 1) * num_frames_per_second,
-                             end_frame=(t2 + 1) * num_frames_per_second, format="video")
-    init_str = "".join(ref_utterences[:skip_frames])
-    output_buffer_str = "".join(ref_utterences[:t2])
-    user_prompt_t2 = get_user_prompt("feedback_loop", context=init_str, step=step)
-    user_prompt_t2 += output_buffer_str
-    generation_t2 = "<WAIT>"
+        video_t2 = sample_frames(mp4_file, num_frames_to_use, start_frame=(t2 - step + 1) * num_frames_per_second,
+                                 end_frame=(t2 + 1) * num_frames_per_second, format="video")
+        init_str = "".join(ref_utterences[:skip_frames])
+        output_buffer_str = "".join(ref_utterences[:t2])
+        user_prompt_t2 = get_user_prompt("feedback_loop", context=init_str, step=step)
+        user_prompt_t2 += output_buffer_str
+        generation_t2 = "<WAIT>"
 
-    wait_example = {"video": video_t2, "prompt": user_prompt_t2, "generation": generation_t2}
+        wait_example = {"video": video_t2, "prompt": user_prompt_t2, "generation": generation_t2}
+        icl_examples.append(generate_example)
+        icl_examples.append(wait_example)
 
-    return (generate_example, wait_example)
+
+    return icl_examples
 
 
 def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False,init_skip_frames=5,
-                           ICL = False, split_word = "ASSISTANT:"):
+                           ICL = False, split_word = "ASSISTANT:", k = 2):
 
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
@@ -239,11 +246,12 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             max_new_tokens = 25
             do_sample = False
         if ICL:
-            icl_examples = construct_icl_examples(ICL, k=2, step=step, t=t, num_frames_to_use=num_frames_to_use)
-            videos = [icl_examples[0]['video'], icl_examples[1]['video'], video]
+            icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
+            videos = [icl_examples[i]['video'] for i in range(len(icl_examples))]
         else:
+            videos = []
             icl_examples = False
-            videos = [video]
+        videos.append(video)
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
                                  max_length=5120).to(model.device)
@@ -306,124 +314,126 @@ def extract_until_last_complete_sentence(paragraph):
     return paragraph[:last_period_pos + 1]
 if __name__ == '__main__':
     date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
+
+    parser = argparse.ArgumentParser(
+        description="Given , generates commentary as per the defined settings"
+    )
+    parser.add_argument("--dir", required=True, type=str, help="Directory containing the videos "
+                        "and respective commentary in recordings and transcriptions_whole_data_english folder")
+    parser.add_argument("--n", required=False, type=int, default=-1, help="Number of samples to run")
+    parser.add_argument("--icl", required=False, type=bool, default=False, help="If ICL should be used. Currently disabled")
+    parser.add_argument("--k", required=False, type=int,default=2, help="number of examples for ICL")
+    parser.add_argument("--step", required=False, type=int,default=1, help="Time Step for generation")
+    parser.add_argument("--frames", required=False, type=int, default=-1, help="Number of frames to use per step of generation")
+    args = parser.parse_args()
+
+    folder = args.dir
+    n = args.n
+    step = args.step
+    k = args.k
+    num_frames_to_use = args.frames
+
+
     wandb_setup()
 
     my_folder = os.path.join("logs", date_time)
-    if len(sys.argv) > 3:
-        folder = sys.argv[1]
-        n = int(sys.argv[2])
-        step = int(sys.argv[3])
-    elif len(sys.argv) > 2:
-        folder = sys.argv[1]
-        n = int(sys.argv[2])
-        step = None
-    elif len(sys.argv) > 1:
-        folder = sys.argv[1]
-        n = None
-        step = None
-    else:
-        print("Usage: python main.py path/to/folder/containing/data" )
-        sys.exit(1)
+    # define directory paths
+    video_directory = "recordings"
+    video_directory = os.path.join(folder,video_directory)
 
-# define directory paths
-video_directory = "recordings"
-video_directory = os.path.join(folder,video_directory)
+    commentary_directory = "transcriptions_whole_data_english"
+    commentary_directory = os.path.join(folder,commentary_directory)
 
-commentary_directory = "transcriptions_whole_data_english"
-commentary_directory = os.path.join(folder,commentary_directory)
+    # define path for icl example
+    icl_path = os.path.join(video_directory,
+                               "AC_150221-130155_R_ks_porsche_macan_mugello_"
+                               )
+    icl_mp4_file = mp4_file = [os.path.join(icl_path,file)
+                               for file in os.listdir(icl_path) if
+                         file.endswith('.mp4') and os.path.isfile(os.path.join(icl_path, file)) and "客観" in file][0]
+    icl_transcription_file = transcription_file = get_commentary_path(commentary_directory,icl_path)
+    icl_example_paths = {'mp4_file':icl_mp4_file,
+                   'transcription': icl_transcription_file}
 
-# define path for icl example
-icl_path = os.path.join(video_directory,
-                           "AC_150221-130155_R_ks_porsche_macan_mugello_"
-                           )
-icl_mp4_file = mp4_file = [os.path.join(icl_path,file)
-                           for file in os.listdir(icl_path) if
-                     file.endswith('.mp4') and os.path.isfile(os.path.join(icl_path, file)) and "客観" in file][0]
-icl_transcription_file = transcription_file = get_commentary_path(commentary_directory,icl_path)
-icl_example_paths = {'mp4_file':icl_mp4_file,
-               'transcription': icl_transcription_file}
+    #define hp
+    max_new_tokens = 50
+    skip_frames = 20
 
-#define hp
-max_new_tokens = 50
-if step is None:
-    step = 1
-skip_frames = 20
+    if num_frames_to_use == -1:
+        num_frames_to_use = step
 
-num_frames_to_use = {1:1, 2:2, 3:3, 4:4,5:5, 10:10}
-num_frames_to_use = num_frames_to_use[step]
+    #define model
 
-#define model
-
-model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
-split_word = "ASSISTANT:"
-#model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
-#split_word = "<|im_start|> assistant"
+    model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
+    split_word = "ASSISTANT:"
+    #model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
+    #split_word = "<|im_start|> assistant"
 
 
-model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-        model_id,
-        torch_dtype=torch.float16,
-        low_cpu_mem_usage=True,
-    load_in_4bit=True,
-    ).to(0)
+    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            low_cpu_mem_usage=True,
+        load_in_4bit=True,
+        ).to(0)
 
-#model = None
-processor = LlavaNextVideoProcessor.from_pretrained(model_id)
+    #model = None
+    processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
-# iterate over all samples
-all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video_directory) if os.path.isdir(os.path.join(video_directory, name))]
-if n is None:
-    n = len(all_game_path)
-for i, game_path in enumerate(all_game_path[:n]):
-    transcription_file = get_commentary_path(commentary_directory,game_path)
-    if transcription_file is not None:
-        mp4_file = [os.path.join(game_path,file) for file in os.listdir(game_path) if
-                     file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
-    else:
-        print (f"kyakkan commentary not available for game: {game_path}")
-        continue
+    # iterate over all samples
+    all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video_directory) if os.path.isdir(os.path.join(video_directory, name))]
+    if n == -1:
+        n = len(all_game_path)
+    for i, game_path in enumerate(all_game_path[:n]):
+        transcription_file = get_commentary_path(commentary_directory,game_path)
+        if transcription_file is not None:
+            mp4_file = [os.path.join(game_path,file) for file in os.listdir(game_path) if
+                         file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
+        else:
+            print (f"kyakkan commentary not available for game: {game_path}")
+            continue
 
-    # Baseline without feedback loop
-    sample_name = os.path.dirname(mp4_file).split('/')[-1]
-    out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
-    os.makedirs(out_folder, exist_ok=True)
+        # Baseline without feedback loop
+        sample_name = os.path.dirname(mp4_file).split('/')[-1]
+        out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
+        os.makedirs(out_folder, exist_ok=True)
 
-    baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+        baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-    feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                      init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
+        feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                          init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
 
-    icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                          init_skip_frames=skip_frames, step=step,
-                                                          ICL=icl_example_paths, split_word = split_word)
-    '''
-    # test code for pushing to weights and biases
-    my_folder = "logs/2025-03-19_11-46-21/llava-hf_LLaVA-NeXT-Video-7B-hf/AC_100221-115136_R_ks_porsche_cayenne_mugello_/step_1_frames-used_1"
-    with open(os.path.join(my_folder, "baseline.json"), 'r') as openfile:
-        # Reading from json file
-        baseline_json = json.load(openfile)
-    timestamps = []
-    utterances = []
-    with open(os.path.join(my_folder, "logs_baseline.txt"), 'r') as file:
-        lines = file.readlines()
-    for line in lines:
-        l = line.split(':')
-        t = int(l[0])
-        ut = str(l[1]).strip()
-        timestamps.append(t)
-        utterances.append(ut)
+        icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                              init_skip_frames=skip_frames, step=step,
+                                                              ICL=icl_example_paths, split_word = split_word, k = 4)
+        '''
+        # test code for pushing to weights and biases
+        my_folder = "logs/2025-03-19_11-46-21/llava-hf_LLaVA-NeXT-Video-7B-hf/AC_100221-115136_R_ks_porsche_cayenne_mugello_/step_1_frames-used_1"
+        with open(os.path.join(my_folder, "baseline.json"), 'r') as openfile:
+            # Reading from json file
+            baseline_json = json.load(openfile)
+        timestamps = []
+        utterances = []
+        with open(os.path.join(my_folder, "logs_baseline.txt"), 'r') as file:
+            lines = file.readlines()
+        for line in lines:
+            l = line.split(':')
+            t = int(l[0])
+            ut = str(l[1]).strip()
+            timestamps.append(t)
+            utterances.append(ut)
+    
+        baseline_generation = utterances, timestamps, baseline_json
+        feedback_loop_generation = utterances, timestamps, baseline_json
+        icl_feedback_loop_generation = utterances, timestamps, baseline_json
+        '''
+        run_name = f"{sample_name}"
+        config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name,
+                  }
 
-    baseline_generation = utterances, timestamps, baseline_json
-    feedback_loop_generation = utterances, timestamps, baseline_json
-    icl_feedback_loop_generation = utterances, timestamps, baseline_json
-    '''
-    run_name = f"{sample_name}"
-    config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name,
-              }
-
-    write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
-                icl_output = icl_feedback_loop_generation, config=config,
-                )
+        write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
+                    icl_output = icl_feedback_loop_generation, config=config,
+                    )
 
 
 
