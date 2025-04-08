@@ -49,3 +49,20 @@ def sample_frames(path, num_frames, start_frame = None, end_frame = None, format
 
 def replace_video_with_images(text, frames):
   return text.replace("<video>", "<image>" * frames)
+
+def process_video_cv2(video: cv2.VideoCapture, indices: np.array, length: int):
+    index = 0
+    frames = []
+    while video.isOpened():
+        success, frame = video.read()
+        if index in indices:
+            # Channel 0:B 1:G 2:R
+            height, width, channel = frame.shape
+            frames.append(frame[0:height, 0:width, 0:channel])
+        if success:
+            index += 1
+        if index >= length:
+            break
+
+    video.release()
+    return frames

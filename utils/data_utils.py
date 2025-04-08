@@ -121,13 +121,14 @@ def compute_10_percent_rouge(ref_commentary, pred_commentary):
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
     cm = confusion_matrix(ref_timing, pred_timing)
+    #todo: add precision / recall
 
     pred_commentary = " ".join(pred_utterences)
     ref_commentary = " ".join(ref_utterences)
     r_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
     rouge = r_scorer.score(ref_commentary, pred_commentary)
 
-    rouge_intervals = compute_10_percent_rouge
+    rouge_intervals = compute_10_percent_rouge(ref_commentary,pred_commentary)
     BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights=(0.5, 0.5))
 
 

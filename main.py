@@ -13,6 +13,7 @@ from utils.data_utils import *
 from utils.video_utils import *
 import argparse
 def get_user_prompt(mode="baseline", context="", step = 1, force=False):
+    #todo: move prompts to a yaml file
     if mode == "baseline":
         user_prompt = ("You are a professional commentator for car racing games.You will be provided with a"
                        " video interval extracted from the whole game and your task is generate brief Commentary."
@@ -82,7 +83,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
                               end_frame=(t + 1) * num_frames_per_second, format="video")
 
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt",
-                                 max_length = 5120).to(model.device)
+                                 max_length = context_window).to(model.device)
 
         output = model.generate(**inputs_video,  do_sample=False, max_new_tokens=50)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
@@ -316,7 +317,7 @@ if __name__ == '__main__':
     date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
 
     parser = argparse.ArgumentParser(
-        description="Given , generates commentary as per the defined settings"
+        description="Generates commentary as per the defined settings"
     )
     parser.add_argument("--dir", required=True, type=str, help="Directory containing the videos "
                         "and respective commentary in recordings and transcriptions_whole_data_english folder")
@@ -325,6 +326,8 @@ if __name__ == '__main__':
     parser.add_argument("--k", required=False, type=int,default=2, help="number of examples for ICL")
     parser.add_argument("--step", required=False, type=int,default=1, help="Time Step for generation")
     parser.add_argument("--frames", required=False, type=int, default=-1, help="Number of frames to use per step of generation")
+    parser.add_argument("--context_window", required=False, type=int, default=5120,
+                        help="Context Window to be used by LLM")
     args = parser.parse_args()
 
     folder = args.dir
@@ -332,6 +335,7 @@ if __name__ == '__main__':
     step = args.step
     k = args.k
     num_frames_to_use = args.frames
+    context_window = args.context_window
 
 
     wandb_setup()
