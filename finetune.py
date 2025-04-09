@@ -140,12 +140,12 @@ else:
     dataset = datasets.load_from_disk(dataset_path)
 print (dataset)
 
-
+processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=False)
+processor.tokenizer.padding_side = "right"
 # set num_proc higher for faster processing
 dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=8)
 
-processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=False)
-processor.tokenizer.padding_side = "right"
+
 dataset_processed = dataset.shuffle(seed=42)
 dataset = dataset_processed.train_test_split(test_size=0.2)
 train_dataset, test_dataset = dataset['train'].with_format("torch"), dataset['test'].with_format("torch")
