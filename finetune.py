@@ -1,10 +1,11 @@
 # Library Imports
 import os
 import av
+import datasets
 import fsspec
 import shutil
 import pandas as pd
-import numpy as np
+from tqdm import tqdm
 from datasets import Dataset
 #from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
 from transformers import AutoProcessor, BitsAndBytesConfig, LlavaNextVideoForConditionalGeneration
@@ -39,27 +40,37 @@ def get_commentary_path(commentary_directory, game_path):
     else:
         commentary_path = None
     return commentary_path
-def collate_fn(example, video_path, config:dict):
-    video_clip = sample_frames(video_path, config['num_frames_to_use'], start_frame= config['start_frame'],
-                          end_frame=config['end_frame'], format="video")
+def get_FT_prompt(prev_generation):
+    prompt =    ("You are a professional commentator for car racing games.You will be provided with few frames"
+                           "from an ongoing game and your task is generate brief Commentary for it."
+                "1) Identify if the provided video has any new development as compared to the already provided commentary."
+                "2) Ignore the background information and refrain the describing the scenery."
+                "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
+                "4) If there are new developments in the provided video, such as if a new player is in lead, or if one of the players did an "
+                "impressive move, or if two players are competing strongly, then generate 1 line of commentary to describe it."
+                f"Previous generated Commentary: {prev_generation}"
+            )
 
-    # we'll take the overall video caption, not per-scene caption for each frame
-    captions_all = [caption for caption in example['captions'] if caption['idx'] == '-1']
-    caption = captions_all[0]['content']
+    return prompt
+
+def collate_fn(example):
+    video_clip = example["video"]
+    prev_generation = example["prev_generations"]
+    ground_truth = example["gt"]
 
     # Let's use chat template to format the prompt correctly
     conversation = [
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Provide a detailed caption for this video."},
+                    {"type": "text", "text": get_FT_prompt(prev_generation)},
                     {"type": "video"},
                     ],
             },
             {
                 "role": "assistant",
                 "content": [
-                    {"type": "text", "text": caption},
+                    {"type": "text", "text": ground_truth},
                      ],
             },
         ]
@@ -75,8 +86,8 @@ def collate_fn(example, video_path, config:dict):
     )
 
     return batch
-def convert_to_hf_dataset(folder):
-    dataset_list = []
+def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
+    dataset = []
     # define directory paths
     video_directory = "recordings"
     video_directory = os.path.join(folder,video_directory)
@@ -87,7 +98,7 @@ def convert_to_hf_dataset(folder):
     all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
                      os.path.isdir(os.path.join(video_directory, name))]
 
-    for i, game_path in enumerate(all_game_path):
+    for i, game_path in tqdm(enumerate(all_game_path), total = len(all_game_path)):
 
         transcription_file = get_commentary_path(commentary_directory, game_path)
         if transcription_file is not None:
@@ -102,23 +113,41 @@ def convert_to_hf_dataset(folder):
         srt = read_srt(transcription_file)
         video_metadata = get_video_info(mp4_file)
         ref_utterences, ref_timing = get_utterence_timing(srt, video_metadata)
-        dataset_item = {"video_path": mp4_file , "ref_timing": ref_timing, "ref_utterences":ref_utterences}
-        dataset_list.append(dataset_item)
+        for t in tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
+            video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * video_metadata["frames_per_second"],
+                                  end_frame=(t + 1) * video_metadata["frames_per_second"], format="video")
+            prev_generations = " ".join(ref_utterences[:(t - step)])
+            ground_truth = " ".join([ref_utterences[t - j] for j in reversed(range(step))])
+            if not ground_truth.strip():
+                ground_truth = "<WAIT>"
+            dataset_item = {"sample_name": sample_name,
+                            "video": video ,
+                            "prev_generations": prev_generations,
+                            "gt":ground_truth}
+            dataset.append(dataset_item)
 
-    dataset = Dataset.from_list(dataset_list)
+    dataset = Dataset.from_list(dataset)
+    dataset.save_to_disk(f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}')
     return dataset
+
+
+config = {"num_frames_to_use": 1, "step":6}
+create_dataset = True
+if create_dataset:
+    dataset =  convert_to_hf_dataset(DATASET_PATH, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
+else:
+    dataset_path = "CarRacingFT_89_step_4_numframes_1"
+    dataset = datasets.load_from_disk(dataset_path)
+print (dataset)
+
+
+# set num_proc higher for faster processing
+dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=8)
 
 processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=False)
 processor.tokenizer.padding_side = "right"
-dataset =  convert_to_hf_dataset(DATASET_PATH)
-print (dataset)
-
-'''
-# set num_proc higher for faster processing
-small_dataset = small_dataset.map(collate_fn, batched=False, fn_kwargs={"path": f"{directory}/{zip_folder}"}, num_proc=8)
-temp_dataset = process_dataset(zip_file)
-
-dataset_processed = dataset_processed.shuffle(seed=42)
+dataset_processed = dataset.shuffle(seed=42)
 dataset = dataset_processed.train_test_split(test_size=0.2)
 train_dataset, test_dataset = dataset['train'].with_format("torch"), dataset['test'].with_format("torch")
-'''
+print (train_dataset)
+print (test_dataset)
