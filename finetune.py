@@ -7,18 +7,20 @@ import shutil
 import pandas as pd
 from tqdm import tqdm
 from datasets import Dataset
-#from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
+from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
 from transformers import AutoProcessor, BitsAndBytesConfig, LlavaNextVideoForConditionalGeneration
-#from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
+from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
 from main import get_utterence_timing
 import torch
-#from torch.utils.data import Dataset
+from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
-#from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
+from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
 from datasets import load_dataset, concatenate_datasets
 from utils.data_utils import read_srt
 # Local Module imports
 from utils.video_utils import sample_frames, get_video_info
+
+# Reference tutorial: LLaVA-NeXT-Video/Fine_tune_LLaVa_NeXT_Video_with_HFTrainer.ipynb
 
 MAX_LENGTH = 256
 BATCH_SIZE = 4
@@ -130,7 +132,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
     dataset.save_to_disk(f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}')
     return dataset
 
-
+# ---------------------- Dataset Preparation -----------------------------------
 config = {"num_frames_to_use": 1, "step":6}
 create_dataset = True
 if create_dataset:
@@ -138,7 +140,7 @@ if create_dataset:
 else:
     dataset_path = "CarRacingFT_89_step_4_numframes_1"
     dataset = datasets.load_from_disk(dataset_path)
-print (dataset)
+
 
 processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=False)
 processor.tokenizer.padding_side = "right"
@@ -149,5 +151,166 @@ dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=8)
 dataset_processed = dataset.shuffle(seed=42)
 dataset = dataset_processed.train_test_split(test_size=0.2)
 train_dataset, test_dataset = dataset['train'].with_format("torch"), dataset['test'].with_format("torch")
-print (train_dataset)
-print (test_dataset)
+
+# ------------------------------------- LLM Fine-tuning ------------------------------------
+
+class LlavaNextVideoDataCollatorWithPadding:
+    def __init__(self, processor):
+        self.processor = processor
+
+    def __call__(self, features):
+        padded_inputs = self.processor.tokenizer.pad(
+            {
+                "input_ids": [feat['input_ids'][0] for feat in features], # each element is one batch only so we slice [0]
+                "attention_mask": [feat['attention_mask'][0] for feat in features],
+            },
+            padding=True,
+            return_tensors="pt",
+        )
+
+        labels = padded_inputs["input_ids"].clone()
+        labels[labels == self.processor.tokenizer.pad_token_id] = -100
+        padded_inputs["labels"] = labels
+        padded_inputs["pixel_values_videos"] = torch.cat([feat['pixel_values_videos'] for feat in features], dim=0)
+
+        return padded_inputs
+
+if USE_QLORA or USE_LORA:
+    if USE_QLORA:
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.float16,
+        )
+    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+        MODEL_ID,
+        torch_dtype=torch.float16,
+        quantization_config=bnb_config,
+        device_map="auto",
+    )
+else:
+    # for full fine-tuning, we can speed up the model using Flash Attention
+    # only available on certain devices, see https://github.com/Dao-AILab/flash-attention?tab=readme-ov-file#installation-and-features
+    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+        MODEL_ID,
+        torch_dtype=torch.float16,
+        _attn_implementation="flash_attention_2",
+        device_map="auto",
+    )
+
+def find_all_linear_names(model):
+    cls = torch.nn.Linear
+    lora_module_names = set()
+    multimodal_keywords = ['multi_modal_projector', 'vision_model']
+    for name, module in model.named_modules():
+        if any(mm_keyword in name for mm_keyword in multimodal_keywords):
+            continue
+        if isinstance(module, cls):
+            names = name.split('.')
+            lora_module_names.add(names[0] if len(names) == 1 else names[-1])
+
+    if 'lm_head' in lora_module_names: # needed for 16-bit
+        lora_module_names.remove('lm_head')
+    return list(lora_module_names)
+
+
+lora_config = LoraConfig(
+    r=8,
+    lora_alpha=8,
+    lora_dropout=0.1,
+    target_modules=find_all_linear_names(model),
+    init_lora_weights="gaussian",
+)
+
+model = prepare_model_for_kbit_training(model)
+model = get_peft_model(model, lora_config)
+
+
+args = TrainingArguments(
+
+    # args related to training
+    output_dir = OUTPUT_DIR,
+    eval_strategy = 'steps',
+    eval_steps=20,
+    per_device_train_batch_size = BATCH_SIZE,
+    per_device_eval_batch_size = BATCH_SIZE,
+    gradient_accumulation_steps = 8,
+    learning_rate = 2e-05,
+    max_steps = 100, # adjust this depending on your dataset size
+    lr_scheduler_type = 'cosine',
+    warmup_ratio = 0.1,
+
+    # args related to eval/save
+    logging_steps = 20,
+    save_strategy = 'steps',
+    save_steps=20,
+    save_total_limit = 1,
+    fp16 = True, # we have the model train and eval with fp16 precision
+    fp16_full_eval = True,
+    optim = 'adamw_bnb_8bit', # adam in lower-bits to save memory, consider changing to 'adamw_torch' if model is not converging
+    report_to = "wandb", # install wand to use this
+    hub_model_id = REPO_ID,
+    push_to_hub = True, # wel'll push the model to hub after each epoch
+
+    # model that was wrapped for QLORA training with peft will not have arguments listed in its signature
+    # so we need to pass lable names explicitly to calculate val loss
+    label_names=["labels"],
+    dataloader_num_workers=4, # let's get more workers since iterating on video datasets might be slower in general
+)
+
+trainer = Trainer(
+    model = model,
+    tokenizer = processor,
+    data_collator = LlavaNextVideoDataCollatorWithPadding(processor=processor),
+    train_dataset = train_dataset,
+    eval_dataset = test_dataset,
+    args=args,
+)
+
+trainer.train()
+trainer.model.push_to_hub(REPO_ID)
+
+# ------------------------ Test the trained model -----------------------------------#
+model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+    REPO_ID,
+    torch_dtype=torch.float16,
+    device_map="auto",
+)
+
+def run_inference(video_clip, model):
+    # Let's use chat template to format the prompt correctly, this time without the caption
+    conversation = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Provide a detailed caption for this video."},
+                    {"type": "video"},
+                    ],
+            },
+        ]
+
+    # Set add_generation_prompt to add the "ASSISTANT: " at the end
+    prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
+
+    batch = processor(
+        text=prompt,
+        videos=None, # we have a processed video, passing it again to processor causes errors
+        return_tensors="pt"
+    ).to(model.device)
+    video_clip = video_clip.to(model.device)
+
+    out = model.generate(**batch, pixel_values_videos=video_clip, max_length=MAX_LENGTH, do_sample=True)
+    generated_text = processor.batch_decode(out, skip_special_tokens=True)
+    return generated_text
+
+example = test_dataset[0]
+processor.batch_decode(example["input_ids"])
+
+run_inference(example["pixel_values_videos"], model)
+
+old_model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+    MODEL_ID,
+    torch_dtype=torch.float16,
+    device_map="auto",
+)
+run_inference(example["pixel_values_videos"], old_model)
