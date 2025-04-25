@@ -374,16 +374,12 @@ if __name__ == '__main__':
     #model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
     #split_word = "<|im_start|> assistant"
 
+    model = None
 
-    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-            model_id,
-            torch_dtype=torch.float16,
-            low_cpu_mem_usage=True,
-        load_in_4bit=True,
-        ).to(0)
+    model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
 
-    #model = None
-    processor = LlavaNextVideoProcessor.from_pretrained(model_id)
+
+    processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
 
     # iterate over all samples
     all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video_directory) if os.path.isdir(os.path.join(video_directory, name))]
@@ -403,10 +399,10 @@ if __name__ == '__main__':
         out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
         os.makedirs(out_folder, exist_ok=True)
 
-        #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+        baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-        #feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-        #                                                  init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
+        feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                          init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
         if icl:
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
