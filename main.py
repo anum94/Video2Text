@@ -336,6 +336,7 @@ if __name__ == '__main__':
     k = args.k
     num_frames_to_use = args.frames
     context_window = args.context_window
+    icl = args.icl
 
 
     wandb_setup()
@@ -402,35 +403,15 @@ if __name__ == '__main__':
         out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
         os.makedirs(out_folder, exist_ok=True)
 
-        baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+        #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-        feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                          init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
-
-        icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+        #feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+        #                                                  init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
+        if icl:
+            icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
                                                               ICL=icl_example_paths, split_word = split_word, k = 4)
-        '''
-        # test code for pushing to weights and biases
-        my_folder = "logs/2025-03-19_11-46-21/llava-hf_LLaVA-NeXT-Video-7B-hf/AC_100221-115136_R_ks_porsche_cayenne_mugello_/step_1_frames-used_1"
-        with open(os.path.join(my_folder, "baseline.json"), 'r') as openfile:
-            # Reading from json file
-            baseline_json = json.load(openfile)
-        timestamps = []
-        utterances = []
-        with open(os.path.join(my_folder, "logs_baseline.txt"), 'r') as file:
-            lines = file.readlines()
-        for line in lines:
-            l = line.split(':')
-            t = int(l[0])
-            ut = str(l[1]).strip()
-            timestamps.append(t)
-            utterances.append(ut)
-    
-        baseline_generation = utterances, timestamps, baseline_json
-        feedback_loop_generation = utterances, timestamps, baseline_json
-        icl_feedback_loop_generation = utterances, timestamps, baseline_json
-        '''
+
         run_name = f"{sample_name}"
         config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name,
                   }
