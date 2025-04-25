@@ -161,7 +161,7 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
     num_frames_per_second = video_metadata["frames_per_second"]
 
     k_pair = int(k/2) if (k/2) >1 else 1
-    for i in range(len(k_pair)):
+    for i in range(k_pair):
 
         # get positive and negative examples
         if t <= skip_frames:
