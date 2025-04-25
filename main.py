@@ -140,7 +140,7 @@ def get_messages(user_prompt, ICL = False ):
                     ],
                 })
 
-    conversation.append([
+    conversation.append(
             {
 
                 "role": "user",
@@ -148,8 +148,8 @@ def get_messages(user_prompt, ICL = False ):
                     {"type": "text", "text": user_prompt},
                     {"type": "video"},
                 ],
-            },
-        ])
+            }
+        )
 
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True, padding=True)
     return prompt
