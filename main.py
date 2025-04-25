@@ -136,7 +136,7 @@ def get_messages(user_prompt, ICL = False ):
                     "role": "user",
                     "content": [
                         {"type": "text", "text": ICL[icl_number]['generation']},
-                        {"type": "video"},
+                        #{"type": "video"},
                     ],
                 })
 
@@ -375,14 +375,14 @@ if __name__ == '__main__':
     #split_word = "<|im_start|> assistant"
 
 
-    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-            model_id,
-            torch_dtype=torch.float16,
-            low_cpu_mem_usage=True,
-        load_in_4bit=True,
-        ).to(0)
+    #model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+    #        model_id,
+    #        torch_dtype=torch.float16,
+    #        low_cpu_mem_usage=True,
+    #    load_in_4bit=True,
+    #    ).to(0)
 
-    #model = None
+    model = None
     processor = LlavaNextVideoProcessor.from_pretrained(model_id)
 
     # iterate over all samples
