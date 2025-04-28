@@ -413,8 +413,8 @@ if __name__ == '__main__':
                                                               init_skip_frames=skip_frames, step=step,
                                                               ICL=icl_example_paths, split_word = split_word, k = 4)
 
-        run_name = f"{sample_name}"
-        config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name,
+        run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
+        config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
                   }
 
         write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
