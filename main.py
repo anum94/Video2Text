@@ -59,8 +59,11 @@ def get_utterence_timing(ground_truth,metadata):
     utterences = [""] * int(metadata.get("duration"))
     for gt in ground_truth:
         i = srt_time_to_seconds(gt.start)
-        utterence_timing[i] = True
-        utterences[i] = gt.text
+        if i >= 0:
+            utterence_timing[i] = True
+            utterences[i] = gt.text
+        else:
+            print (f"i: {i}")
     return utterences, utterence_timing
 
 def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False, split_word = "ASSISTANT:", ):

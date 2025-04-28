@@ -28,6 +28,7 @@ def srt_time_to_seconds(srt_time, ms = False):
         return int(total_seconds)
     except ValueError:
         raise ValueError(f"Invalid SRT time format: {srt_time}")
+        return (-1)
 
 def seconds_to_timestamp(seconds):
     # Convert seconds to hours, minutes, and seconds
