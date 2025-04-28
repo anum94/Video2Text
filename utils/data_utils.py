@@ -135,8 +135,9 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
 
     pred_commentary = "\n".join(pred_utterences)
     ref_commentary = "\n".join(ref_utterences)
-    r_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+    r_scorer = rouge_scorer.RougeScorer(['rouge1', 'rougeL'], use_stemmer=True)
     rouge = r_scorer.score(ref_commentary, pred_commentary)
+    rouge  = rouge['rouge1'].fmeasure
 
 
     BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights=(0.5, 0.5))
