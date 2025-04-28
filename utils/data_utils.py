@@ -101,23 +101,29 @@ def flatten_2d_dict(in_dict:dict)->dict:
 
   return out_dict
 
-def compute_10_percent_rouge(ref_commentary, pred_commentary):
+
+def interval_indices(length, n_intervals=10):
+    """Helper to get list of (start, end) indices for `n_intervals` intervals."""
+    indices = []
+    for i in range(n_intervals):
+        start_idx = int(i * length / n_intervals)
+        end_idx = int((i + 1) * length / n_intervals)
+        indices.append((start_idx, end_idx))
+    return indices
+
+
+def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
+    assert len(pred_list) == len(ref_list), "Lists must be of the same length"
+    scorer = rouge_scorer.RougeScorer(['rouge1'], use_stemmer=True)
+    intervals = interval_indices(len(pred_list), n_intervals)
     rouge_dict = {}
-    r_scorer = rouge_scorer.RougeScorer(['rouge1'], use_stemmer=True)
-    num_samples = len(pred_commentary)
-    step = int(num_samples * 0.1) if num_samples > 10 else 1
-    for i in range(1, num_samples, step):
-        start = (i-1) * step
-        end = i * step
-        if end > num_samples:
-            end = num_samples
-        pred = " ".join(pred_commentary[start:end])
-        ref = " ".join(ref_commentary[start:end])
+    for i, (start, end) in enumerate(intervals):
+        hyp = " ".join(pred_list[start:end])
+        ref = " ".join(ref_list[start:end])
+        score = scorer.score(ref, hyp)
 
-        rouge = r_scorer.score(ref, pred)
-        rouge_dict[f"rouge_{i}0%"] = flatten_2d_dict(rouge)
+        rouge_dict[ f"{i * 10}-{(i + 1) * 10}%"] = score['rouge1'].fmeasure
     return rouge_dict
-
 
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
