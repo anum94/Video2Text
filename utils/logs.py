@@ -24,18 +24,18 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
            mode=wandb_mode)
 
     b_eval_metrics = baseline_output[2]
-    b_generations = b_eval_metrics["pred_utterences"]
+    b_generations = baseline_output[0]
     b_pred_timing =b_eval_metrics["pred_timing"]
     ref_timing = b_eval_metrics["ref_timing"]
-    ref_generations = b_eval_metrics["ref_utterences"]
+    ref_generations = baseline_output[3]
 
     f_eval_metrics = feedback_output[2]
     f_pred_timing = f_eval_metrics["pred_timing"]
-    f_generations = f_eval_metrics["pred_utterences"]
+    f_generations = feedback_output[0]
 
     i_eval_metrics = icl_output[2]
     i_pred_timing = i_eval_metrics["pred_timing"]
-    i_generations = i_eval_metrics["pred_utterences"]
+    i_generations = icl_output[0]
 
 
     metrics_columns = (

@@ -117,7 +117,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         print(eval_metrics)
         print(f"Complete Commentary: {pred_utterences}")
 
-    return pred_utterences, pred_utterences_step, eval_metrics
+    return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences
 
 def get_messages(user_prompt, ICL = False ):
     conversation = []
@@ -305,7 +305,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         print(eval_metrics)
         print(f"Complete Commentary: {pred_utterences}")
 
-    return pred_utterences, pred_utterences_step, eval_metrics
+    return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences
 
 
 def extract_until_last_complete_sentence(paragraph):
