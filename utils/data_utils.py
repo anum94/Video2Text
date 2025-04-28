@@ -126,11 +126,12 @@ def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
     return rouge_dict
 
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
+    print(len(ref_utterences), len(pred_utterences))
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
     cm = confusion_matrix(ref_timing, pred_timing)
 
     rouge_intervals = compute_10_percent_rouge(ref_utterences, pred_utterences)
-    print (len(ref_utterences), len(pred_utterences))
+
 
     pred_commentary = "\n".join(pred_utterences)
     ref_commentary = "\n".join(ref_utterences)
