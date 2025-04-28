@@ -82,12 +82,12 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
     # plt.yticks([0, 1], ['False', 'True'])
     # plt.xticks(x)
 
-    #plt.title(f"{run_name}")
+    plt.title(f"{run_name}")
     plt.legend()
 
     # Show grid
     plt.grid(axis='y', linestyle='--', alpha=0.7)
-    wandb.log({f"plot_timing_{run_name}": wandb.Image(fig)})
+    wandb.log({f"plot_timing": wandb.Image(fig)})
 
     # Plot Prediction Token Stats
     b_gen_words = np.array([len(gen.split()) for gen in b_generations]).astype(int)
@@ -116,11 +116,11 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
     # plt.yticks([0, 1], ['False', 'True'])
     # plt.xticks(x)
 
-    # plt.title(f"{run_name}")
+    plt.title(f"{run_name}")
     plt.legend()
 
     # Show grid
     plt.grid(axis='y', linestyle='--', alpha=0.7)
-    wandb.log({f"plot_worddist_{run_name}": wandb.Image(fig)})
+    wandb.log({f"plot_word_dist": wandb.Image(fig)})
 
     wandb.finish()
