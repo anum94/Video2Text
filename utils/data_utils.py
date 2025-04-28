@@ -95,6 +95,7 @@ def remove_repeatitions(utterences):
 
 def flatten_2d_dict(in_dict:dict)->dict:
   out_dict = dict()
+  print (in_dict)
   for key, value in in_dict.items():
     for v, k  in zip(value, ["p", "r", "f1"]):
       out_dict[f"{key}_{k}"] = v
