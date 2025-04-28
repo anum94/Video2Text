@@ -80,10 +80,10 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
     # plt.yticks([0, 1], ['False', 'True'])
     # plt.xticks(x)
 
-    plt.title(f"{run_name}")
+    #plt.title(f"{run_name}")
     plt.legend()
 
     # Show grid
     plt.grid(axis='y', linestyle='--', alpha=0.7)
-    wandb.log({"plot": wandb.Image(fig)})
+    wandb.log({f"plot_{run_name}": wandb.Image(fig)})
     wandb.finish()
