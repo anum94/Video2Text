@@ -138,13 +138,17 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
     ref_commentary = "\n".join(ref_utterences)
     r_scorer = rouge_scorer.RougeScorer(['rouge1', 'rougeL'], use_stemmer=True)
     rouge = r_scorer.score(ref_commentary, pred_commentary)
-    rouge  = rouge['rouge1'].fmeasure
+    rouge_1  = rouge['rouge1'].fmeasure
+    rouge_L = rouge['rougeL'].fmeasure
+
+    #flatten_2d_dict(rouge)
 
 
     BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights=(0.5, 0.5))
 
 
-    res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE": flatten_2d_dict(rouge), "BLEU": BLEUscore,  "ref_timing": list(ref_timing),
+    res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE_1": rouge_1, "ROUGE_L": rouge_L,
+            "BLEU": BLEUscore,  "ref_timing": list(ref_timing),
             "pred_timing": list(pred_timing), "ROUGE_10%": rouge_intervals}
     return res
 
