@@ -125,7 +125,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
         srt = read_srt(transcription_file)
         video_metadata = get_video_info(mp4_file)
         ref_utterences, ref_timing = get_utterence_timing(srt, video_metadata)
-        for t in tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
+        for t in range(0, video_metadata["duration"], step): #tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
             video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * video_metadata["frames_per_second"],
                                   end_frame=(t + 1) * video_metadata["frames_per_second"], format="video")
             prev_generations = " ".join(ref_utterences[:(t - step)])
