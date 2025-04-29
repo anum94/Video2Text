@@ -39,14 +39,14 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
 
 
     metrics_columns = (
-            ["model_name", "# frame", "step"] +
+            ["model_name", "sample","# frame", "step"] +
                        [f"baseline_{key}" for key in b_eval_metrics.keys()] +
                        [f"feedback_{key}" for key in f_eval_metrics.keys()] +
                        [f"icl_{key}" for key in i_eval_metrics.keys()]
     )
 
     metrics_data = (
-            [config['model'], config['# frame'], config['step']] +
+            [config['model'], run_name, config['# frame'], config['step']] +
                     list(b_eval_metrics.values()) +
                     list(f_eval_metrics.values()) +
                     list(i_eval_metrics.values())
