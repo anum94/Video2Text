@@ -246,9 +246,9 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                 temp = 1
             else:
                 user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step)
-                temp = 1
+                temp = 1.2
             user_prompt += output_buffer_str
-            max_new_tokens = 25
+            max_new_tokens = 50
             do_sample = False
         if ICL:
             icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
@@ -401,7 +401,7 @@ if __name__ == '__main__':
 
         # Baseline without feedback loop
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
-        out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}")
+        out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}")
         os.makedirs(out_folder, exist_ok=True)
 
         baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
