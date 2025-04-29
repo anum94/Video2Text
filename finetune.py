@@ -1,5 +1,7 @@
 # Library Imports
 import os
+from email.policy import default
+
 import av
 import datasets
 import fsspec
@@ -19,14 +21,22 @@ from datasets import load_dataset, concatenate_datasets
 from utils.data_utils import read_srt
 # Local Module imports
 from utils.video_utils import sample_frames, get_video_info
-
+import argparse
 # Reference tutorial: LLaVA-NeXT-Video/Fine_tune_LLaVa_NeXT_Video_with_HFTrainer.ipynb
+parser = argparse.ArgumentParser(
+        description="Generates commentary as per the defined settings"
+    )
+parser.add_argument("--dir", required=True, type=str, help="Directory containing the videos "
+                        "and respective commentary in recordings and transcriptions_whole_data_english folder",
+                        default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary")
 
+args = parser.parse_args()
+
+DATASET_PATH = args.dir
 MAX_LENGTH = 256
 BATCH_SIZE = 4
 NUM_FRAMES = 8 # more frames -> more VRAM needed
-DATASET_PATH = "/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary" # path where to save the dataset
-OUTPUT_DIR = "/Users/anumafzal/PycharmProjects/video2Text/logs/FT/" # path where to save the checkpoints
+OUTPUT_DIR = "logs/FT/" # path where to save the checkpoints
 MODEL_ID = "llava-hf/LLaVa-NeXT-Video-7b-hf"
 REPO_ID = "anumafzal94/LLaVa-NeXT-Video-demo" # Change to your hf-hub repo
 
