@@ -59,7 +59,7 @@ def get_utterence_timing(ground_truth,metadata):
     utterences = [""] * int(metadata.get("duration"))
     for gt in ground_truth:
         i = srt_time_to_seconds(gt.start)
-        if i >= 0:
+        if i >= 0 and i < len(utterence_timing):
             utterence_timing[i] = True
             utterences[i] = gt.text
         else:
