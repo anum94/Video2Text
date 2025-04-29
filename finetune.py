@@ -289,11 +289,20 @@ model = LlavaNextVideoForConditionalGeneration.from_pretrained(
 
 def run_inference(video_clip, model):
     # Let's use chat template to format the prompt correctly, this time without the caption
+    user_prompt = ("You are a professional commentator for car racing games. You will be provided with few frames"
+                   " from an on-going game and your task is generate brief Commentary."
+                   "1) Ignore the background information and refrain the describing the scenery."
+                   "2) Do not regenerate information that is already part of the Previous Commentary."
+                   "3) Identify new developments if any, in the provided video as compared to previous commentary, then generate 1 sentence of commentary."
+                   "If nothing has change, then generate <WAIT>. Otherwise a brief commentary"
+    
+                   "Previous generated Commentary: "
+                   )
     conversation = [
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Provide a detailed caption for this video."},
+                    {"type": "text", "text": user_prompt},
                     {"type": "video"},
                     ],
             },
