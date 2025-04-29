@@ -1,0 +1,8 @@
+transformers
+accelerate
+bitsandbytes
+peft
+dataset
+opencv-python
+wandb
+sentencepiece

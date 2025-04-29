@@ -28,6 +28,7 @@ def srt_time_to_seconds(srt_time, ms = False):
         return int(total_seconds)
     except ValueError:
         raise ValueError(f"Invalid SRT time format: {srt_time}")
+        return (-1)
 
 def seconds_to_timestamp(seconds):
     # Convert seconds to hours, minutes, and seconds
@@ -92,20 +93,63 @@ def remove_repeatitions(utterences):
     return pred_utterences_cleaned
 
 
+def flatten_2d_dict(in_dict:dict)->dict:
+  out_dict = dict()
+  print (in_dict)
+  for key, value in in_dict.items():
+    for v, k  in zip(value, ["p", "r", "f1"]):
+      out_dict[f"{key}_{k}"] = v
+
+  return out_dict
+
+
+def interval_indices(length, n_intervals=10):
+    """Helper to get list of (start, end) indices for `n_intervals` intervals."""
+    indices = []
+    for i in range(n_intervals):
+        start_idx = int(i * length / n_intervals)
+        end_idx = int((i + 1) * length / n_intervals)
+        indices.append((start_idx, end_idx))
+    return indices
+
+
+def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
+    assert len(pred_list) == len(ref_list), "Lists must be of the same length"
+    scorer = rouge_scorer.RougeScorer(['rouge1'], use_stemmer=True)
+    intervals = interval_indices(len(pred_list), n_intervals)
+    rouge_dict = {}
+    for i, (start, end) in enumerate(intervals):
+        hyp = " ".join(pred_list[start:end])
+        ref = " ".join(ref_list[start:end])
+        score = scorer.score(ref, hyp)
+
+        rouge_dict[ f"{i * 10}-{(i + 1) * 10}%"] = score['rouge1'].fmeasure
+    return rouge_dict
+
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
+
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
     cm = confusion_matrix(ref_timing, pred_timing)
 
-    pred_commentary = " ".join(pred_utterences)
-    ref_commentary = " ".join(ref_utterences)
-    r_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+    rouge_intervals = compute_10_percent_rouge(ref_utterences, pred_utterences)
+
+
+    pred_commentary = "\n".join(pred_utterences)
+    ref_commentary = "\n".join(ref_utterences)
+    r_scorer = rouge_scorer.RougeScorer(['rouge1', 'rougeL'], use_stemmer=True)
     rouge = r_scorer.score(ref_commentary, pred_commentary)
+    rouge_1  = rouge['rouge1'].fmeasure
+    rouge_L = rouge['rougeL'].fmeasure
+
+    #flatten_2d_dict(rouge)
+
 
     BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights=(0.5, 0.5))
 
 
-    res =  {"correlation":(correlations.count(1))/len(correlations), "rouge": rouge, "blue": BLEUscore,  "ref_timing": list(ref_timing),
-            "pred_timing": list(pred_timing)}
+    res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE_1": rouge_1, "ROUGE_L": rouge_L,
+            "BLEU": BLEUscore,  "ref_timing": list(ref_timing),
+            "pred_timing": list(pred_timing), "ROUGE_10%": rouge_intervals}
     return res
 
 
@@ -160,8 +204,20 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
         test = read_srt(srt_filename)
 
 
+def rename_mp4_files(directory):
+    for dirpath, _, filenames in os.walk(directory):
+        for filename in filenames:
+            if filename.endswith('.mp4'):
+                # Customize your new name pattern as needed
+                new_name = f"{filename.replace('%E5%AE%A2%E8%A6%B3', '客観')}"
 
+                # Construct full file paths
+                old_file = os.path.join(dirpath, filename)
+                new_file = os.path.join(dirpath, new_name)
 
+                # Rename the file
+                os.rename(old_file, new_file)
+                print(f'Renamed: {old_file} to {new_file}')
 
-#convert_text_to_srt(
-#    file_path="../logs/llava-hf_LLaVA-NeXT-Video-34B-hf/AC_100221-115136_R_ks_porsche_cayenne_mugello_/step_1_frames-used_1/logs_feedback_loop.txt")
+#dir = "../RaceCommentary/recordings/"
+#rename_mp4_files(dir)

@@ -7,7 +7,14 @@ opencv-python
 openai
 pysrt
 sentencepiece
+av
+matplotlib
+pandas
+numpy
+datasets
+python-dotenv
 wandb
 rouge_score
 nltk
 scikit-learn
+bitsandbytes
