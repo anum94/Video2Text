@@ -108,7 +108,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
     commentary_directory = os.path.join(folder,commentary_directory)
 
     all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
-                     os.path.isdir(os.path.join(video_directory, name))][5]
+                     os.path.isdir(os.path.join(video_directory, name))][:5]
 
     for i, game_path in tqdm(enumerate(all_game_path), total = len(all_game_path)):
 
