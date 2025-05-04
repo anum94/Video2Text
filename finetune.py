@@ -88,7 +88,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
     commentary_directory = os.path.join(folder,commentary_directory)
 
     all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
-                     os.path.isdir(os.path.join(video_directory, name))][:20]
+                     os.path.isdir(os.path.join(video_directory, name))][:10]
 
     for i, game_path in tqdm(enumerate(all_game_path), total = len(all_game_path)):
 
@@ -118,9 +118,10 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
                             "gt":ground_truth}
             dataset.append(dataset_item)
 
-    dataset = Dataset.from_list(dataset, writer_batch_size=100)
+    dataset = Dataset.from_list(dataset)
     path = f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}'
     dataset.save_to_disk(path)
+    dataset.save_to_disk(path, writer_batch_size = 10)
     print(f"Dataset saved to {path}")
     return dataset
 
@@ -221,7 +222,7 @@ if __name__ == '__main__':
 
     DATASET_PATH = args.dir
     MAX_LENGTH = args.context_window
-    BATCH_SIZE = 2
+    BATCH_SIZE = 1
     NUM_FRAMES = args.frames # more frames -> more VRAM needed
     OUTPUT_DIR = "logs/FT/" # path where to save the checkpoints
     MODEL_ID = "llava-hf/LLaVa-NeXT-Video-7b-hf"

@@ -258,7 +258,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         videos.append(video)
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
-                                 max_length=5120).to(model.device)
+                                 max_length=context_window).to(model.device)
 
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
