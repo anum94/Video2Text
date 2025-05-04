@@ -14,7 +14,6 @@ from transformers import AutoProcessor, BitsAndBytesConfig, LlavaNextVideoForCon
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
 from main import get_utterence_timing
 import torch
-#from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
 from utils.data_utils import read_srt
@@ -138,7 +137,9 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
             dataset.append(dataset_item)
 
     dataset = Dataset.from_list(dataset)
-    dataset.save_to_disk(f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}')
+    path = f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}'
+    dataset.save_to_disk(path)
+    print(f"Dataset saved to {path}")
     return dataset
 
 # ---------------------- Dataset Preparation -----------------------------------
@@ -151,10 +152,10 @@ else:
     dataset = datasets.load_from_disk(dataset_path)
 
 
-processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=False)
+processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
 processor.tokenizer.padding_side = "right"
 # set num_proc higher for faster processing
-dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=8)
+dataset = dataset.map(collate_fn, batched=True, fn_kwargs={}, num_proc=8)
 
 
 dataset_processed = dataset.shuffle(seed=42)
@@ -292,9 +293,8 @@ def run_inference(video_clip, model):
                    " from an on-going game and your task is generate brief Commentary."
                    "1) Ignore the background information and refrain the describing the scenery."
                    "2) Do not regenerate information that is already part of the Previous Commentary."
-                   "3) Identify new developments if any, in the provided video as compared to previous commentary, then generate 1 sentence of commentary."
+                   "3) Identify new developments if any, in the provided video clip as compared to previous commentary, then generate 1 sentence of commentary."
                    "If nothing has change, then generate <WAIT>. Otherwise a brief commentary"
-    
                    "Previous generated Commentary: "
                    )
     conversation = [
