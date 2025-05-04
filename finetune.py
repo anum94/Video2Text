@@ -34,7 +34,9 @@ def get_commentary_path(commentary_directory, game_path):
     return commentary_path
 def get_FT_prompt(prev_generation):
     prompt =    ("You are a professional commentator for car racing games.You will be provided with few frames"
-                           "from an ongoing game and your task is generate brief Commentary for it."
+                "from an ongoing car racing game and your task is to compare the given video with the previously generated"
+                 "commentary"
+                 " generate brief Commentary for it."
                 "1) Identify if the provided video has any new development as compared to the already provided commentary."
                 "2) Ignore the background information and refrain the describing the scenery."
                 "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
@@ -118,7 +120,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
                             "gt":ground_truth}
             dataset.append(dataset_item)
 
-    dataset = Dataset.from_list(dataset)
+    dataset = Dataset.from_list(dataset, writer_batch_size=100)
     path = f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}'
     dataset.save_to_disk(path)
     print(f"Dataset saved to {path}")
@@ -236,6 +238,7 @@ if __name__ == '__main__':
     if create_dataset:
         dataset =  convert_to_hf_dataset(DATASET_PATH, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
         print (dataset)
+        dataset.push_to_hub("anumafzal94/test")
     else:
         dataset_path = "CarRacingFT_89_step_4_numframes_1"
         dataset = datasets.load_from_disk(dataset_path)
