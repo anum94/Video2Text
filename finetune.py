@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
 from utils.data_utils import read_srt
 # Local Module imports
-from utils.video_utils import sample_frames, get_video_info
+from utils.video_utils import sample_frames, get_video_info, write_video
 import argparse
 # Reference tutorial: LLaVA-NeXT-Video/Fine_tune_LLaVa_NeXT_Video_with_HFTrainer.ipynb
 
@@ -80,6 +80,8 @@ def collate_fn(examples):
     return batch
 def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
     dataset = []
+    path = f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}'
+    os.makedirs(path, exist_ok=True)
     # define directory paths
     video_directory = "recordings"
     video_directory = os.path.join(folder,video_directory)
@@ -108,20 +110,21 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
         for t in range(0, video_metadata["duration"], step): #tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
             video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * video_metadata["frames_per_second"],
                                   end_frame=(t + 1) * video_metadata["frames_per_second"], format="video")
+            video_path = os.path.join(path, mp4_file.replace('.mp4', f'_{t}.mp4'))
+            write_video(video, video_path, video_metadata)
             prev_generations = " ".join(ref_utterences[:(t - step)])
             ground_truth = " ".join([ref_utterences[t - j] for j in reversed(range(step))])
             if not ground_truth.strip():
                 ground_truth = "<WAIT>"
             dataset_item = {"sample_name": sample_name,
-                            "video": video ,
+                            "video": video_path ,
                             "prev_generations": prev_generations,
                             "gt":ground_truth}
             dataset.append(dataset_item)
 
     dataset = Dataset.from_list(dataset)
-    path = f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}'
+
     dataset.save_to_disk(path)
-    dataset.save_to_disk(path, writer_batch_size = 10)
     print(f"Dataset saved to {path}")
     return dataset
 

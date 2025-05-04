@@ -124,3 +124,5 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
     wandb.log({f"plot_word_dist": wandb.Image(fig)})
 
     wandb.finish()
+
+    return table.to_json()

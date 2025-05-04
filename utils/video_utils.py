@@ -9,6 +9,21 @@ def get_video_info(path):
     duration = int(total_frames/fps)
     return {"total_frames": total_frames, "frames_per_second": fps,
             "duration":duration }
+def write_video(video_array, path, video_metadata):
+
+    fps = 1 # Frames per second
+    width = video_array.shape[2]
+    height = video_array.shape[1]
+    # Define the codec and create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # You can use other codecs like 'mp4v' for .mp4 files
+    out = cv2.VideoWriter(path, fourcc, fps, (width, height))
+
+    for frame in video_array:
+        out.write(frame)
+
+    out.release()
+    return path
+
 def sample_frames(path, num_frames, start_frame = None, end_frame = None, format = "images"):
 
     video = cv2.VideoCapture(path)
