@@ -225,7 +225,7 @@ if __name__ == '__main__':
 
     DATASET_PATH = args.dir
     MAX_LENGTH = args.context_window
-    BATCH_SIZE = 1
+    BATCH_SIZE = 2
     NUM_FRAMES = args.frames # more frames -> more VRAM needed
     OUTPUT_DIR = "logs/FT/" # path where to save the checkpoints
     MODEL_ID = "llava-hf/LLaVa-NeXT-Video-7b-hf"
@@ -249,7 +249,7 @@ if __name__ == '__main__':
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
     # set num_proc higher for faster processing
-    dataset = dataset.map(collate_fn, batched=True, fn_kwargs={}, num_proc=8)
+    dataset = dataset.map(collate_fn, batched=True, fn_kwargs={}, num_proc=4)
 
 
     dataset_processed = dataset.shuffle(seed=42)
