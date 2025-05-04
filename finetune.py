@@ -33,16 +33,14 @@ def get_commentary_path(commentary_directory, game_path):
         commentary_path = None
     return commentary_path
 def get_FT_prompt(prev_generation):
-    prompt =    ("You are a professional commentator for car racing games.You will be provided with few frames"
-                "from an ongoing car racing game and your task is to compare the given video with the previously generated"
-                 "commentary"
-                 " generate brief Commentary for it."
-                "1) Identify if the provided video has any new development as compared to the already provided commentary."
-                "2) Ignore the background information and refrain the describing the scenery."
+    prompt =    ("You are a professional commentator for car racing games. You are provided with a video clip"
+                "from an ongoing car racing game and commentary generated for the game so far."
+                 f"Previous generated Commentary: {prev_generation}"
+                 "Your task is to compare the given video with the previously generated commentary. "
+                "1) Identify if the video has any new development as compared to the already provided commentary."
+                "2) Ignore the background information and refrain the describing the scenery too much."
                 "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
-                "4) If there are new developments in the provided video, such as if a new player is in lead, or if one of the players did an "
-                "impressive move, or if two players are competing strongly, then generate 1 line of commentary to describe it."
-                f"Previous generated Commentary: {prev_generation}"
+                "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
             )
 
     return prompt
