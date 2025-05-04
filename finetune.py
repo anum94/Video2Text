@@ -3,21 +3,20 @@ import os
 from email.policy import default
 
 import av
-import datasets
 import fsspec
 import shutil
 import pandas as pd
 from tqdm import tqdm
-from datasets import Dataset
+import datasets
+from datasets import Dataset, load_dataset, concatenate_datasets
 from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
 from transformers import AutoProcessor, BitsAndBytesConfig, LlavaNextVideoForConditionalGeneration
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
 from main import get_utterence_timing
 import torch
-from torch.utils.data import Dataset
+#from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
-from datasets import load_dataset, concatenate_datasets
 from utils.data_utils import read_srt
 # Local Module imports
 from utils.video_utils import sample_frames, get_video_info
@@ -108,7 +107,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
     commentary_directory = os.path.join(folder,commentary_directory)
 
     all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
-                     os.path.isdir(os.path.join(video_directory, name))][:5]
+                     os.path.isdir(os.path.join(video_directory, name))][:10]
 
     for i, game_path in tqdm(enumerate(all_game_path), total = len(all_game_path)):
 
