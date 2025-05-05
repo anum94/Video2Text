@@ -39,6 +39,7 @@ def process_video(video, num_frames, height=1080, width=1920, channels=3):
         video_fixed = video_fixed[:num_frames]
     return video_fixed
 def read_video(video_path):
+    print (video_path)
     cap = cv2.VideoCapture(video_path)
 
     frames = []
@@ -54,6 +55,7 @@ def read_video(video_path):
 
     # Convert list of frames to a numpy array (N, H, W, C)
     video_np = np.array(frames)
+    print (video_np.shape)
 
 
     #print("Shape of video numpy array:", video_np.shape)  # e.g., (num_frames, height, width, 3)

@@ -119,7 +119,7 @@ def collate_fn_batch(examples):
 
 def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
     dataset = []
-    path = f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}/videos/'
+    path = f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}/'
     os.makedirs(path, exist_ok=True)
     # define directory paths
     video_directory = "recordings"
@@ -143,6 +143,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
 
         # Baseline without feedback loop
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
+        os.makedirs(f'{path}_videos', exist_ok=True)
 
         srt = read_srt(transcription_file)
 
