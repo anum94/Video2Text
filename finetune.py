@@ -274,7 +274,7 @@ if __name__ == '__main__':
     config = {"num_frames_to_use": NUM_FRAMES, "step":step, "max_length": MAX_LENGTH}
 
 
-    create_dataset = False
+    create_dataset = True
     if create_dataset:
         dataset =  convert_to_hf_dataset(DATASET_PATH, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
         print (dataset)
@@ -288,7 +288,7 @@ if __name__ == '__main__':
     processor.tokenizer.padding_side = "right"
     # set num_proc higher for faster processing
     #dataset = dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
-    dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=2)
+    dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=8)
 
 
     dataset_processed = dataset.shuffle(seed=42)
