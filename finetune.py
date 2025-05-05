@@ -81,6 +81,8 @@ def collate_fn(examples):
         max_length=MAX_LENGTH,
         return_tensors="pt"
     )
+    for i, v in enumerate(video_clips):
+        print(f"Video {i} shape:", v.shape)
 
     return batch
 def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
