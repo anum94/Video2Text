@@ -215,29 +215,9 @@ def find_all_linear_names(model):
 
 
 
-def run_inference(video_clip, model):
+def run_inference(example, model):
     # Let's use chat template to format the prompt correctly, this time without the caption
-    user_prompt = ("You are a professional commentator for car racing games. You will be provided with few frames"
-                   " from an on-going game and your task is generate brief Commentary."
-                   "1) Ignore the background information and refrain the describing the scenery."
-                   "2) Do not regenerate information that is already part of the Previous Commentary."
-                   "3) Identify new developments if any, in the provided video clip as compared to previous commentary, then generate 1 sentence of commentary."
-                   "If nothing has change, then generate <WAIT>. Otherwise a brief commentary"
-                   "Previous generated Commentary: "
-                   )
-    conversation = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": user_prompt},
-                    {"type": "video"},
-                    ],
-            },
-        ]
-
-    # Set add_generation_prompt to add the "ASSISTANT: " at the end
-    inputs_video = processor(text=conversation, videos=video, padding=True, return_tensors="pt",
-                             max_length=MAX_LENGTH).to(model.device)
+    inputs_video = collate_fn(example)
 
     out = model.generate(**inputs_video, do_sample=True, max_new_tokens=50).to(model.device)
 
