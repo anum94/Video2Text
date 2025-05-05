@@ -50,8 +50,8 @@ def collate_fn(examples):
     video_clips = [read_video(path) for path in examples["video"]]
     video_clips = [process_video(clip, num_frames=NUM_FRAMES) for clip in video_clips]
     video_clips = np.stack(video_clips, axis=0)# list of video clips
-    #print (video_clips.shape)
-    video_clips= np.transpose(video_clips, (0,1, 4, 2, 3))
+    print (video_clips.shape)
+    #video_clips= np.transpose(video_clips, (0,1, 4, 2, 3))
     print(video_clips.shape)
     prev_generations = examples["prev_generations"]
     ground_truths = examples["gt"]
