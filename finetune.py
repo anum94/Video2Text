@@ -245,6 +245,7 @@ def run_inference(video_clip, model):
         videos=None, # we have a processed video, passing it again to processor causes errors
         return_tensors="pt"
     ).to(model.device)
+    print (video_clip.shape)
     video_clip = video_clip.to(model.device)
 
     out = model.generate(**batch, pixel_values_videos=video_clip, max_length=MAX_LENGTH, do_sample=True)
@@ -283,13 +284,13 @@ if __name__ == '__main__':
     config = {"num_frames_to_use": NUM_FRAMES, "step":step, "max_length": MAX_LENGTH}
 
 
-    create_dataset = True
+    create_dataset = False
     if create_dataset:
         dataset =  convert_to_hf_dataset(DATASET_PATH, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
         print (dataset)
         dataset.push_to_hub("anumafzal94/test")
     else:
-        dataset_path = "CarRacingFT_0_step_1_numframes_2"
+        dataset_path = "CarRacingFT_0_step_2_numframes_2"
         dataset = datasets.load_from_disk(dataset_path)
 
 
