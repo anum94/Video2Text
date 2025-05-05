@@ -8,6 +8,8 @@ import numpy as np
 import shutil
 import pandas as pd
 from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
 import datasets
 from datasets import Dataset, load_dataset, concatenate_datasets
 from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
