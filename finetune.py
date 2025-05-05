@@ -48,8 +48,6 @@ def get_FT_prompt(prev_generation):
 
 def collate_fn(example):
     video_clips = read_video(example["video"])
-    video_clips = [process_video(clip, num_frames=NUM_FRAMES) for clip in video_clips]
-
     print (video_clips.shape)
     video_clips= np.transpose(video_clips, (0,3, 1, 2))
     print(video_clips.shape)
