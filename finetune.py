@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
 from utils.data_utils import read_srt
 # Local Module imports
-from utils.video_utils import sample_frames, get_video_info, write_video, read_video
+from utils.video_utils import sample_frames, get_video_info, write_video, read_video, process_video
 import argparse
 # Reference tutorial: LLaVA-NeXT-Video/Fine_tune_LLaVa_NeXT_Video_with_HFTrainer.ipynb
 
@@ -48,6 +48,7 @@ def get_FT_prompt(prev_generation):
 
 def collate_fn(examples):
     video_clips = [read_video(path) for path in examples["video"]]
+    video_clips = [process_video(clip, num_frames=NUM_FRAMES) for clip in video_clips]
     video_clips = np.stack(video_clips, axis=0)# list of video clips
     print (video_clips.shape)
     video_clips= np.transpose(video_clips, (0,1, 4, 2, 3))
@@ -97,7 +98,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
     commentary_directory = os.path.join(folder,commentary_directory)
 
     all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
-                     os.path.isdir(os.path.join(video_directory, name))][:10]
+                     os.path.isdir(os.path.join(video_directory, name))][:6]
 
     for i, game_path in tqdm(enumerate(all_game_path), total = len(all_game_path)):
 
@@ -256,7 +257,7 @@ if __name__ == '__main__':
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
     # set num_proc higher for faster processing
-    dataset = dataset.map(collate_fn, batched=True, fn_kwargs={}, num_proc=5)
+    dataset = dataset.map(collate_fn, batched=True, fn_kwargs={}, num_proc=1)
 
 
     dataset_processed = dataset.shuffle(seed=42)

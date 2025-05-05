@@ -17,11 +17,28 @@ def write_video(video_array, path, fps):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # You can use other codecs like 'mp4v' for .mp4 files
     out = cv2.VideoWriter(path, fourcc, fps, (width, height))
 
-    for frame in video_array:
+    for i, frame in enumerate(video_array):
         out.write(frame)
 
     out.release()
     return path
+def process_video(video, num_frames, height=1080, width=1920, channels=3):
+    frames = []
+    for frame in video:
+        # Resize to target size and ensure 3 channels
+        frame_resized = cv2.resize(frame, (width, height))
+        if frame_resized.shape[2] != channels:
+            frame_resized = frame_resized[:,:,:channels]  # or convert as needed
+        frames.append(frame_resized)
+    video_fixed = np.stack(frames)  # (nf, h, w, c)
+    # Truncate or pad to the fixed number of frames
+    nf = video_fixed.shape[0]
+    if nf < num_frames:
+        pad = np.zeros((num_frames - nf, height, width, channels), dtype=video_fixed.dtype)
+        video_fixed = np.concatenate([video_fixed, pad], axis=0)
+    else:
+        video_fixed = video_fixed[:num_frames]
+    return video_fixed
 def read_video(video_path):
     cap = cv2.VideoCapture(video_path)
 
