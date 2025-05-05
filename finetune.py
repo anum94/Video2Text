@@ -48,9 +48,7 @@ def get_FT_prompt(prev_generation):
 
 def collate_fn(example):
     video_clips = read_video(example["video"])
-    print (video_clips.shape)
     video_clips= np.transpose(video_clips, (0,3, 1, 2))
-    print(video_clips.shape)
     prev_gen = example["prev_generations"]
     gt = example["gt"]
 
@@ -245,6 +243,7 @@ def run_inference(video_clip, model):
         videos=None, # we have a processed video, passing it again to processor causes errors
         return_tensors="pt"
     ).to(model.device)
+    video_clip = video_clip.squeeze()
     print (video_clip.shape)
     video_clip = video_clip.to(model.device)
 
@@ -344,12 +343,12 @@ if __name__ == '__main__':
         # args related to training
         output_dir=OUTPUT_DIR,
         eval_strategy='steps',
-        eval_steps=2,
+        eval_steps=1,
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
         gradient_accumulation_steps=8,
         learning_rate=2e-05,
-        max_steps=10,  # adjust this depending on your dataset size
+        max_steps=5,  # adjust this depending on your dataset size
         lr_scheduler_type='cosine',
         warmup_ratio=0.1,
 
