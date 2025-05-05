@@ -13,7 +13,7 @@ from datasets import Dataset, load_dataset, concatenate_datasets
 from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
 from transformers import AutoProcessor, BitsAndBytesConfig, LlavaNextVideoForConditionalGeneration
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
-from main import get_utterence_timing
+from main import get_utterence_timing, extract_until_last_complete_sentence
 import torch
 from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
@@ -216,12 +216,15 @@ def find_all_linear_names(model):
 
 
 def run_inference(example, model):
+    split_word = "ASSISTANT:"
     # Let's use chat template to format the prompt correctly, this time without the caption
     inputs_video = collate_fn(example)
 
-    out = model.generate(**inputs_video, do_sample=True, max_new_tokens=50).to(model.device)
+    output = model.generate(**inputs_video, do_sample=True, max_new_tokens=50).to(model.device)
 
-    generated_text = processor.batch_decode(out, skip_special_tokens=True)
+    generated_text = processor.decode(output[0][2:], skip_special_tokens=True)
+    generated_text = generated_text.split(split_word)[-1]
+    generated_text = extract_until_last_complete_sentence(generated_text)
     return generated_text
 
 if __name__ == '__main__':
