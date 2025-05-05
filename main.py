@@ -54,6 +54,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
 
 
 def get_utterence_timing(ground_truth,metadata):
+    print (metadata)
     utterence_timing = [False] * int(metadata.get("duration"))
     utterences = [""] * int(metadata.get("duration"))
     for gt in ground_truth:
@@ -63,6 +64,7 @@ def get_utterence_timing(ground_truth,metadata):
             utterences[i] = gt.text
         else:
             print (f"i: {i}")
+
     return utterences, utterence_timing
 
 def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False, split_word = "ASSISTANT:", ):

@@ -144,6 +144,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
 
         # Baseline without feedback loop
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
+        print(transcription_file)
         srt = read_srt(transcription_file)
         video_metadata = get_video_info(mp4_file)
         ref_utterences, ref_timing = get_utterence_timing(srt, video_metadata)
