@@ -23,6 +23,25 @@ def write_video(video_array, path, video_metadata):
 
     out.release()
     return path
+def read_video(video_path):
+    cap = cv2.VideoCapture(video_path)
+
+    frames = []
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        # Optionally, convert BGR to RGB if you need it in standard format
+        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frames.append(frame)
+
+    cap.release()
+
+    # Convert list of frames to a numpy array (N, H, W, C)
+    video_np = np.array(frames)
+
+    print("Shape of video numpy array:", video_np.shape)  # e.g., (num_frames, height, width, 3)
+
 
 def sample_frames(path, num_frames, start_frame = None, end_frame = None, format = "images"):
 

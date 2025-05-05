@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
 from utils.data_utils import read_srt
 # Local Module imports
-from utils.video_utils import sample_frames, get_video_info, write_video
+from utils.video_utils import sample_frames, get_video_info, write_video, read_video
 import argparse
 # Reference tutorial: LLaVA-NeXT-Video/Fine_tune_LLaVa_NeXT_Video_with_HFTrainer.ipynb
 
@@ -46,7 +46,7 @@ def get_FT_prompt(prev_generation):
     return prompt
 
 def collate_fn(examples):
-    video_clips = examples["video"]  # list of video clips
+    video_clips = [read_video(path) for path in examples["video"]]  # list of video clips
     prev_generations = examples["prev_generations"]
     ground_truths = examples["gt"]
     prompts = []
