@@ -386,7 +386,6 @@ if __name__ == '__main__':
 
     # ------------------------ Test the trained model -----------------------------------#
     example = test_dataset[0]
-    print (example)
     print (processor.batch_decode(example["input_ids"]))
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         REPO_ID,
