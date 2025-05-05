@@ -259,7 +259,7 @@ if __name__ == '__main__':
     config = {"num_frames_to_use": NUM_FRAMES, "step":step, "max_length": MAX_LENGTH}
 
 
-    create_dataset = False
+    create_dataset = True
     if create_dataset:
         dataset =  convert_to_hf_dataset(DATASET_PATH, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
         print (dataset)
