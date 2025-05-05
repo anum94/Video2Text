@@ -297,8 +297,6 @@ if __name__ == '__main__':
     dataset = dataset_processed.train_test_split(test_size=0.2)
     train_dataset, test_dataset = dataset['train'].with_format("torch"), dataset['test'].with_format("torch")
     print (f"{len(train_dataset)} training example, {len(test_dataset)} testing examples")
-    example = test_dataset[0]
-    processor.batch_decode(example["input_ids"])
 
     if USE_QLORA or USE_LORA:
         if USE_QLORA:
@@ -379,6 +377,9 @@ if __name__ == '__main__':
     trainer.model.push_to_hub(REPO_ID)
 
     # ------------------------ Test the trained model -----------------------------------#
+    example = test_dataset[0]
+    print (example)
+    processor.batch_decode(example["input_ids"])
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         REPO_ID,
         torch_dtype=torch.float16,
