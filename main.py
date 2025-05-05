@@ -54,12 +54,9 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
 
 
 def get_utterence_timing(ground_truth,metadata):
-    print (metadata)
-    print (len(ground_truth))
     utterence_timing = [False] * int(metadata.get("duration"))
     utterences = [""] * int(metadata.get("duration"))
     for gt in ground_truth:
-        print (gt)
         i = srt_time_to_seconds(gt.start)
         if i >= 0 and i < len(utterence_timing):
             utterence_timing[i] = True
