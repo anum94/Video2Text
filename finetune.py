@@ -257,7 +257,7 @@ if __name__ == '__main__':
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
     # set num_proc higher for faster processing
-    dataset = dataset.map(collate_fn, batched=True, fn_kwargs={}, num_proc=1)
+    dataset = dataset.map(collate_fn, batched=True, fn_kwargs={}, num_proc=2)
 
 
     dataset_processed = dataset.shuffle(seed=42)
