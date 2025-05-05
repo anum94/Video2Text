@@ -40,6 +40,7 @@ def read_video(video_path):
     # Convert list of frames to a numpy array (N, H, W, C)
     video_np = np.array(frames)
 
+
     print("Shape of video numpy array:", video_np.shape)  # e.g., (num_frames, height, width, 3)
     return video_np
 

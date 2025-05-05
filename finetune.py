@@ -4,6 +4,7 @@ from email.policy import default
 
 import av
 import fsspec
+import numpy as np
 import shutil
 import pandas as pd
 from tqdm import tqdm
@@ -46,7 +47,11 @@ def get_FT_prompt(prev_generation):
     return prompt
 
 def collate_fn(examples):
-    video_clips = [read_video(path) for path in examples["video"]]  # list of video clips
+    video_clips = [read_video(path) for path in examples["video"]]
+    video_clips = np.stack(video_clips, axis=0)# list of video clips
+    print (video_clips.shape)
+    video_clips= np.transpose(video_clips, (0,1, 4, 2, 3))
+    print(video_clips.shape)
     prev_generations = examples["prev_generations"]
     ground_truths = examples["gt"]
     prompts = []
@@ -213,7 +218,7 @@ if __name__ == '__main__':
                             default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary")
     parser.add_argument("--n", required=False, type=int, default=-1, help="Number of samples to run")
     parser.add_argument("--step", required=False, type=int, default=1, help="Time Step for generation")
-    parser.add_argument("--frames", required=False, type=int, default=-1,
+    parser.add_argument("--frames", required=False, type=int, default=1,
                         help="Number of frames to use per step of generation")
     parser.add_argument("--context_window", required=False, type=int, default=5120,
                         help="Context Window to be used by LLM")
