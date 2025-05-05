@@ -236,18 +236,11 @@ def run_inference(video_clip, model):
         ]
 
     # Set add_generation_prompt to add the "ASSISTANT: " at the end
-    prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
+    inputs_video = processor(text=conversation, videos=video, padding=True, return_tensors="pt",
+                             max_length=MAX_LENGTH).to(model.device)
 
-    batch = processor(
-        text=prompt,
-        videos=None, # we have a processed video, passing it again to processor causes errors
-        return_tensors="pt"
-    ).to(model.device)
-    video_clip = video_clip.squeeze()
-    print (video_clip.shape)
-    video_clip = video_clip.to(model.device)
+    out = model.generate(**inputs_video, do_sample=True, max_new_tokens=50).to(model.device)
 
-    out = model.generate(**batch, pixel_values_videos=video_clip, max_length=MAX_LENGTH, do_sample=True)
     generated_text = processor.batch_decode(out, skip_special_tokens=True)
     return generated_text
 
@@ -385,18 +378,18 @@ if __name__ == '__main__':
 
     # ------------------------ Test the trained model -----------------------------------#
     example = test_dataset[0]
-    print (processor.batch_decode(example["input_ids"]))
+    print (example)
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         REPO_ID,
         torch_dtype=torch.float16,
         device_map="auto",
     )
 
-    print (run_inference(example["pixel_values_videos"], model))
+    print (run_inference(example, model))
 
     old_model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         MODEL_ID,
         torch_dtype=torch.float16,
         device_map="auto",
     )
-    print(run_inference(example["pixel_values_videos"], old_model))
+    print(run_inference(example, old_model))
