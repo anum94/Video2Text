@@ -46,7 +46,42 @@ def get_FT_prompt(prev_generation):
 
     return prompt
 
-def collate_fn(examples):
+def collate_fn(example):
+    video_clips = read_video(example["video"])
+    video_clips = [process_video(clip, num_frames=NUM_FRAMES) for clip in video_clips]
+
+    print (video_clips.shape)
+    video_clips= np.transpose(video_clips, (0,3, 1, 2))
+    print(video_clips.shape)
+    prev_gen = example["prev_generations"]
+    gt = example["gt"]
+    prompts = []
+
+    conversation = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": get_FT_prompt(prev_gen)},
+                    {"type": "video"},
+                ],
+            },
+            {
+                "role": "assistant",
+                "content": [
+                    {"type": "text", "text": gt},
+                ],
+            },
+        ]
+    prompt = processor.apply_chat_template(conversation, add_generation_prompt=False)
+    batch = processor(
+        text=prompt,
+        videos=video_clips,
+        truncation=True,
+        max_length=MAX_LENGTH,
+        return_tensors="pt"
+    )
+    return batch
+def collate_fn_batch(examples):
     video_clips = [read_video(path) for path in examples["video"]]
     video_clips = [process_video(clip, num_frames=NUM_FRAMES) for clip in video_clips]
     video_clips = np.stack(video_clips, axis=0)# list of video clips
@@ -86,6 +121,7 @@ def collate_fn(examples):
 
 
     return batch
+
 def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
     dataset = []
     path = f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}'
@@ -98,7 +134,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
     commentary_directory = os.path.join(folder,commentary_directory)
 
     all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
-                     os.path.isdir(os.path.join(video_directory, name))][:20]
+                     os.path.isdir(os.path.join(video_directory, name))][:10]
 
     for i, game_path in tqdm(enumerate(all_game_path), total = len(all_game_path)):
 
@@ -257,7 +293,8 @@ if __name__ == '__main__':
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
     # set num_proc higher for faster processing
-    dataset = dataset.map(collate_fn, batched=True, fn_kwargs={}, num_proc=2)
+    #dataset = dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
+    dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=2)
 
 
     dataset_processed = dataset.shuffle(seed=42)
