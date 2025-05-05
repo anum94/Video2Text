@@ -209,41 +209,52 @@ def find_all_linear_names(model):
     return list(lora_module_names)
 
 
-
 def run_inference(video_clip, model):
-    # Let's use chat template to format the prompt correctly, this time without the caption
-    user_prompt = ("You are a professional commentator for car racing games. You will be provided with few frames"
-                   " from an on-going game and your task is generate brief Commentary."
-                   "1) Ignore the background information and refrain the describing the scenery."
-                   "2) Do not regenerate information that is already part of the Previous Commentary."
-                   "3) Identify new developments if any, in the provided video clip as compared to previous commentary, then generate 1 sentence of commentary."
-                   "If nothing has change, then generate <WAIT>. Otherwise a brief commentary"
-                   "Previous generated Commentary: "
-                   )
-    conversation = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": user_prompt},
-                    {"type": "video"},
-                    ],
-            },
-        ]
+    # PREPARE TEXT PROMPT AND MATCH THE NUMBER OF <video> TOKENS
 
-    # Set add_generation_prompt to add the "ASSISTANT: " at the end
+    user_prompt = (
+        "You are a professional commentator for car racing games. You will be provided with few frames"
+        " from an on-going game and your task is generate brief Commentary."
+        "1) Ignore the background information and refrain the describing the scenery."
+        "2) Do not regenerate information that is already part of the Previous Commentary."
+        "3) Identify new developments if any, in the provided video clip as compared to previous commentary, then generate 1 sentence of commentary."
+        "If nothing has change, then generate <WAIT>. Otherwise a brief commentary"
+        "Previous generated Commentary: "
+    )
+
+    # >>> Get the correct number of features from your video tensor <<<
+    num_video_features = video_clip.shape[1]  # Typically (batch, time/patch/features, ...)
+    video_tokens = " ".join(["<video>"] * num_video_features)
+
+    # Option A: Insert as a single text field (recommended if processor doesn't support type="video" multiple times)
+    conversation = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_prompt},
+                {"type": "text", "text": video_tokens},
+            ],
+        },
+    ]
+    # Optionally check prompt
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
 
+    # Check token count for debugging
+    tokens = processor.tokenizer.tokenize(prompt)
+    print("Num <video> tokens in prompt:", tokens.count("<video>"))
+    print("Num video features:", num_video_features)
+
+    # Format batch
     batch = processor(
         text=prompt,
-        videos=None, # we have a processed video, passing it again to processor causes errors
+        videos=None,  # don't process video again
         return_tensors="pt"
     ).to(model.device)
-    video_clip = video_clip.to(model.device)
 
+    video_clip = video_clip.to(model.device)
     out = model.generate(**batch, pixel_values_videos=video_clip, max_length=MAX_LENGTH, do_sample=True)
     generated_text = processor.batch_decode(out, skip_special_tokens=True)
     return generated_text
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description="Generates commentary as per the defined settings"
@@ -379,7 +390,7 @@ if __name__ == '__main__':
     # ------------------------ Test the trained model -----------------------------------#
     example = test_dataset[0]
     print (example)
-    processor.batch_decode(example["input_ids"])
+    print (processor.batch_decode(example["input_ids"]))
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         REPO_ID,
         torch_dtype=torch.float16,
