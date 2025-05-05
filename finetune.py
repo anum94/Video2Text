@@ -48,9 +48,7 @@ def get_FT_prompt(prev_generation):
 
 def collate_fn(example):
     video_clips = read_video(example["video"])
-    print (video_clips.shape)
     video_clips= np.transpose(video_clips, (0,3, 1, 2))
-    print(video_clips.shape)
     prev_gen = example["prev_generations"]
     gt = example["gt"]
     prompts = []
