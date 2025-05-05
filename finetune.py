@@ -130,7 +130,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
     commentary_directory = os.path.join(folder,commentary_directory)
 
     all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
-                     os.path.isdir(os.path.join(video_directory, name))][:10]
+                     os.path.isdir(os.path.join(video_directory, name))][:20]
 
     for i, game_path in tqdm(enumerate(all_game_path), total = len(all_game_path)):
 
@@ -152,8 +152,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
             video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * video_metadata["frames_per_second"],
                                   end_frame=(t + 1) * video_metadata["frames_per_second"], format="video")
 
-            video_path = os.path.join(path, commentary_directory, os.path.basename(mp4_file.replace('.mp4', f'_{t}.mp4')))
-            print (video_path)
+            video_path = os.path.join(path, os.path.basename(mp4_file.replace('.mp4', f'_{t}.mp4')))
             write_video(video, video_path, video_metadata["frames_per_second"])
             prev_generations = " ".join(ref_utterences[:(t - step)])
             ground_truth = " ".join([ref_utterences[t - j] for j in reversed(range(step))])
