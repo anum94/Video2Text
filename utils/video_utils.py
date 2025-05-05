@@ -10,7 +10,8 @@ def get_video_info(path):
     return {"total_frames": total_frames, "frames_per_second": fps,
             "duration":duration }
 def write_video(video_array, path, fps):
-
+    print (path)
+    exit()
     width = video_array.shape[2]
     height = video_array.shape[1]
     # Define the codec and create VideoWriter object

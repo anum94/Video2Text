@@ -1,7 +1,5 @@
 # Library Imports
 import os
-from email.policy import default
-
 import av
 import fsspec
 import numpy as np
@@ -49,7 +47,7 @@ def get_FT_prompt(prev_generation):
     return prompt
 
 def collate_fn(example):
-    #video_clips = read_video(example["video"])
+    video_clips = read_video(example["video"])
     video_clips = np.array(example["video"])
     print (video_clips.shape)
     video_clips= np.transpose(video_clips, (0,3, 1, 2))
@@ -150,10 +148,11 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
         video_metadata = get_video_info(mp4_file)
         ref_utterences, ref_timing = get_utterence_timing(srt, video_metadata)
         for t in range(0, video_metadata["duration"], step): #tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
+
             video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * video_metadata["frames_per_second"],
                                   end_frame=(t + 1) * video_metadata["frames_per_second"], format="video")
-            #video_path = os.path.join(path, mp4_file.replace('.mp4', f'_{t}.mp4'))
-            #write_video(video, video_path, video_metadata["frames_per_second"])
+            video_path = os.path.join(path, mp4_file.replace('.mp4', f'_{t}.mp4'))
+            write_video(video, video_path, video_metadata["frames_per_second"])
             prev_generations = " ".join(ref_utterences[:(t - step)])
             ground_truth = " ".join([ref_utterences[t - j] for j in reversed(range(step))])
             if not ground_truth.strip():
