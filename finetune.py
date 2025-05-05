@@ -344,12 +344,12 @@ if __name__ == '__main__':
         # args related to training
         output_dir=OUTPUT_DIR,
         eval_strategy='steps',
-        eval_steps=20,
+        eval_steps=2,
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
         gradient_accumulation_steps=8,
         learning_rate=2e-05,
-        max_steps=100,  # adjust this depending on your dataset size
+        max_steps=10,  # adjust this depending on your dataset size
         lr_scheduler_type='cosine',
         warmup_ratio=0.1,
 
