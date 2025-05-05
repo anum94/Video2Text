@@ -73,7 +73,8 @@ def collate_fn(examples):
         ]
         prompt = processor.apply_chat_template(conversation, add_generation_prompt=False)
         prompts.append(prompt)
-
+    for i, v in enumerate(video_clips):
+        print(f"Video {i} shape:", v.shape)
     batch = processor(
         text=prompts,
         videos=video_clips,
@@ -81,8 +82,7 @@ def collate_fn(examples):
         max_length=MAX_LENGTH,
         return_tensors="pt"
     )
-    for i, v in enumerate(video_clips):
-        print(f"Video {i} shape:", v.shape)
+
 
     return batch
 def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
