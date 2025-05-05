@@ -363,7 +363,6 @@ if __name__ == '__main__':
     # ------------------------ Test the trained model -----------------------------------#
     for i in range(10):
         example = test_dataset[i]
-        print (example)
         model = LlavaNextVideoForConditionalGeneration.from_pretrained(
             REPO_ID,
             torch_dtype=torch.float16,
