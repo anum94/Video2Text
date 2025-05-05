@@ -146,7 +146,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
         srt = read_srt(transcription_file)
 
         video_metadata = get_video_info(mp4_file)
-        video_metadata["duration"] = 50
+        #video_metadata["duration"] = 50
         ref_utterences, ref_timing = get_utterence_timing(srt, video_metadata)
         for t in range(0, video_metadata["duration"], step): #tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
 
@@ -319,12 +319,13 @@ if __name__ == '__main__':
         # args related to training
         output_dir=OUTPUT_DIR,
         eval_strategy='steps',
-        eval_steps=1,
+        eval_steps=20,
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
         gradient_accumulation_steps=8,
         learning_rate=2e-05,
-        max_steps=5,  # adjust this depending on your dataset size
+        num_train_epochs=1,
+        #max_steps=5,  # adjust this depending on your dataset size
         lr_scheduler_type='cosine',
         warmup_ratio=0.1,
 
@@ -360,19 +361,20 @@ if __name__ == '__main__':
     trainer.model.push_to_hub(REPO_ID)
 
     # ------------------------ Test the trained model -----------------------------------#
-    example = test_dataset[0]
-    print (example)
-    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-        REPO_ID,
-        torch_dtype=torch.float16,
-        device_map="auto",
-    )
+    for i in range(10):
+        example = test_dataset[i]
+        print (example)
+        model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+            REPO_ID,
+            torch_dtype=torch.float16,
+            device_map="auto",
+        )
 
-    print (run_inference(example, model))
+        print (run_inference(example, model))
 
-    old_model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-        MODEL_ID,
-        torch_dtype=torch.float16,
-        device_map="auto",
-    )
-    print(run_inference(example, old_model))
+        old_model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+            MODEL_ID,
+            torch_dtype=torch.float16,
+            device_map="auto",
+        )
+        print(run_inference(example, old_model))
