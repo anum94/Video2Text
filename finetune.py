@@ -129,7 +129,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
     commentary_directory = os.path.join(folder,commentary_directory)
 
     all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
-                     os.path.isdir(os.path.join(video_directory, name))][:6]
+                     os.path.isdir(os.path.join(video_directory, name))][:n]
 
     for i, game_path in tqdm(enumerate(all_game_path), total = len(all_game_path)):
 
@@ -143,18 +143,19 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
 
         # Baseline without feedback loop
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
-        os.makedirs(f'{path}_videos', exist_ok=True)
+        os.makedirs(path.replace("/", "_videos/"), exist_ok=True)
 
         srt = read_srt(transcription_file)
 
         video_metadata = get_video_info(mp4_file)
+        video_metadata["duration"] = 50
         ref_utterences, ref_timing = get_utterence_timing(srt, video_metadata)
         for t in range(0, video_metadata["duration"], step): #tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
 
             video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * video_metadata["frames_per_second"],
                                   end_frame=(t + 1) * video_metadata["frames_per_second"], format="video")
 
-            video_path = os.path.join(path, "videos/", os.path.basename(mp4_file.replace('.mp4', f'_{t}.mp4')))
+            video_path = os.path.join(path.replace("/", "_videos/"), os.path.basename(mp4_file.replace('.mp4', f'_{t}.mp4')))
             write_video(video, video_path, video_metadata["frames_per_second"])
             prev_generations = " ".join(ref_utterences[:(t - step)])
             ground_truth = " ".join([ref_utterences[t - j] for j in reversed(range(step))])
@@ -164,6 +165,7 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
                            "video": video_path ,
                           #  "video": video,
                             "prev_generations": prev_generations,
+                            "num_frames": video.shape[0],
                             "gt":ground_truth}
             dataset.append(dataset_item)
 
@@ -256,9 +258,9 @@ if __name__ == '__main__':
     parser.add_argument("--dir", required=True, type=str, help="Directory containing the videos "
                             "and respective commentary in recordings and transcriptions_whole_data_english folder",
                             default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary")
-    parser.add_argument("--n", required=False, type=int, default=-1, help="Number of samples to run")
-    parser.add_argument("--step", required=False, type=int, default=1, help="Time Step for generation")
-    parser.add_argument("--frames", required=False, type=int, default=1,
+    parser.add_argument("--n", required=False, type=int, default=10, help="Number of samples to run")
+    parser.add_argument("--step", required=False, type=int, default=2, help="Time Step for generation")
+    parser.add_argument("--frames", required=False, type=int, default=2,
                         help="Number of frames to use per step of generation")
     parser.add_argument("--context_window", required=False, type=int, default=5120,
                         help="Context Window to be used by LLM")
