@@ -49,11 +49,13 @@ def get_FT_prompt(prev_generation):
     return prompt
 
 def collate_fn(example):
-    video_clips = read_video(example["video"])
+    #video_clips = read_video(example["video"])
+    video_clips = example["video"]
+    print (video_clips.shape)
     video_clips= np.transpose(video_clips, (0,3, 1, 2))
+    print(video_clips.shape)
     prev_gen = example["prev_generations"]
     gt = example["gt"]
-    prompts = []
 
     conversation = [
             {
@@ -150,14 +152,15 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
         for t in range(0, video_metadata["duration"], step): #tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
             video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * video_metadata["frames_per_second"],
                                   end_frame=(t + 1) * video_metadata["frames_per_second"], format="video")
-            video_path = os.path.join(path, mp4_file.replace('.mp4', f'_{t}.mp4'))
-            write_video(video, video_path, video_metadata["frames_per_second"])
+            #video_path = os.path.join(path, mp4_file.replace('.mp4', f'_{t}.mp4'))
+            #write_video(video, video_path, video_metadata["frames_per_second"])
             prev_generations = " ".join(ref_utterences[:(t - step)])
             ground_truth = " ".join([ref_utterences[t - j] for j in reversed(range(step))])
             if not ground_truth.strip():
                 ground_truth = "<WAIT>"
             dataset_item = {"sample_name": sample_name,
-                            "video": video_path ,
+                          #  "video": video_path ,
+                            "video": video,
                             "prev_generations": prev_generations,
                             "gt":ground_truth}
             dataset.append(dataset_item)
@@ -209,52 +212,41 @@ def find_all_linear_names(model):
     return list(lora_module_names)
 
 
+
 def run_inference(video_clip, model):
-    # PREPARE TEXT PROMPT AND MATCH THE NUMBER OF <video> TOKENS
-
-    user_prompt = (
-        "You are a professional commentator for car racing games. You will be provided with few frames"
-        " from an on-going game and your task is generate brief Commentary."
-        "1) Ignore the background information and refrain the describing the scenery."
-        "2) Do not regenerate information that is already part of the Previous Commentary."
-        "3) Identify new developments if any, in the provided video clip as compared to previous commentary, then generate 1 sentence of commentary."
-        "If nothing has change, then generate <WAIT>. Otherwise a brief commentary"
-        "Previous generated Commentary: "
-    )
-
-    # >>> Get the correct number of features from your video tensor <<<
-    num_video_features = video_clip.shape[1]  # Typically (batch, time/patch/features, ...)
-    video_tokens = " ".join(["<video>"] * num_video_features)
-
-    # Option A: Insert as a single text field (recommended if processor doesn't support type="video" multiple times)
+    # Let's use chat template to format the prompt correctly, this time without the caption
+    user_prompt = ("You are a professional commentator for car racing games. You will be provided with few frames"
+                   " from an on-going game and your task is generate brief Commentary."
+                   "1) Ignore the background information and refrain the describing the scenery."
+                   "2) Do not regenerate information that is already part of the Previous Commentary."
+                   "3) Identify new developments if any, in the provided video clip as compared to previous commentary, then generate 1 sentence of commentary."
+                   "If nothing has change, then generate <WAIT>. Otherwise a brief commentary"
+                   "Previous generated Commentary: "
+                   )
     conversation = [
-        {
-            "role": "user",
-            "content": [
-                {"type": "text", "text": user_prompt},
-                {"type": "text", "text": video_tokens},
-            ],
-        },
-    ]
-    # Optionally check prompt
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": user_prompt},
+                    {"type": "video"},
+                    ],
+            },
+        ]
+
+    # Set add_generation_prompt to add the "ASSISTANT: " at the end
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
 
-    # Check token count for debugging
-    tokens = processor.tokenizer.tokenize(prompt)
-    print("Num <video> tokens in prompt:", tokens.count("<video>"))
-    print("Num video features:", num_video_features)
-
-    # Format batch
     batch = processor(
         text=prompt,
-        videos=None,  # don't process video again
+        videos=None, # we have a processed video, passing it again to processor causes errors
         return_tensors="pt"
     ).to(model.device)
-
     video_clip = video_clip.to(model.device)
+
     out = model.generate(**batch, pixel_values_videos=video_clip, max_length=MAX_LENGTH, do_sample=True)
     generated_text = processor.batch_decode(out, skip_special_tokens=True)
     return generated_text
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description="Generates commentary as per the defined settings"
