@@ -126,7 +126,8 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
     wandb.finish()
     metrics = dict(zip(metrics_columns, metrics_data))
     additional_columns+= ["baseline_ref_timing", "baseline_pred_timing", "feedback_ref_timing",
-                          "feedback_pred_timing", "icl_ref_timing", "icl_pred_timing",]
+                          "feedback_pred_timing", "icl_ref_timing", "icl_pred_timing", "feedback_ROUGE_10%",
+                          "baseline_ROUGE_10%", "icl_ROUGE_10%"]
     for k,v in metrics["feedback_ROUGE_10%"].items():
         metrics[k] = v
     for k,v in metrics["baseline_ROUGE_10%"].items():
