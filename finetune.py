@@ -273,7 +273,7 @@ if __name__ == '__main__':
     processor.tokenizer.padding_side = "right"
     # set num_proc higher for faster processing
     #dataset = dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
-    dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=8)
+    dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=4)
 
 
     dataset_processed = dataset.shuffle(seed=42)
