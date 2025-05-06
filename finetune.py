@@ -252,8 +252,8 @@ if __name__ == '__main__':
     NUM_FRAMES = args.frames # more frames -> more VRAM needed
     OUTPUT_DIR = "logs/FT/" # path where to save the checkpoints
     MODEL_ID = "llava-hf/LLaVa-NeXT-Video-7b-hf"
-    USE_LORA = True
-    USE_QLORA = False
+    USE_LORA = False
+    USE_QLORA = True
     REPO_ID = "anumafzal94/LLaVa-NeXT-Video-demo" # Change to your hf-hub repo
 
     config = {"num_frames_to_use": NUM_FRAMES, "step":step, "max_length": MAX_LENGTH, "use_lora": USE_LORA,
@@ -277,6 +277,10 @@ if __name__ == '__main__':
     n = 100000  # or any number you want
     dataset = dataset.select(range(n))
     dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=4)
+    cache_dir = "ds_cache/"
+    os.mkdir(cache_dir)
+    dataset.save_to_disk(cache_dir)
+    print (f"collated data saved to {cache_dir}")
 
 
     dataset_processed = dataset.shuffle(seed=42)
