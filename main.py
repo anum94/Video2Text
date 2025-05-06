@@ -423,7 +423,9 @@ if __name__ == '__main__':
                     )
         metrics_all_samples.append(metrics_per_sample)
         df = pd.DataFrame(metrics_all_samples)
+        print(df.dtypes)
         means_dict = df.mean().to_dict()
+
         print(means_dict)
 
 
