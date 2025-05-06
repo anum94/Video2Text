@@ -4,6 +4,7 @@ import os
 import nltk
 from sklearn.metrics import confusion_matrix
 import json
+from difflib import SequenceMatcher
 from rouge_score import rouge_scorer
 def get_text_sequence(lines):
     return [l['text'] for l in lines if l['text']]
