@@ -377,8 +377,8 @@ if __name__ == '__main__':
 
     model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
     split_word = "ASSISTANT:"
-    model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
-    split_word = "<|im_start|> assistant"
+    #model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
+    #split_word = "<|im_start|> assistant"
 
     model = None
 
