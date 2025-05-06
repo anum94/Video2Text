@@ -67,7 +67,7 @@ def write_logs(out_folder, predictions,times, eval_metrics, mode, talking_speed_
             ut = ut.replace("\n", "")
             the_file.write(f"{t}: {ut}\n")
 
-    convert_text_to_srt(out_file, talking_speed_sample)
+    out_file = convert_text_to_srt(out_file, talking_speed_sample)
     return out_file
 def get_commentary_path(commentary_directory, game_path):
     game_path = os.path.basename(game_path)
