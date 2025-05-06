@@ -5,6 +5,50 @@ import nltk
 from sklearn.metrics import confusion_matrix
 import json
 from rouge_score import rouge_scorer
+def get_text_sequence(lines):
+    return [l['text'] for l in lines if l['text']]
+
+def compute_LA(ref_lines, hyp_lines):
+    ref_seq = get_text_sequence(ref_lines)
+    hyp_seq = get_text_sequence(hyp_lines)
+    # SequenceMatcher finds the longest contiguous matching subsequence
+    sm = SequenceMatcher(None, ref_seq, hyp_seq)
+    blocks = sm.get_matching_blocks()
+    # Length of the longest matching block is the LA (can sum lengths if you want total, or count contiguous only)
+    la = max(block.size for block in blocks)
+    return la, blocks
+
+def overlap(start1, end1, start2, end2):
+    return max(start1, start2) < min(end1, end2)
+import pysrt
+
+def parse_srt(srt_path):
+    subs = pysrt.open(srt_path)
+    lines = []
+    for item in subs:
+        lines.append({
+            'start': item.start.ordinal,  # in milliseconds
+            'end': item.end.ordinal,
+            'text': item.text.strip()
+        })
+    return lines
+def compute_LAAL(ref_lines, hyp_lines, text_similarity_threshold=0.6):
+    import difflib
+    aligned = 0
+    for ref in ref_lines:
+        best_match = None
+        for hyp in hyp_lines:
+            if overlap(ref['start'], ref['end'], hyp['start'], hyp['end']):
+                sm = difflib.SequenceMatcher(None, ref['text'], hyp['text'])
+                sim = sm.ratio()
+                if sim > text_similarity_threshold:
+                    best_match = sim
+        if best_match:
+            aligned += 1
+    # LAAL as a ratio or count (e.g., aligned actions / total reference actions)
+    laal = aligned / len(ref_lines) if ref_lines else 0
+    return laal
+
 def srt_time_to_seconds(srt_time, ms = False):
     # Split the time string by colon and comma
     try:
@@ -54,11 +98,7 @@ def read_srt(input_file_path):
         subs.append(sub)
     return subs
 
-def write_logs(out_folder, predictions,times, eval_metrics, mode, talking_speed_sample=None):
-
-    out_file = os.path.join(out_folder, f'{mode}.json')
-    with open(out_file, 'w') as f:
-        json.dump(eval_metrics, f)
+def write_logs(out_folder, predictions,times, mode, talking_speed_sample=None):
 
     out_file = os.path.join(out_folder, f"logs_{mode}.txt")
     print(f"Generation stored at {out_file}")
@@ -126,7 +166,7 @@ def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
         rouge_dict[ f"{i * 10}-{(i + 1) * 10}%"] = score['rouge1'].fmeasure
     return rouge_dict
 
-def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
+def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, generated_srt, reference_srt):
 
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
     cm = confusion_matrix(ref_timing, pred_timing)
@@ -146,10 +186,25 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences):
 
     BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights=(0.5, 0.5))
 
+    print("Computing LA and LAAL")
+
+    ref_lines = parse_srt(reference_srt)
+    hyp_lines = parse_srt(generated_srt)
+
+    # LA: longest contiguous block
+    la, _ = compute_LA(ref_lines, hyp_lines)
+    print("Longest Alignment (LA):", la)
+
+
+    # LAAL: fraction of reference actions aligned
+    laal = compute_LAAL(ref_lines, hyp_lines)
+    print("Longest Aligned Action Location (LAAL):", laal)
+
 
     res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE_1": rouge_1, "ROUGE_L": rouge_L,
             "BLEU": BLEUscore,  "ref_timing": list(ref_timing),
-            "pred_timing": list(pred_timing), "ROUGE_10%": rouge_intervals}
+            "pred_timing": list(pred_timing), "ROUGE_10%": rouge_intervals,
+            'LAAL': laal, "LA": la}
     return res
 
 

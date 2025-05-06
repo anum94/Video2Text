@@ -69,18 +69,6 @@ def get_utterence_timing(ground_truth,metadata):
     return utterences, utterence_timing
 
 
-def get_text_sequence(lines):
-    return [l['text'] for l in lines if l['text']]
-
-def compute_LA(ref_lines, hyp_lines):
-    ref_seq = get_text_sequence(ref_lines)
-    hyp_seq = get_text_sequence(hyp_lines)
-    # SequenceMatcher finds the longest contiguous matching subsequence
-    sm = SequenceMatcher(None, ref_seq, hyp_seq)
-    blocks = sm.get_matching_blocks()
-    # Length of the longest matching block is the LA (can sum lengths if you want total, or count contiguous only)
-    la = max(block.size for block in blocks)
-    return la, blocks
 def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False, split_word = "ASSISTANT:", ):
 
     user_prompt = get_user_prompt("baseline")
@@ -125,8 +113,10 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
     ref_timing = [ref_timing[ref] for ref in range(0,len(ref_timing),step)]
     ref_utterences = [ref_utterences[ref] for ref in range(0, len(ref_utterences), step)]
-    eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences)
-    pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode="baseline", talking_speed_sample=icl_transcription_file)
+    pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step, mode="baseline",
+                               talking_speed_sample=icl_transcription_file)
+    eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences,
+                            pred_srt_file, transcription_file)
     print (f"Logs written at {out_folder}")
     if verbose:
         print(eval_metrics)
@@ -313,9 +303,9 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     ref_timing = [ref_timing[ref] for ref in range(0,len(ref_timing),step)]
     ref_utterences = [ref_utterences[ref] for ref in range(0, len(ref_utterences), step)]
 
-    eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences)
-    pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode=mode, talking_speed_sample=icl_transcription_file)
 
+    pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step,  mode=mode, talking_speed_sample=icl_transcription_file)
+    eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, pred_srt_file, transcription_file)
     if verbose:
         print(eval_metrics)
         print(f"Complete Commentary: {pred_utterences}")
