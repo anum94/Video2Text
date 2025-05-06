@@ -129,9 +129,9 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
                           "feedback_pred_timing", "icl_ref_timing", "icl_pred_timing", "feedback_ROUGE_10%",
                           "baseline_ROUGE_10%", "icl_ROUGE_10%"]
     for k,v in metrics["feedback_ROUGE_10%"].items():
-        metrics[k] = v
+        metrics[f"feedback_{k}"] = v
     for k,v in metrics["baseline_ROUGE_10%"].items():
-        metrics[k] = v
+        metrics[f"baseline_{k}"] = v
     for k,v in metrics["icl_ROUGE_10%"].items():
-        metrics[k] = v
+        metrics[f"icl_{k}"] = v
     return {k: v for k, v in metrics.items() if k not in additional_columns}

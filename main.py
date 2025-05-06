@@ -422,11 +422,21 @@ if __name__ == '__main__':
                     icl_output = icl_feedback_loop_generation, config=config,
                     )
         metrics_all_samples.append(metrics_per_sample)
-        df = pd.DataFrame(metrics_all_samples)
-        print(df.dtypes)
-        means_dict = df.mean().to_dict()
+    df = pd.DataFrame(metrics_all_samples)
+    means_dict = df.select_dtypes(include='number').mean().to_dict()
+    means_dict["n"] = len(df)
+    means_dict["model_name"] = model_id
+    means_dict["# frame"] = num_frames_to_use
+    means_dict["step"] = step
+    print(means_dict)
+    project_name = "CommGen"
+    entity = "anum-afzal-technical-university-of-munich"
+    wandb_setup()
+    wandb_mode = "online"
 
-        print(means_dict)
+    wandb.init(project=project_name, entity=entity, config=config, name=run_name,
+           mode=wandb_mode, group="global")
+    wandb.log({"metrics_table": means_dict}, commit=True)
 
 
 

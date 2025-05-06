@@ -200,10 +200,9 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
                 # Blank line to separate entries
                 srt_file.write("\n")
 
-        print(f"SRT file '{srt_filename}' created successfully.")
         test = read_srt(srt_filename)
-
-
+        print(f"SRT file '{srt_filename}' created successfully.")
+        return srt_filename
 def rename_mp4_files(directory):
     for dirpath, _, filenames in os.walk(directory):
         for filename in filenames:
