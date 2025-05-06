@@ -278,7 +278,7 @@ if __name__ == '__main__':
     dataset = dataset.select(range(n))
     dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=4)
     cache_dir = "ds_cache/"
-    os.mkdir(cache_dir)
+    os.makedirs(cache_dir, exist_ok=True)
     dataset.save_to_disk(cache_dir)
     print (f"collated data saved to {cache_dir}")
 
