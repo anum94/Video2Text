@@ -4,6 +4,7 @@ import os
 import nltk
 from sklearn.metrics import confusion_matrix
 import json
+import pysrt
 from difflib import SequenceMatcher
 from rouge_score import rouge_scorer
 def get_text_sequence(lines):
@@ -21,7 +22,7 @@ def compute_LA(ref_lines, hyp_lines):
 
 def overlap(start1, end1, start2, end2):
     return max(start1, start2) < min(end1, end2)
-import pysrt
+
 
 def parse_srt(srt_path):
     subs = pysrt.open(srt_path)
@@ -33,7 +34,7 @@ def parse_srt(srt_path):
             'text': item.text.strip()
         })
     return lines
-def compute_LAAL(ref_lines, hyp_lines, text_similarity_threshold=0.6):
+def compute_LAAL(ref_lines, hyp_lines, text_similarity_threshold=0.1):
     import difflib
     aligned = 0
     for ref in ref_lines:
