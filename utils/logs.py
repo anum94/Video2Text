@@ -126,4 +126,4 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
     wandb.finish()
     additional_columns+= ["baseline_ref_timing", "baseline_pred_timing", "feedback_ref_timing",
                           "feedback_pred_timing", "icl_ref_timing", "icl_pred_timing",]
-    return {k: v for k, v in table.to_json().items() if k not in additional_columns}
+    return {k: v for k, v in table.to_json("metrics_table").items() if k not in additional_columns}

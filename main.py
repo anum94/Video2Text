@@ -409,8 +409,8 @@ if __name__ == '__main__':
 
         feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                           init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
-        if icl:
-            icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+
+        icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
                                                               ICL=icl_example_paths, split_word = split_word, k = 4)
 
