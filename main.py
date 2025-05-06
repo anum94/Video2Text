@@ -6,6 +6,7 @@ from tqdm import tqdm
 from datetime import datetime
 import torch
 import sys
+import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
 from utils.logs import *
@@ -385,7 +386,7 @@ if __name__ == '__main__':
 
 
     processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
-
+    metrics_all_samples = []
     # iterate over all samples
     all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video_directory) if os.path.isdir(os.path.join(video_directory, name))]
     if n == -1:
@@ -417,9 +418,14 @@ if __name__ == '__main__':
         config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
                   }
 
-        write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
+        metrics_per_sample = write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
                     icl_output = icl_feedback_loop_generation, config=config,
                     )
+        metrics_all_samples.append(metrics_per_sample)
+        df = pd.DataFrame(metrics_all_samples)
+        print(df)
+
+
 
 
 

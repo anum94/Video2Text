@@ -37,9 +37,9 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
     i_pred_timing = i_eval_metrics["pred_timing"]
     i_generations = icl_output[0]
 
-
+    additional_columns = ["model_name", "sample","# frame", "step"]
     metrics_columns = (
-            ["model_name", "sample","# frame", "step"] +
+            additional_columns +
                        [f"baseline_{key}" for key in b_eval_metrics.keys()] +
                        [f"feedback_{key}" for key in f_eval_metrics.keys()] +
                        [f"icl_{key}" for key in i_eval_metrics.keys()]
@@ -124,5 +124,6 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
     wandb.log({f"plot_word_dist": wandb.Image(fig)})
 
     wandb.finish()
-
-    return table.to_json()
+    additional_columns+= ["baseline_ref_timing", "baseline_pred_timing", "feedback_ref_timing",
+                          "feedback_pred_timing", "icl_ref_timing", "icl_pred_timing",]
+    return {k: v for k, v in table.to_json().items() if k not in additional_columns}
