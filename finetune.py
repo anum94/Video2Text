@@ -274,7 +274,7 @@ if __name__ == '__main__':
     # set num_proc higher for faster processing
     #dataset = dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
     n = 10000  # or any number you want
-    small_dataset = dataset.select(range(n))
+    dataset = dataset.select(range(n))
     dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=8)
 
 
