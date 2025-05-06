@@ -434,9 +434,10 @@ if __name__ == '__main__':
     wandb_setup()
     wandb_mode = "online"
 
-    wandb.init(project=project_name, entity=entity, config=config, name=run_name,
+    wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
            mode=wandb_mode, group="global")
-    wandb.log({"metrics_table": means_dict}, commit=True)
+    wandb.log(means_dict, commit=True)
+    wandb.finish()
 
 
 
