@@ -34,7 +34,7 @@ def parse_srt(srt_path):
             'text': item.text.strip()
         })
     return lines
-def compute_LAAL(ref_lines, hyp_lines, text_similarity_threshold=0.1):
+def compute_LAAL(ref_lines, hyp_lines, text_similarity_threshold=0.4):
     import difflib
     aligned = 0
     for ref in ref_lines:
