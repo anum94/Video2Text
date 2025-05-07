@@ -30,7 +30,7 @@ if __name__ == '__main__':
             mp4_file = [os.path.join(game_path,file) for file in os.listdir(game_path) if
                          file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
         else:
-            print (f"kyakkan commentary not available for game: {game_path}")
+            #print (f"kyakkan commentary not available for game: {game_path}")
             count += 1
             continue
 

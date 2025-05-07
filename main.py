@@ -335,6 +335,7 @@ if __name__ == '__main__':
     parser.add_argument("--icl", required=False, type=bool, default=False, help="If ICL should be used. Currently disabled")
     parser.add_argument("--k", required=False, type=int,default=2, help="number of examples for ICL")
     parser.add_argument("--step", required=False, type=int,default=1, help="Time Step for generation")
+    parser.add_argument("--wb", required=False, type=bool, default=True, help="Whether or not to push results to W&B")
     parser.add_argument("--frames", required=False, type=int, default=-1, help="Number of frames to use per step of generation")
     parser.add_argument("--context_window", required=False, type=int, default=5120,
                         help="Context Window to be used by LLM")
@@ -347,9 +348,10 @@ if __name__ == '__main__':
     num_frames_to_use = args.frames
     context_window = args.context_window
     icl = args.icl
+    WB = args.wb
 
-
-    wandb_setup()
+    if WB:
+        wandb_setup()
 
     my_folder = os.path.join("logs", date_time)
     # define directory paths
@@ -424,7 +426,7 @@ if __name__ == '__main__':
                       }
 
             metrics_per_sample = write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
-                        icl_output = icl_feedback_loop_generation, config=config,
+                        icl_output = icl_feedback_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
         except Exception as e:
@@ -439,17 +441,20 @@ if __name__ == '__main__':
     means_dict["# frame"] = num_frames_to_use
     means_dict["step"] = step
     print(means_dict)
-    project_name = "CommGen"
-    entity = "anum-afzal-technical-university-of-munich"
-    wandb_setup()
-    wandb_mode = "online"
+    if WB:
+        project_name = "CommGen"
+        entity = "anum-afzal-technical-university-of-munich"
+        wandb_setup()
+        wandb_mode = "online"
 
-    wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
-           mode=wandb_mode, group="global")
-    table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
-    wandb.log({"experiment_metrics": table}, commit=True)
-    wandb.finish()
-
+        wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
+               mode=wandb_mode, group="global")
+        table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
+        wandb.log({"experiment_metrics": table}, commit=True)
+        wandb.finish()
+    import json
+    with open(f'{sample_name}_{str(date_time)}.json', 'w') as fp:
+        json.dump(means_dict, fp)
 
 
 
