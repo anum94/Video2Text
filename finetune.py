@@ -116,9 +116,8 @@ def collate_fn_batch(examples):
     return batch
 
 def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
-    dataset = []
-    path = f'CarRacingFT_{len(dataset)}_step_{step}_numframes_{num_frames_to_use}/'
-    os.makedirs(path, exist_ok=True)
+    hf_dataset = []
+
     # define directory paths
     video_directory = "recordings"
     video_directory = os.path.join(folder,video_directory)
@@ -128,6 +127,9 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
 
     all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
                      os.path.isdir(os.path.join(video_directory, name))][:n]
+
+    path = f'CarRacingFT_{len(all_game_path)}_step_{step}_numframes_{num_frames_to_use}/'
+    os.makedirs(path, exist_ok=True)
 
     for i, game_path in tqdm(enumerate(all_game_path), total = len(all_game_path)):
 
@@ -165,13 +167,13 @@ def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
                             "prev_generations": prev_generations,
                             "num_frames": video.shape[0],
                             "gt":ground_truth}
-            dataset.append(dataset_item)
+            hf_dataset.append(dataset_item)
 
-    dataset = Dataset.from_list(dataset)
+    hf_dataset = Dataset.from_list(hf_dataset)
 
-    dataset.save_to_disk(path)
+    hf_dataset.save_to_disk(path)
     print(f"Dataset saved to {path}")
-    return dataset
+    return hf_dataset
 
 
 # ------------------------------------- LLM Fine-tuning ------------------------------------
