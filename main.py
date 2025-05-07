@@ -329,9 +329,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Generates commentary as per the defined settings"
     )
-    parser.add_argument("--dir", required=True, type=str, help="Directory containing the videos "
+    parser.add_argument("--dir", required=False, type=str, help="Directory containing the videos "
                         "and respective commentary in recordings and transcriptions_whole_data_english folder")
     parser.add_argument("--n", required=False, type=int, default=-1, help="Number of samples to run")
+    parser.add_argument("--hf_dataset", required=False, type=str,
+                        help="The directory containing hf_Dataset")
     parser.add_argument("--icl", required=False, type=bool, default=False, help="If ICL should be used. Currently disabled")
     parser.add_argument("--k", required=False, type=int,default=2, help="number of examples for ICL")
     parser.add_argument("--step", required=False, type=int,default=1, help="Time Step for generation")
@@ -349,6 +351,7 @@ if __name__ == '__main__':
     context_window = args.context_window
     icl = args.icl
     WB = args.wb
+    hf_dataset = args.hf_dataset
 
     if WB:
         wandb_setup()

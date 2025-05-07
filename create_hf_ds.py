@@ -39,12 +39,14 @@ if __name__ == '__main__':
                         "video": mp4_file,
                         "srt": transcription_file, }
         hf_dataset.append(dataset_item)
+        for i in range(10):
+            hf_dataset.append(dataset_item)
 
     hf_dataset = Dataset.from_list(hf_dataset)
     dataset_processed = hf_dataset.shuffle(seed=42)
     print (f"kyakkan commentary not available for {count} samples.")
     print (dataset_processed)
-    hf_dataset = dataset_processed.train_test_split(test_size=400)
+    hf_dataset = dataset_processed.train_test_split(test_size=0.2)
     dir = "RaceCommentaryEn/"
     os.makedirs(dir, exist_ok=True)
     hf_dataset.save_to_disk(dir)

@@ -188,7 +188,6 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
 
     BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights=(0.5, 0.5))
 
-    print("Computing LA and LAAL")
 
     ref_lines = parse_srt(reference_srt)
     hyp_lines = parse_srt(generated_srt)
