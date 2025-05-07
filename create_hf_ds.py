@@ -23,7 +23,7 @@ if __name__ == '__main__':
     all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
                      os.path.isdir(os.path.join(video_directory, name))]
 
-
+    count = 0
     for i, game_path in enumerate(all_game_path):
         transcription_file = get_commentary_path(commentary_directory,game_path)
         if transcription_file is not None:
@@ -31,6 +31,7 @@ if __name__ == '__main__':
                          file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
         else:
             print (f"kyakkan commentary not available for game: {game_path}")
+            count += 1
             continue
 
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
@@ -41,8 +42,9 @@ if __name__ == '__main__':
 
     hf_dataset = Dataset.from_list(hf_dataset)
     dataset_processed = hf_dataset.shuffle(seed=42)
-    print (len(dataset_processed))
-    hf_dataset = dataset_processed.train_test_split(test_size=0.2)
+    print (f"kyakkan commentary not available for {count} samples.")
+    print (dataset_processed)
+    hf_dataset = dataset_processed.train_test_split(test_size=400)
     dir = "RaceCommentaryEn/"
     os.makedirs(dir, exist_ok=True)
     hf_dataset.save_to_disk(dir)
