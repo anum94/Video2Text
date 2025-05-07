@@ -6,6 +6,8 @@ from tqdm import tqdm
 from datetime import datetime
 import torch
 import sys
+
+import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
 from utils.logs import *
@@ -15,12 +17,11 @@ import argparse
 def get_user_prompt(mode="baseline", context="", step = 1, force=False):
     #todo: move prompts to a yaml file
     if mode == "baseline":
-        user_prompt = ("You are a professional commentator for car racing games.You will be provided with a"
-                       " video interval extracted from the whole game and your task is generate brief Commentary."
-                       "If there is no developments in the game, then generate <WAIT> instead of commentary."
-                       "1) Identify the name of car diver through the legends provided and refer to cars by the name of the driver."
-                       "2) Ignore the background information and refrain the describing the scenery."
-                       "3) observe the game and briefly describe any developments.")
+        user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
+                       "from an ongoing car racing game and commentary generated for the game so far."
+                       "Your task is to generate 1 - 2 line of commentary to describe it"
+                       "1) Ignore the background information and refrain the describing the scenery too much."
+                       )
 
     elif mode == "feedback_loop_init":
         user_prompt = ("You are a professional commentator for car racing games. You will be provided with a video interval"
@@ -32,23 +33,23 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
 
     elif mode == "feedback_loop":
         if force:
-            user_prompt = ("You are a professional commentator for car racing games. You will be provided with few frames"
-                           " from an on-going game and your task is generate brief Commentary."
-            "1) Ignore the background information and refrain the describing the scenery."
-            "2) Do not regenerate information that is already part of the Previous Commentary."
-            "3) Identify new developments if any, in the provided video as compared to previous commentary, then generate 1 sentence of commentary."
-            "If nothing has change, then just say that and describe the state of the game in the provided video."
-            "Previous generated Commentary: "
+            user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
+                "from an ongoing car racing game and commentary generated for the game so far."
+                 f"Previous generated Commentary: {context}"
+                 "Your task is to compare the given video with the previously generated commentary. "
+                "1) Identify if the video has any new development as compared to the already provided commentary."
+                "2) Ignore the background information and refrain the describing the scenery too much."
+                "3) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
             )
         else:
-            user_prompt = ("You are a professional commentator for car racing games.You will be provided with few frames"
-                           "from an ongoing game and your task is generate brief Commentary for it."
-                "1) Identify if the provided video has any new development as compared to the already provided commentary."
-                "2) Ignore the background information and refrain the describing the scenery."
+            user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
+                "from an ongoing car racing game and commentary generated for the game so far."
+                 f"Previous generated Commentary: {context}"
+                 "Your task is to compare the given video with the previously generated commentary. "
+                "1) Identify if the video has any new development as compared to the already provided commentary."
+                "2) Ignore the background information and refrain the describing the scenery too much."
                 "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
-                "4) If there are new developments in the provided video, such as if a new player is in lead, or if one of the players did an "
-                "impressive move, or if two players are competing strongly, then generate 1 line of commentary to describe it."
-                "Previous generated Commentary:"
+                "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
             )
 
     return user_prompt
@@ -64,7 +65,9 @@ def get_utterence_timing(ground_truth,metadata):
             utterences[i] = gt.text
         else:
             print (f"i: {i}")
+
     return utterences, utterence_timing
+
 
 def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False, split_word = "ASSISTANT:", ):
 
@@ -110,8 +113,10 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
     ref_timing = [ref_timing[ref] for ref in range(0,len(ref_timing),step)]
     ref_utterences = [ref_utterences[ref] for ref in range(0, len(ref_utterences), step)]
-    eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences)
-    out_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode="baseline", talking_speed_sample=icl_transcription_file)
+    pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step, mode="baseline",
+                               talking_speed_sample=icl_transcription_file)
+    eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences,
+                            pred_srt_file, transcription_file)
     print (f"Logs written at {out_folder}")
     if verbose:
         print(eval_metrics)
@@ -259,7 +264,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         videos.append(video)
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
-                                 max_length=5120).to(model.device)
+                                 max_length=context_window).to(model.device)
 
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
@@ -298,9 +303,9 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     ref_timing = [ref_timing[ref] for ref in range(0,len(ref_timing),step)]
     ref_utterences = [ref_utterences[ref] for ref in range(0, len(ref_utterences), step)]
 
-    eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences)
-    out_file = write_logs(out_folder, pred_utterences, pred_utterences_step, eval_metrics,  mode=mode, talking_speed_sample=icl_transcription_file)
 
+    pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step,  mode=mode, talking_speed_sample=icl_transcription_file)
+    eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, pred_srt_file, transcription_file)
     if verbose:
         print(eval_metrics)
         print(f"Complete Commentary: {pred_utterences}")
@@ -324,12 +329,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Generates commentary as per the defined settings"
     )
-    parser.add_argument("--dir", required=True, type=str, help="Directory containing the videos "
+    parser.add_argument("--dir", required=False, type=str, help="Directory containing the videos "
                         "and respective commentary in recordings and transcriptions_whole_data_english folder")
     parser.add_argument("--n", required=False, type=int, default=-1, help="Number of samples to run")
+    parser.add_argument("--hf_dataset", required=False, type=str,
+                        help="The directory containing hf_Dataset")
     parser.add_argument("--icl", required=False, type=bool, default=False, help="If ICL should be used. Currently disabled")
     parser.add_argument("--k", required=False, type=int,default=2, help="number of examples for ICL")
     parser.add_argument("--step", required=False, type=int,default=1, help="Time Step for generation")
+    parser.add_argument("--wb", required=False, type=bool, default=True, help="Whether or not to push results to W&B")
     parser.add_argument("--frames", required=False, type=int, default=-1, help="Number of frames to use per step of generation")
     parser.add_argument("--context_window", required=False, type=int, default=5120,
                         help="Context Window to be used by LLM")
@@ -342,9 +350,11 @@ if __name__ == '__main__':
     num_frames_to_use = args.frames
     context_window = args.context_window
     icl = args.icl
+    WB = args.wb
+    hf_dataset = args.hf_dataset
 
-
-    wandb_setup()
+    if WB:
+        wandb_setup()
 
     my_folder = os.path.join("logs", date_time)
     # define directory paths
@@ -367,7 +377,7 @@ if __name__ == '__main__':
 
     #define hp
     max_new_tokens = 50
-    skip_frames = 20
+    skip_frames = 15
 
     if num_frames_to_use == -1:
         num_frames_to_use = step
@@ -385,7 +395,7 @@ if __name__ == '__main__':
 
 
     processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
-
+    metrics_all_samples = []
     # iterate over all samples
     all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video_directory) if os.path.isdir(os.path.join(video_directory, name))]
     if n == -1:
@@ -403,23 +413,53 @@ if __name__ == '__main__':
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
         out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}")
         os.makedirs(out_folder, exist_ok=True)
+        try:
 
-        baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+            baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-        feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                          init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
-        if icl:
+            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                              init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
+
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                              init_skip_frames=skip_frames, step=step,
-                                                              ICL=icl_example_paths, split_word = split_word, k = 4)
+                                                                  init_skip_frames=skip_frames, step=step,
+                                                                  ICL=icl_example_paths, split_word = split_word, k = 4)
 
-        run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
-        config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
-                  }
+            run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
+            config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
+                      }
 
-        write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
-                    icl_output = icl_feedback_loop_generation, config=config,
-                    )
+            metrics_per_sample = write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
+                        icl_output = icl_feedback_loop_generation, config=config, WB = WB,
+                        )
+            metrics_all_samples.append(metrics_per_sample)
+        except Exception as e:
+            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+
+
+
+    df = pd.DataFrame(metrics_all_samples)
+    means_dict = df.select_dtypes(include='number').mean().to_dict()
+    means_dict["n"] = len(df)
+    means_dict["model_name"] = model_id
+    means_dict["# frame"] = num_frames_to_use
+    means_dict["step"] = step
+    print(means_dict)
+    if WB:
+        project_name = "CommGen"
+        entity = "anum-afzal-technical-university-of-munich"
+        wandb_setup()
+        wandb_mode = "online"
+
+        wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
+               mode=wandb_mode, group="global")
+        table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
+        wandb.log({"experiment_metrics": table}, commit=True)
+        wandb.finish()
+    import json
+    with open(f'{sample_name}_{str(date_time)}.json', 'w') as fp:
+        json.dump(means_dict, fp)
+
+
 
 
 

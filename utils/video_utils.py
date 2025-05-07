@@ -9,6 +9,57 @@ def get_video_info(path):
     duration = int(total_frames/fps)
     return {"total_frames": total_frames, "frames_per_second": fps,
             "duration":duration }
+def write_video(video_array, path, fps):
+    width = video_array.shape[2]
+    height = video_array.shape[1]
+    # Define the codec and create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # You can use other codecs like 'mp4v' for .mp4 files
+    out = cv2.VideoWriter(path, fourcc, fps, (width, height))
+
+    for i, frame in enumerate(video_array):
+        out.write(frame)
+
+    out.release()
+    return path
+def process_video(video, num_frames, height=1080, width=1920, channels=3):
+    frames = []
+    for frame in video:
+        # Resize to target size and ensure 3 channels
+        frame_resized = cv2.resize(frame, (width, height))
+        if frame_resized.shape[2] != channels:
+            frame_resized = frame_resized[:,:,:channels]  # or convert as needed
+        frames.append(frame_resized)
+    video_fixed = np.stack(frames)  # (nf, h, w, c)
+    # Truncate or pad to the fixed number of frames
+    nf = video_fixed.shape[0]
+    if nf < num_frames:
+        pad = np.zeros((num_frames - nf, height, width, channels), dtype=video_fixed.dtype)
+        video_fixed = np.concatenate([video_fixed, pad], axis=0)
+    else:
+        video_fixed = video_fixed[:num_frames]
+    return video_fixed
+def read_video(video_path):
+    cap = cv2.VideoCapture(video_path)
+
+    frames = []
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        # Optionally, convert BGR to RGB if you need it in standard format
+        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frames.append(frame)
+
+    cap.release()
+
+    # Convert list of frames to a numpy array (N, H, W, C)
+    video_np = np.array(frames)
+
+
+    #print("Shape of video numpy array:", video_np.shape)  # e.g., (num_frames, height, width, 3)
+    return video_np
+
+
 def sample_frames(path, num_frames, start_frame = None, end_frame = None, format = "images"):
 
     video = cv2.VideoCapture(path)
