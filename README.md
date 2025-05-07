@@ -5,7 +5,9 @@ Usage
 python main.py "path/to/data"
 
 Example:
-python main.py --dir "/groups-2.0/gac50547/RaceCommentary" --n 2 --icl True --step 5 
+python main.py --dir "/groups/gac50547/RaceCommentary" --n 1 --icl True --step 20 --k 4 --frames 1 --context_window 4096 --wb False
+
+python finetune.py --dir "/groups/gac50547/RaceCommentary/" --frames 2 --step 2 --n 2000
 
 
 #transcription_file = "transcriptions_whole_data_english/AC_150221-130155_R_ks_porsche_macan_mugello__kyakkan.merged.mp4_translated.srt"
