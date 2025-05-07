@@ -184,5 +184,6 @@ data
 data_translated
 RaceCommentary.zip
 RaceCommentary
+RaceCommentaryEn/
 logs
 .env
