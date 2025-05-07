@@ -20,8 +20,8 @@ global output_path
 marker = " <|> "
 
 # Constants for retry logic
-MAX_RETRY_ATTEMPTS = 3
-RETRY_INTERVAL = 5  # seconds
+MAX_RETRY_ATTEMPTS = 5
+RETRY_INTERVAL = 10  # seconds
 
 # print term width horizontal line
 def print_horizontal_line(character='-'):
@@ -231,7 +231,7 @@ if __name__ == '__main__':
     # Check the .srt file and load it in
     input_path = sys.argv[1]
     input_file_paths = check_path_and_list_srt_files(input_path)
-    input_file_paths = input_file_paths * 50
+    input_file_paths = input_file_paths
     # setup the output directory
 
     output_path = sys.argv[2]
@@ -240,6 +240,8 @@ if __name__ == '__main__':
     if len(sys.argv) > 3:
         start = int(sys.argv[3])
         end = int(sys.argv[4])
+        if end > len(input_file_paths):
+            end = len(input_file_paths)
     else:
         start = 0
         end = len(input_file_paths)
@@ -256,7 +258,9 @@ if __name__ == '__main__':
 
     start_time = time.time()
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        futures = [executor.submit(translate, input_file_path) for input_file_path in input_file_paths]
+        futures = []
+        for input_file_path in input_file_paths:
+            futures.append(executor.submit(translate, input_file_path))
         for future in concurrent.futures.as_completed(futures):
             print(f"Translation done for file: {futures.index(future)}")
 
