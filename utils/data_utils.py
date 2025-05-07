@@ -34,7 +34,7 @@ def parse_srt(srt_path):
             'text': item.text.strip()
         })
     return lines
-def compute_LAAL(ref_lines, hyp_lines, text_similarity_threshold=0.4):
+def compute_LAAL(ref_lines, hyp_lines, text_similarity_threshold=0.5):
     import difflib
     aligned = 0
     for ref in ref_lines:
@@ -195,12 +195,12 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
 
     # LA: longest contiguous block
     la, _ = compute_LA(ref_lines, hyp_lines)
-    print("Longest Alignment (LA):", la)
+    #print("Longest Alignment (LA):", la)
 
 
     # LAAL: fraction of reference actions aligned
     laal = compute_LAAL(ref_lines, hyp_lines)
-    print("Longest Aligned Action Location (LAAL):", laal)
+    #print("Longest Aligned Action Location (LAAL):", laal)
 
 
     res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE_1": rouge_1, "ROUGE_L": rouge_L,
