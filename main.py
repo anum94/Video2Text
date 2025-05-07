@@ -408,24 +408,30 @@ if __name__ == '__main__':
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
         out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}")
         os.makedirs(out_folder, exist_ok=True)
+        try:
 
-        baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+            baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-        feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                          init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
+            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                              init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
 
-        icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                              init_skip_frames=skip_frames, step=step,
-                                                              ICL=icl_example_paths, split_word = split_word, k = 4)
+            icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                                  init_skip_frames=skip_frames, step=step,
+                                                                  ICL=icl_example_paths, split_word = split_word, k = 4)
 
-        run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
-        config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
-                  }
+            run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
+            config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
+                      }
 
-        metrics_per_sample = write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
-                    icl_output = icl_feedback_loop_generation, config=config,
-                    )
-        metrics_all_samples.append(metrics_per_sample)
+            metrics_per_sample = write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
+                        icl_output = icl_feedback_loop_generation, config=config,
+                        )
+            metrics_all_samples.append(metrics_per_sample)
+        except Exception as e:
+            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+
+
+
     df = pd.DataFrame(metrics_all_samples)
     means_dict = df.select_dtypes(include='number').mean().to_dict()
     means_dict["n"] = len(df)
