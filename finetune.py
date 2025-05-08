@@ -119,7 +119,8 @@ def collate_fn_batch(examples):
 
 def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
     hf_dataset = []
-    os.makedirs(path.replace("/", "_videos/"), exist_ok=True)
+    path = path.replace("/", "_videos/")
+    os.makedirs(path, exist_ok=True)
     for i in tqdm(range(len(hf_ds))):
 
         mp4_file = hf_ds[i]["video_path"]
