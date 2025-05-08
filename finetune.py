@@ -5,6 +5,7 @@ import fsspec
 import numpy as np
 import shutil
 import pandas as pd
+from datetime import datetime
 from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
@@ -279,7 +280,7 @@ if __name__ == '__main__':
     train_dataset_raw, test_dataset_raw = ft_dataset['train'].with_format("torch"), ft_dataset['test'].with_format("torch")
 
     # enable this line for testing
-    #train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(2)), test_dataset_raw .select(range(2))
+    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(2)), test_dataset_raw .select(range(2))
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
@@ -295,7 +296,6 @@ if __name__ == '__main__':
         train_dataset = datasets.load_from_disk(dataset_path)
 
     print(train_dataset)
-    exit()
     if n == -1:
         n = len(train_dataset)
     train_dataset = train_dataset.select(range(n))
@@ -417,6 +417,8 @@ if __name__ == '__main__':
 
     # ------------------------------- Test the trained model on whole Train Set ----------------------- #
     split_word = "ASSISTANT:"
+    out_folder = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
+    out_folder = os.makedirs(os.path.join("logs", out_folder), exist_ok=True)
     metrics_all_samples = []
     for i in tqdm(range(len(test_dataset_raw))):
         # get sample
@@ -425,19 +427,20 @@ if __name__ == '__main__':
 
         # create folder to store logs for each sample.
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
-        #try:
+        try:
 
-        feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
-                                                              init_skip_frames=10, step=step, ICL=False,
-                                                              split_word = split_word, processor=processor, model=model)
+            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
+                                                                  init_skip_frames=10, step=step, ICL=False,
+                                                                  split_word = split_word, processor=processor,
+                                                              model=model, logs_dir=out_folder)
 
-        config = {"model": REPO_ID, "step": step, "# frame": NUM_FRAMES, "sample_name": sample_name,
-                      }
+            config = {"model": REPO_ID, "step": step, "# frame": NUM_FRAMES, "sample_name": sample_name,
+                          }
 
-        metrics_per_sample =  organize_metrics(feedback_loop_generation, config)
-        metrics_all_samples.append(metrics_per_sample)
-        #except Exception as e:
-        #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+            metrics_per_sample =  organize_metrics(feedback_loop_generation, config)
+            metrics_all_samples.append(metrics_per_sample)
+        except Exception as e:
+            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
 
     # Writing per experiments logs

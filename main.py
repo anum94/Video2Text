@@ -254,7 +254,7 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
 
 def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False,init_skip_frames=5,
                            ICL = False, split_word = "ASSISTANT:", k = 2, processor = None,
-                           model = None, context_window = 4096):
+                           model = None, context_window = 4096, logs_dir = None):
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
     ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
@@ -343,7 +343,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     ref_timing = [ref_timing[ref] for ref in range(0,len(ref_timing),step)]
     ref_utterences = [ref_utterences[ref] for ref in range(0, len(ref_utterences), step)]
 
-
+    if logs_dir is not None:
+        out_folder = logs_dir
     pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step,  mode=mode, talking_speed_sample=icl_transcription_file)
     eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, pred_srt_file, transcription_file)
     if verbose:
