@@ -13,7 +13,7 @@ from datasets import Dataset, load_dataset, concatenate_datasets
 from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
 from transformers import AutoProcessor, BitsAndBytesConfig, LlavaNextVideoForConditionalGeneration
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
-from main import get_utterence_timing, extract_until_last_complete_sentence, create_ds
+from main import get_utterence_timing, extract_until_last_complete_sentence, create_ds, baseline_feedback_loop
 import torch
 from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
@@ -193,6 +193,28 @@ def find_all_linear_names(model):
     return list(lora_module_names)
 
 
+def organize_metrics(feedback_loop_generation, config):
+    f_eval_metrics = feedback_loop_generation[2]
+
+
+    additional_columns = ["model_name", "sample", "# frame", "step"]
+    metrics_columns = (
+            additional_columns +
+            [f"feedback_{key}" for key in f_eval_metrics.keys()]
+    )
+
+    metrics_data = (
+            [config['model'], run_name, config['# frame'], config['step']] +
+            list(f_eval_metrics.values())
+    )
+    metrics = dict(zip(metrics_columns, metrics_data))
+    additional_columns += ["feedback_ref_timing", "feedback_pred_timing", "feedback_ROUGE_10%", ]
+    for k, v in metrics["feedback_ROUGE_10%"].items():
+        metrics[f"feedback_{k}"] = v
+
+    metrics_per_sample = {k: v for k, v in metrics.items() if k not in additional_columns}
+    return metrics_per_sample
+
 
 def run_inference(example, model):
     split_word = "ASSISTANT:"
@@ -248,6 +270,9 @@ if __name__ == '__main__':
     ft_dataset = datasets.load_from_disk(hf_dataset_path)
     print (ft_dataset)
     train_dataset_raw, test_dataset_raw = ft_dataset['train'].with_format("torch"), ft_dataset['test'].with_format("torch")
+    # enable this line for testing
+
+    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(5)), test_dataset_raw .select(range(2))
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
@@ -350,27 +375,72 @@ if __name__ == '__main__':
         tokenizer=processor,
         data_collator=LlavaNextVideoDataCollatorWithPadding(processor=processor),
         train_dataset=train_dataset,
-        eval_dataset=test_dataset,
+        eval_dataset=validation_dataset,
         args=args,
     )
 
     trainer.train()
     trainer.model.push_to_hub(REPO_ID)
 
-    # ------------------------ Test the trained model -----------------------------------#
+    # ------------------------ Test the trained model on Validation Set-----------------------------------#
+    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+        MODEL_ID,
+        torch_dtype=torch.float16,
+        device_map="auto",
+    )
+    print("Old Model")
     for i in range(10):
-        example = test_dataset[i]
-        model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+
+        example = validation_dataset[i]
+        print(run_inference(example, model))
+
+    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
             REPO_ID,
             torch_dtype=torch.float16,
             device_map="auto",
         )
+    print ("FT Model")
+    for i in range(10):
+        example = validation_dataset[i]
+        print(run_inference(example, model))
 
-        print (run_inference(example, model))
 
-        old_model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-            MODEL_ID,
-            torch_dtype=torch.float16,
-            device_map="auto",
-        )
-        print(run_inference(example, old_model))
+    # ------------------------------- Test the trained model on whole Train Set ----------------------- #
+    split_word = "ASSISTANT:"
+    metrics_all_samples = []
+    for i in tqdm(range(len(test_dataset_raw))):
+        # get sample
+        mp4_file = test_dataset_raw[i]["video_path"]
+        transcription_file = test_dataset_raw[i]["srt_path"]
+
+        # create folder to store logs for each sample.
+        sample_name = os.path.dirname(mp4_file).split('/')[-1]
+        try:
+
+            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
+                                                              init_skip_frames=10, step=step, ICL=False, split_word = split_word)
+
+            config = {"model": REPO_ID, "step": step, "# frame": NUM_FRAMES, "sample_name": sample_name,
+                      }
+
+            metrics_per_sample =  organize_metrics(feedback_loop_generation, config)
+            metrics_all_samples.append(metrics_per_sample)
+        except Exception as e:
+            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+
+
+    # Writing per experiments logs
+    df = pd.DataFrame(metrics_all_samples)
+    means_dict = df.select_dtypes(include='number').mean().to_dict()
+    means_dict["n"] = len(df)
+    means_dict["model_name"] = REPO_ID
+    means_dict["# frame"] = NUM_FRAMES
+    means_dict["step"] = step
+    print(means_dict)
+
+    import json
+    run_name = f"FT_step_{step}_k_{k}_frames_{NUM_FRAMES}"
+    with open(f'{run_name}_FT.json', 'w') as fp:
+        json.dump(means_dict, fp)
+
+
