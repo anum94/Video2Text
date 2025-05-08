@@ -164,7 +164,6 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 def get_messages(user_prompt, ICL = False , proc = None):
     if proc is not None:
         processor = proc
-        print("here")
     conversation = []
     if ICL:
         for icl_number in range(len(ICL)):
