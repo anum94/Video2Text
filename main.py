@@ -299,6 +299,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             icl_examples = False
         videos.append(video)
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
+        print("here")
+        print(processor)
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
                                  max_length=context_window).to(model.device)
 
