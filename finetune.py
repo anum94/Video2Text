@@ -287,6 +287,8 @@ if __name__ == '__main__':
 
     if use_existing is None:
         print ("Creating training data from videos and srt files!")
+        hf_dataset_path = os.path(hf_dataset_path)
+        print(hf_dataset_path)
         ft_dataset_path = f"{hf_dataset_path.replace('/', '_FT/')}"
         print(ft_dataset_path)
         train_dataset =  create_training_samples(train_dataset_raw, path = ft_dataset_path, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
