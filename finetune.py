@@ -400,7 +400,6 @@ if __name__ == '__main__':
     )
     print("Old Model")
     for i in range(1):
-
         example = validation_dataset[i]
         print(run_inference(example, model))
 
@@ -413,7 +412,6 @@ if __name__ == '__main__':
     for i in range(1):
         example = validation_dataset[i]
         print(run_inference(example, model))
-
 
     # ------------------------------- Test the trained model on whole Train Set ----------------------- #
     split_word = "ASSISTANT:"
