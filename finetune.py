@@ -68,13 +68,15 @@ def collate_fn(example):
             },
         ]
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=False)
+    video_clips = video_clips.to(model.device)
     batch = processor(
         text=prompt,
         videos=video_clips,
         truncation=True,
         max_length=MAX_LENGTH,
         return_tensors="pt"
-    )
+    ).to(model.device)
+
     return batch
 def collate_fn_batch(examples):
     video_clips = [read_video(path) for path in examples["video"]]
@@ -221,7 +223,7 @@ def run_inference(example, model):
     # Let's use chat template to format the prompt correctly, this time without the caption
     inputs_video = collate_fn(example)
 
-    output = model.generate(**inputs_video, do_sample=True, max_new_tokens=50).to(model.device)
+    output = model.generate(**inputs_video, do_sample=True, max_new_tokens=50)
 
     generated_text = processor.decode(output[0][2:], skip_special_tokens=True)
     generated_text = generated_text.split(split_word)[-1]
@@ -383,6 +385,7 @@ if __name__ == '__main__':
     trainer.model.push_to_hub(REPO_ID)
 
     # ------------------------ Test the trained model on Validation Set-----------------------------------#
+
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(
         MODEL_ID,
         torch_dtype=torch.float16,
