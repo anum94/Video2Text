@@ -119,8 +119,9 @@ def collate_fn_batch(examples):
 
 def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
     hf_dataset = []
-    path = path.replace("/", "_videos/")
-    os.makedirs(path, exist_ok=True)
+    cache_video_folder = path.replace("/", "_videos/")
+
+    os.makedirs(cache_video_folder, exist_ok=True)
     for i in tqdm(range(len(hf_ds))):
 
         mp4_file = hf_ds[i]["video_path"]
@@ -134,9 +135,9 @@ def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
 
             video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * video_metadata["frames_per_second"],
                                   end_frame=(t + 1) * video_metadata["frames_per_second"], format="video")
-            print(path)
+            print(cache_video_folder)
             print(os.path.basename(mp4_file))
-            video_path = os.path.join(path, os.path.basename(mp4_file.replace('.mp4', f'_{t}.mp4')))
+            video_path = os.path.join(cache_video_folder, os.path.basename(mp4_file.replace('.mp4', f'_{t}.mp4')))
             print(video_path)
             write_video(video, video_path, video_metadata["frames_per_second"])
             prev_generations = " ".join(ref_utterences[:(t - step)])
@@ -285,7 +286,9 @@ if __name__ == '__main__':
 
     if use_existing is None:
         print ("Creating training data from videos and srt files!")
-        train_dataset =  create_training_samples(train_dataset_raw, path = f"{hf_dataset_path.replace('/', '_FT/')}", num_frames_to_use=config["num_frames_to_use"], step=config["step"])
+        ft_dataset_path = f"{hf_dataset_path.replace('/', '_FT/')}"
+        print(ft_dataset)
+        train_dataset =  create_training_samples(train_dataset_raw, path = ft_dataset_path, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
     else:
         dataset_path = use_existing #"CarRacingFT_0_step_2_numframes_2/"
         train_dataset = datasets.load_from_disk(dataset_path)
