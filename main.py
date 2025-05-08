@@ -254,7 +254,8 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
 
 
 def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False,init_skip_frames=5,
-                           ICL = False, split_word = "ASSISTANT:", k = 2, processor = None, model = None):
+                           ICL = False, split_word = "ASSISTANT:", k = 2, processor = None,
+                           model = None, context_window = 4096):
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
     ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
@@ -456,13 +457,15 @@ if __name__ == '__main__':
 
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step, ICL=False,
-                                                              split_word = split_word, processor=processor, model=model)
+                                                              split_word = split_word, processor=processor, model=model,
+                                                              context_window=context_window)
 
 
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                                   init_skip_frames=skip_frames, step=step,
                                                                   ICL=icl_example_paths, split_word = split_word,
-                                                                  k = 4 , processor=processor, model=model)
+                                                                  k = 4 , processor=processor, model=model,
+                                                                  context_window=context_window)
 
             run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
             config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
