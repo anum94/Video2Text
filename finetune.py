@@ -246,7 +246,7 @@ if __name__ == '__main__':
         hf_dataset_path = create_ds(DATASET_PATH)
 
     ft_dataset = datasets.load_from_disk(hf_dataset_path)
-    train_dataset_raw, test_dataset_raw = ds['train'].with_format("torch"), ds['test'].with_format("torch")
+    train_dataset_raw, test_dataset_raw = ft_dataset['train'].with_format("torch"), ft_dataset['test'].with_format("torch")
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
