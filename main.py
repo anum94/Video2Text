@@ -161,7 +161,10 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
     return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences
 
-def get_messages(user_prompt, ICL = False ):
+def get_messages(user_prompt, ICL = False , proc = None):
+    if proc is not None:
+        processor = proc
+        print("here")
     conversation = []
     if ICL:
         for icl_number in range(len(ICL)):
@@ -298,9 +301,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             videos = []
             icl_examples = False
         videos.append(video)
-        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
-        print("here")
-        print(processor)
+        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
+
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
                                  max_length=context_window).to(model.device)
 
