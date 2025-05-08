@@ -272,9 +272,9 @@ if __name__ == '__main__':
     ft_dataset = datasets.load_from_disk(hf_dataset_path)
     print (ft_dataset)
     train_dataset_raw, test_dataset_raw = ft_dataset['train'].with_format("torch"), ft_dataset['test'].with_format("torch")
-    # enable this line for testing
 
-    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(5)), test_dataset_raw .select(range(2))
+    # enable this line for testing
+    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(2)), test_dataset_raw .select(range(2))
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
