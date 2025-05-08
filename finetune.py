@@ -68,7 +68,7 @@ def collate_fn(example):
             },
         ]
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=False)
-    video_clips = video_clips.to(model.device)
+    #video_clips = video_clips.to(model.device)
     batch = processor(
         text=prompt,
         videos=video_clips,
