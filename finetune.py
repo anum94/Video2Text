@@ -119,7 +119,8 @@ def collate_fn_batch(examples):
 
 def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
     hf_dataset = []
-    path = path.replace("/", "")
+    if path[-1] == '/':
+        path = path.replace("/", "")
     cache_video_folder = f"{path}_videos"
 
     os.makedirs(cache_video_folder, exist_ok=True)
@@ -285,7 +286,8 @@ if __name__ == '__main__':
 
     if use_existing is None:
         print ("Creating training data from videos and srt files!")
-        hf_dataset_path = hf_dataset_path.replace("/", "")
+        if hf_dataset_path[-1] == '/':
+            hf_dataset_path = hf_dataset_path.replace("/", "")
         ft_dataset_path = f"{hf_dataset_path}_FT"
         train_dataset =  create_training_samples(train_dataset_raw, path = ft_dataset_path, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
     else:
@@ -425,7 +427,8 @@ if __name__ == '__main__':
         try:
 
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
-                                                              init_skip_frames=10, step=step, ICL=False, split_word = split_word)
+                                                              init_skip_frames=10, step=step, ICL=False,
+                                                              split_word = split_word, processor=processor, model=model)
 
             config = {"model": REPO_ID, "step": step, "# frame": NUM_FRAMES, "sample_name": sample_name,
                       }
@@ -446,7 +449,7 @@ if __name__ == '__main__':
     print(means_dict)
 
     import json
-    run_name = f"FT_step_{step}_k_{k}_frames_{NUM_FRAMES}"
+    run_name = f"FT_step_{step}_frames_{NUM_FRAMES}"
     with open(f'{run_name}_FT.json', 'w') as fp:
         json.dump(means_dict, fp)
 
