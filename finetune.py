@@ -75,7 +75,7 @@ def collate_fn(example):
         truncation=True,
         max_length=MAX_LENGTH,
         return_tensors="pt"
-    ).to(model.device)
+    )
 
     return batch
 def collate_fn_batch(examples):
@@ -223,6 +223,7 @@ def run_inference(example, model):
     split_word = "ASSISTANT:"
     # Let's use chat template to format the prompt correctly, this time without the caption
     inputs_video = collate_fn(example)
+    inputs_video = inputs_video.to(model.device)
 
     output = model.generate(**inputs_video, do_sample=True, max_new_tokens=50)
 
