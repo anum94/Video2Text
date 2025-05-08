@@ -135,7 +135,8 @@ def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
             video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * video_metadata["frames_per_second"],
                                   end_frame=(t + 1) * video_metadata["frames_per_second"], format="video")
 
-            video_path = os.path.join(path.replace("/", "_videos/"), os.path.basename(mp4_file.replace('.mp4', f'_{t}.mp4')))
+            video_path = os.path.join(path, os.path.basename(mp4_file.replace('.mp4', f'_{t}.mp4')))
+            print(video_path)
             write_video(video, video_path, video_metadata["frames_per_second"])
             prev_generations = " ".join(ref_utterences[:(t - step)])
             ground_truth = " ".join([ref_utterences[t - j] for j in reversed(range(step))])
