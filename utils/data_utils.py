@@ -103,7 +103,7 @@ def read_srt(input_file_path):
 def write_logs(out_folder, predictions,times, mode, talking_speed_sample=None):
 
     out_file = os.path.join(out_folder, f"logs_{mode}.txt")
-    print(f"Generation stored at {out_file}")
+    #print(f"Generation stored at {out_file}")
     with open(out_file, 'a') as the_file:
         for t, ut in zip(times, predictions):
             ut = ut.replace("\n", "")

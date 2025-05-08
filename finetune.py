@@ -13,7 +13,7 @@ from datasets import Dataset, load_dataset, concatenate_datasets
 from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
 from transformers import AutoProcessor, BitsAndBytesConfig, LlavaNextVideoForConditionalGeneration
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
-from main import get_utterence_timing, extract_until_last_complete_sentence
+from main import get_utterence_timing, extract_until_last_complete_sentence, create_ds
 import torch
 from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
@@ -115,40 +115,17 @@ def collate_fn_batch(examples):
 
     return batch
 
-def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
+def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
     hf_dataset = []
+    os.makedirs(path.replace("/", "_videos/"), exist_ok=True)
+    for i in range(len(hf_ds)):
 
-    # define directory paths
-    video_directory = "recordings"
-    video_directory = os.path.join(folder,video_directory)
-
-    commentary_directory = "transcriptions_whole_data_english"
-    commentary_directory = os.path.join(folder,commentary_directory)
-
-    all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
-                     os.path.isdir(os.path.join(video_directory, name))][:n]
-
-    path = f'CarRacingFT_{len(all_game_path)}_step_{step}_numframes_{num_frames_to_use}/'
-    os.makedirs(path, exist_ok=True)
-
-    for i, game_path in tqdm(enumerate(all_game_path), total = len(all_game_path)):
-
-        transcription_file = get_commentary_path(commentary_directory, game_path)
-        if transcription_file is not None:
-            mp4_file = [os.path.join(game_path, file) for file in os.listdir(game_path) if
-                        file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
-        else:
-            print(f"kyakkan commentary not available for game: {game_path}")
-            continue
-
-        # Baseline without feedback loop
-        sample_name = os.path.dirname(mp4_file).split('/')[-1]
-        os.makedirs(path.replace("/", "_videos/"), exist_ok=True)
+        mp4_file = hf_ds[i]["video_path"]
+        transcription_file = hf_ds[i]["srt_path"]
+        sample_name = hf_ds[i]["sample_name"]
 
         srt = read_srt(transcription_file)
-
         video_metadata = get_video_info(mp4_file)
-        #video_metadata["duration"] = 50
         ref_utterences, ref_timing = get_utterence_timing(srt, video_metadata)
         for t in range(0, video_metadata["duration"], step): #tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
 
@@ -237,9 +214,12 @@ if __name__ == '__main__':
                             "and respective commentary in recordings and transcriptions_whole_data_english folder",
                             default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary")
     parser.add_argument("--n", required=False, type=int, default=10, help="Number of samples to run")
+    parser.add_argument("--use_existing", required=False, type=str, help="Linking to previously preprocessed training/validaiton set", default=None)
     parser.add_argument("--step", required=False, type=int, default=2, help="Time Step for generation")
     parser.add_argument("--frames", required=False, type=int, default=2,
                         help="Number of frames to use per step of generation")
+    parser.add_argument("--hf_dataset", required=False, type=str,
+                        help="The directory containing hf_Dataset", default = "RaceCommentaryEn/")
     parser.add_argument("--context_window", required=False, type=int, default=5120,
                         help="Context Window to be used by LLM")
     args = parser.parse_args()
@@ -247,7 +227,7 @@ if __name__ == '__main__':
     folder = args.dir
     n = args.n
     step = args.step
-
+    hf_dataset_path = args.hf_dataset
     DATASET_PATH = args.dir
     MAX_LENGTH = args.context_window
     BATCH_SIZE = 2
@@ -256,39 +236,45 @@ if __name__ == '__main__':
     MODEL_ID = "llava-hf/LLaVa-NeXT-Video-7b-hf"
     USE_LORA = False
     USE_QLORA = True
+    use_existing = args.use_existing
     REPO_ID = "anumafzal94/LLaVa-NeXT-Video-demo" # Change to your hf-hub repo
 
     config = {"num_frames_to_use": NUM_FRAMES, "step":step, "max_length": MAX_LENGTH, "use_lora": USE_LORA,
               "q_lora": USE_QLORA}
 
+    if hf_dataset_path is None:
+        hf_dataset_path = create_ds(DATASET_PATH)
 
-    create_dataset = False
-    if create_dataset:
-        dataset =  convert_to_hf_dataset(DATASET_PATH, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
-        print (dataset)
-        dataset.push_to_hub("anumafzal94/test")
-    else:
-        dataset_path = "CarRacingFT_0_step_2_numframes_2/"
-        dataset = datasets.load_from_disk(dataset_path)
-
+    ft_dataset = datasets.load_from_disk(hf_dataset_path)
+    train_dataset_raw, test_dataset_raw = ds['train'].with_format("torch"), ds['test'].with_format("torch")
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
+
+    if use_existing is None:
+        train_dataset =  create_training_samples(train_dataset_raw, path = hf_dataset_path, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
+    else:
+        dataset_path = use_existing #"CarRacingFT_0_step_2_numframes_2/"
+        train_dataset = datasets.load_from_disk(dataset_path)
+
+    print(train_dataset)
+    if n == -1:
+        n = len(train_dataset)
+    train_dataset = train_dataset.select(range(n))
+
     # set num_proc higher for faster processing
-    #dataset = dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
-    n = 50000  # or any number you want
-    dataset = dataset.select(range(n))
-    dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=4)
-    cache_dir = "ds_cache/"
-    os.makedirs(cache_dir, exist_ok=True)
-    dataset.save_to_disk(cache_dir)
-    print (f"collated data saved to {cache_dir}")
+    #train_dataset = train_dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
+    dataset_processed = train_dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=4)
+    #os.makedirs(cache_dir, exist_ok=True)
+    #train_dataset.save_to_disk(cache_dir)
+    #print (f"collated data saved to {cache_dir}")
 
 
-    dataset_processed = dataset.shuffle(seed=42)
-    dataset = dataset_processed.train_test_split(test_size=0.2)
-    train_dataset, test_dataset = dataset['train'].with_format("torch"), dataset['test'].with_format("torch")
-    print (f"{len(train_dataset)} training example, {len(test_dataset)} testing examples")
+    dataset_processed = dataset_processed.shuffle(seed=42)
+    dataset_processed = dataset_processed.train_test_split(test_size=0.1)
+
+    train_dataset, validation_dataset = dataset_processed['train'].with_format("torch"), dataset_processed['test'].with_format("torch")
+    print (f"{len(train_dataset)} training example, {len(validation_dataset)} validation examples")
 
     if USE_QLORA or USE_LORA:
         if USE_QLORA:

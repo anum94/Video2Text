@@ -430,7 +430,7 @@ if __name__ == '__main__':
     processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
     metrics_all_samples = []
 
-    for i in range(len(test_dataset)):
+    for i in tqdm(range(len(test_dataset))):
         # get sample
         mp4_file = test_dataset[i]["video_path"]
         transcription_file = test_dataset[i]["srt_path"]
