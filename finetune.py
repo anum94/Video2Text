@@ -399,7 +399,7 @@ if __name__ == '__main__':
         device_map="auto",
     )
     print("Old Model")
-    for i in range(10):
+    for i in range(1):
 
         example = validation_dataset[i]
         print(run_inference(example, model))
@@ -410,7 +410,7 @@ if __name__ == '__main__':
             device_map="auto",
         )
     print ("FT Model")
-    for i in range(10):
+    for i in range(1):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
