@@ -119,7 +119,7 @@ def collate_fn_batch(examples):
 
 def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
     hf_dataset = []
-    cache_video_folder = path.replace("/", "_videos/")
+    cache_video_folder = f"{path}_videos"
     print (cache_video_folder)
 
     os.makedirs(cache_video_folder, exist_ok=True)
@@ -289,7 +289,7 @@ if __name__ == '__main__':
         print ("Creating training data from videos and srt files!")
         hf_dataset_path = os.path(hf_dataset_path)
         print(hf_dataset_path)
-        ft_dataset_path = f"{hf_dataset_path.replace('/', '_FT/')}"
+        ft_dataset_path = f"{hf_dataset_path}_FT"
         print(ft_dataset_path)
         train_dataset =  create_training_samples(train_dataset_raw, path = ft_dataset_path, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
     else:
