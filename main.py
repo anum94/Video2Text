@@ -426,7 +426,7 @@ if __name__ == '__main__':
     #split_word = "<|im_start|> assistant"
 
     model = None
-    #model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
+    model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
     processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
     metrics_all_samples = []
 
