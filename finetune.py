@@ -280,7 +280,7 @@ if __name__ == '__main__':
     train_dataset_raw, test_dataset_raw = ft_dataset['train'].with_format("torch"), ft_dataset['test'].with_format("torch")
 
     # enable this line for testing
-    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(2)), test_dataset_raw .select(range(2))
+    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(200)), test_dataset_raw .select(range(50))
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
@@ -289,7 +289,7 @@ if __name__ == '__main__':
         print ("Creating training data from videos and srt files!")
         if hf_dataset_path[-1] == '/':
             hf_dataset_path = hf_dataset_path.replace("/", "")
-        ft_dataset_path = f"{hf_dataset_path}_FT"
+        ft_dataset_path = f"{hf_dataset_path}_FT_test"
         train_dataset =  create_training_samples(train_dataset_raw, path = ft_dataset_path, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
     else:
         dataset_path = use_existing #"CarRacingFT_0_step_2_numframes_2/"
@@ -401,7 +401,7 @@ if __name__ == '__main__':
         device_map="auto",
     )
     print("Old Model")
-    for i in range(1):
+    for i in range(10):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
@@ -411,7 +411,7 @@ if __name__ == '__main__':
             device_map="auto",
         )
     print ("FT Model")
-    for i in range(1):
+    for i in range(10):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
