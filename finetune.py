@@ -118,7 +118,7 @@ def collate_fn_batch(examples):
 def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
     hf_dataset = []
     os.makedirs(path.replace("/", "_videos/"), exist_ok=True)
-    for i in range(len(hf_ds)):
+    for i in tqdm(range(len(hf_ds))):
 
         mp4_file = hf_ds[i]["video_path"]
         transcription_file = hf_ds[i]["srt_path"]
@@ -246,12 +246,14 @@ if __name__ == '__main__':
         hf_dataset_path = create_ds(DATASET_PATH)
 
     ft_dataset = datasets.load_from_disk(hf_dataset_path)
+    print (ft_dataset)
     train_dataset_raw, test_dataset_raw = ft_dataset['train'].with_format("torch"), ft_dataset['test'].with_format("torch")
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
 
     if use_existing is None:
+        print ("Creating training data from videos and srt files!")
         train_dataset =  create_training_samples(train_dataset_raw, path = hf_dataset_path, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
     else:
         dataset_path = use_existing #"CarRacingFT_0_step_2_numframes_2/"
