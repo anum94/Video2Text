@@ -428,7 +428,7 @@ if __name__ == '__main__':
         # create folder to store logs for each sample.
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
         #try:
-
+        print (out_folder)
         feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
                                                                   init_skip_frames=10, step=step, ICL=False,
                                                                   split_word = split_word, processor=processor,
