@@ -109,7 +109,7 @@ def get_utterence_timing(ground_truth,metadata):
 def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False, split_word = "ASSISTANT:", ):
 
     user_prompt = get_user_prompt("baseline")
-    prompt = get_messages(user_prompt, ICL=False)
+    prompt = get_messages(user_prompt, ICL=False, proc=processor)
 
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
@@ -162,7 +162,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
     return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences
 
 def get_messages(user_prompt, ICL = False , proc = None):
-    if proc is not None:
+    if proc:
         processor = proc
     conversation = []
     if ICL:
@@ -314,7 +314,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         videos = [video]  # use only the target video
 
         # プロンプト生成と推論
-        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
+        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
         # print(prompt)
         inputs_video = processor(text=prompt, padding=True, videos=videos,
                                  return_tensors="pt", max_length=context_window).to(model.device)
