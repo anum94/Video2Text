@@ -419,7 +419,8 @@ if __name__ == '__main__':
     # ------------------------------- Test the trained model on whole Train Set ----------------------- #
     split_word = "ASSISTANT:"
     out_folder = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
-    os.makedirs(os.path.join("logs", out_folder), exist_ok=True)
+    out_folder = os.path.join("logs", out_folder)
+    os.makedirs(out_folder, exist_ok=True)
     metrics_all_samples = []
     for i in tqdm(range(len(test_dataset_raw))):
         # get sample
