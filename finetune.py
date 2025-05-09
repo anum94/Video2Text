@@ -50,7 +50,6 @@ def get_FT_prompt(prev_generation):
 
 def collate_fn(example):
     video_clips = read_video(example["video"])
-    print (video_clips.shape)
     video_clips= np.transpose(video_clips, (0,3, 1, 2))
     prev_gen = example["prev_generations"]
     gt = example["gt"]
@@ -243,7 +242,8 @@ if __name__ == '__main__':
     parser.add_argument("--dir", required=True, type=str, help="Directory containing the videos "
                             "and respective commentary in recordings and transcriptions_whole_data_english folder",
                             default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary")
-    parser.add_argument("--n", required=False, type=int, default=10, help="Number of samples to run")
+    parser.add_argument("--n_train", required=False, type=int, default=10, help="Number of samples for training")
+    parser.add_argument("--n_test", required=False, type=int, default=5, help="Number of samples for validation")
     parser.add_argument("--use_existing", required=False, type=bool, help="Linking to previously preprocessed training/validaiton set", default=None)
     parser.add_argument("--step", required=False, type=int, default=2, help="Time Step for generation")
     parser.add_argument("--frames", required=False, type=int, default=2,
@@ -255,7 +255,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     folder = args.dir
-    n = args.n
+    n_train = args.n_train
+    n_test = args.n_test
     step = args.step
     hf_dataset_path = args.hf_dataset
     DATASET_PATH = args.dir
@@ -297,9 +298,9 @@ if __name__ == '__main__':
                                                 num_frames_to_use=config["num_frames_to_use"], step=config["step"])
 
     print(train_dataset)
-    if n == -1:
+    if n_train == -1:
         n = len(train_dataset)
-    train_dataset = train_dataset.select(range(n))
+    train_dataset = train_dataset.select(range(n_train))
     print(train_dataset)
 
     # set num_proc higher for faster processing
@@ -403,8 +404,9 @@ if __name__ == '__main__':
         torch_dtype=torch.float16,
         device_map="auto",
     )
+    j = 1 if int(len(validation_dataset)/100) == 0 else int(len(validation_dataset)/100)
     print("Old Model")
-    for i in range(1):
+    for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
@@ -414,7 +416,7 @@ if __name__ == '__main__':
             device_map="auto",
         )
     print ("FT Model")
-    for i in range(1):
+    for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
@@ -424,7 +426,9 @@ if __name__ == '__main__':
     out_folder = os.path.join("logs", out_folder)
     os.makedirs(out_folder, exist_ok=True)
     metrics_all_samples = []
-    for i in tqdm(range(len(test_dataset_raw))):
+    if n_test > 400:
+        n_test = 400
+    for i in tqdm(range(n_test)):
         # get sample
         mp4_file = test_dataset_raw[i]["video_path"]
         transcription_file = test_dataset_raw[i]["srt_path"]
