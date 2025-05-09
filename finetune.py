@@ -122,6 +122,7 @@ def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
     hf_dataset = []
     if path[-1] == '/':
         path = path.replace("/", "")
+    path = f"{path}_frames_{num_frames_to_use}_step_{step}_n_{len(hf_ds)}"
     cache_video_folder = f"{path}_videos"
 
     os.makedirs(cache_video_folder, exist_ok=True)
