@@ -210,7 +210,7 @@ def organize_metrics(feedback_loop_generation, config):
     )
 
     metrics_data = (
-            [config['model'], run_name, config['# frame'], config['step']] +
+            [config['model'], config['sample_name'], config['# frame'], config['step']] +
             list(f_eval_metrics.values())
     )
     metrics = dict(zip(metrics_columns, metrics_data))
