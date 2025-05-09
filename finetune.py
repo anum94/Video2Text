@@ -289,7 +289,6 @@ if __name__ == '__main__':
     ft_dataset_path = f"{hf_dataset_path}_FT_frames_{NUM_FRAMES}_step_{step}_n_{len(train_dataset_raw)}"
 
     if use_existing == True:
-        ft_dataset_path = "RaceCommentaryEn_FT"
         train_dataset = datasets.load_from_disk(ft_dataset_path)
     else:
         print("Creating training data from videos and srt files!")
@@ -297,7 +296,6 @@ if __name__ == '__main__':
                                                 num_frames_to_use=config["num_frames_to_use"], step=config["step"])
 
     print(train_dataset)
-    exit()
     if n == -1:
         n = len(train_dataset)
     train_dataset = train_dataset.select(range(n))
