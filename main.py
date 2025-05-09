@@ -252,6 +252,117 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
     return icl_examples
 
 
+def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step=1, verbose=False,
+                           init_skip_frames=5, ICL=False, split_word="ASSISTANT:", k=2):
+    ground_truth = read_srt(transcription_file)
+    video_metadata = get_video_info(mp4_file)
+    ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
+    num_frames_per_second = video_metadata["frames_per_second"]
+
+    pred_timing = []
+    pred_utterences = []
+    pred_utterences_step = []
+    output_buffer_str = ""
+    wait_count = 0
+    init_str = ""
+    temp = 1.0
+
+    start_time = time.time()
+    prev_elapsed = 0
+
+    while True:
+        current_time = time.time()
+        t = int(current_time - start_time)
+
+        # 動画の長さを超えたら終了
+        if t >= video_metadata["duration"]:
+            break
+
+        # 初期スキップ処理
+        if t < init_skip_frames:
+            if t == 0:
+                user_prompt = get_user_prompt("feedback_loop_init")
+                max_new_tokens = 150
+                do_sample = False
+            else:
+                pred_timing.append(False)
+                pred_utterences.append("<WAIT>")
+                pred_utterences_step.append(t)
+                continue
+        else:
+            force_flag = wait_count >= int(20 / step)
+            user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step, force=force_flag)
+            user_prompt += "\nPrevious generated commentary: " + output_buffer_str + "\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say."
+            max_new_tokens = 50
+            do_sample = False
+            temp = 1.0 if force_flag else 1.2
+
+        # ICL例の取得
+        if ICL:
+            icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
+            videos = [ex['video'] for ex in icl_examples]
+        else:
+            videos = []
+            icl_examples = False
+
+        video = sample_frames(mp4_file, num_frames_to_use,
+                              start_frame=(prev_elapsed) * num_frames_per_second,
+                              # start_frame=(t-5)*num_frames_per_second,
+                              end_frame=t * num_frames_per_second,
+                              format="video")
+        videos.append(video)
+        videos = [video]  # use only the target video
+
+        # プロンプト生成と推論
+        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
+        # print(prompt)
+        inputs_video = processor(text=prompt, padding=True, videos=videos,
+                                 return_tensors="pt", max_length=context_window).to(model.device)
+
+        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens,
+                                do_sample=do_sample, temperature=temp,
+                                no_repeat_ngram_size=4)
+
+        prev_elapsed = t
+        pred_utterance = processor.decode(output[0][2:], skip_special_tokens=True)
+        pred_utterance = pred_utterance.split(split_word)[-1]
+        pred_utterance = extract_until_last_complete_sentence(pred_utterance)
+
+        if "WAIT" in pred_utterance:
+            pred_timing.append(False)
+            pred_utterences.append("<WAIT>")
+            pred_utterences_step.append(t)
+            wait_count += 1
+            print(str(t), "WAIT")
+        else:
+            pred_timing.append(True)
+            pred_utterences.append(pred_utterance)
+            pred_utterences_step.append(t)
+            output_buffer_str += f"utterance generated at {str(t)} seconds from the start: " + pred_utterance + "\n"
+            print(output_buffer_str)
+            wait_count = 0
+            if t == 0:
+                init_str = pred_utterance
+
+            # 🗣 語単位で話すように出力
+            print(t)
+            simulate_speaking(pred_utterance, words_per_sec=4.0)
+
+    # 書き出しと評価
+    mode = "realtime_icl_feedback_loop" if ICL else "realtime_feedback_loop"
+    ref_timing_s = [ref_timing[i] for i in range(0, len(ref_timing), step)]
+    ref_utterences_s = [ref_utterences[i] for i in range(0, len(ref_utterences), step)]
+
+    pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step, mode=mode,
+                               talking_speed_sample=icl_transcription_file)
+    eval_metrics = compute_metrics(ref_timing_s, pred_timing, pred_utterences,
+                                   ref_utterences_s, pred_srt_file, transcription_file)
+
+    if verbose:
+        print(eval_metrics)
+        print(f"Complete Commentary: {pred_utterences}")
+
+    return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences
 def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False,init_skip_frames=5,
                            ICL = False, split_word = "ASSISTANT:", k = 2, processor = None,
                            model = None, context_window = 4096, logs_dir = None):
@@ -461,6 +572,10 @@ if __name__ == '__main__':
                                                               split_word = split_word, processor=processor, model=model,
                                                               context_window=context_window)
 
+            realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                              init_skip_frames=skip_frames, step=step, ICL=False,
+                                                              split_word=split_word)
+
 
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                                   init_skip_frames=skip_frames, step=step,
@@ -473,7 +588,7 @@ if __name__ == '__main__':
                       }
 
             metrics_per_sample = write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
-                        icl_output = icl_feedback_loop_generation, config=config, WB = WB,
+                        icl_output = icl_feedback_loop_generation, realtime_output=realtime_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
         except Exception as e:
