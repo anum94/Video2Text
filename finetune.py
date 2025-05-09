@@ -6,6 +6,7 @@ import numpy as np
 import shutil
 import pandas as pd
 from datetime import datetime
+import time
 from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
@@ -120,8 +121,6 @@ def collate_fn_batch(examples):
 
 def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
     hf_dataset = []
-    if path[-1] == '/':
-        path = path.replace("/", "")
     cache_video_folder = f"{path}_videos"
 
     os.makedirs(cache_video_folder, exist_ok=True)
@@ -211,7 +210,7 @@ def organize_metrics(feedback_loop_generation, config):
     )
 
     metrics_data = (
-            [config['model'], run_name, config['# frame'], config['step']] +
+            [config['model'], config['sample_name'], config['# frame'], config['step']] +
             list(f_eval_metrics.values())
     )
     metrics = dict(zip(metrics_columns, metrics_data))
@@ -243,8 +242,9 @@ if __name__ == '__main__':
     parser.add_argument("--dir", required=True, type=str, help="Directory containing the videos "
                             "and respective commentary in recordings and transcriptions_whole_data_english folder",
                             default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary")
-    parser.add_argument("--n", required=False, type=int, default=10, help="Number of samples to run")
-    parser.add_argument("--use_existing", required=False, type=str, help="Linking to previously preprocessed training/validaiton set", default=None)
+    parser.add_argument("--n_train", required=False, type=int, default=10, help="Number of samples for training")
+    parser.add_argument("--n_test", required=False, type=int, default=5, help="Number of samples for validation")
+    parser.add_argument("--use_existing", required=False, type=bool, help="Linking to previously preprocessed training/validaiton set", default=None)
     parser.add_argument("--step", required=False, type=int, default=2, help="Time Step for generation")
     parser.add_argument("--frames", required=False, type=int, default=2,
                         help="Number of frames to use per step of generation")
@@ -255,7 +255,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     folder = args.dir
-    n = args.n
+    n_train = args.n_train
+    n_test = args.n_test
     step = args.step
     hf_dataset_path = args.hf_dataset
     DATASET_PATH = args.dir
@@ -267,7 +268,7 @@ if __name__ == '__main__':
     USE_LORA = False
     USE_QLORA = True
     use_existing = args.use_existing
-    REPO_ID = "anumafzal94/LLaVa-NeXT-Video-demo" # Change to your hf-hub repo
+
 
     config = {"num_frames_to_use": NUM_FRAMES, "step":step, "max_length": MAX_LENGTH, "use_lora": USE_LORA,
               "q_lora": USE_QLORA}
@@ -280,25 +281,27 @@ if __name__ == '__main__':
     train_dataset_raw, test_dataset_raw = ft_dataset['train'].with_format("torch"), ft_dataset['test'].with_format("torch")
 
     # enable this line for testing
-    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(200)), test_dataset_raw .select(range(50))
+    #train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(2)), test_dataset_raw .select(range(2))
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
 
-    if use_existing is None:
-        print ("Creating training data from videos and srt files!")
-        if hf_dataset_path[-1] == '/':
-            hf_dataset_path = hf_dataset_path.replace("/", "")
-        ft_dataset_path = f"{hf_dataset_path}_FT_test"
-        train_dataset =  create_training_samples(train_dataset_raw, path = ft_dataset_path, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
+    if hf_dataset_path[-1] == '/':
+        hf_dataset_path = hf_dataset_path.replace("/", "")
+    ft_dataset_path = f"{hf_dataset_path}_FT_frames_{NUM_FRAMES}_step_{step}_n_{len(train_dataset_raw)}"
+
+    if use_existing == True:
+        train_dataset = datasets.load_from_disk(ft_dataset_path)
     else:
-        dataset_path = use_existing #"CarRacingFT_0_step_2_numframes_2/"
-        train_dataset = datasets.load_from_disk(dataset_path)
+        print("Creating training data from videos and srt files!")
+        train_dataset = create_training_samples(train_dataset_raw, path=ft_dataset_path,
+                                                num_frames_to_use=config["num_frames_to_use"], step=config["step"])
 
     print(train_dataset)
-    if n == -1:
+    if n_train == -1:
         n = len(train_dataset)
-    train_dataset = train_dataset.select(range(n))
+    train_dataset = train_dataset.select(range(n_train))
+    print(train_dataset)
 
     # set num_proc higher for faster processing
     #train_dataset = train_dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
@@ -309,10 +312,11 @@ if __name__ == '__main__':
 
 
     dataset_processed = dataset_processed.shuffle(seed=42)
-    dataset_processed = dataset_processed.train_test_split(test_size=0.1)
+    dataset_processed = dataset_processed.train_test_split(test_size=0.2)
 
     train_dataset, validation_dataset = dataset_processed['train'].with_format("torch"), dataset_processed['test'].with_format("torch")
     print (f"{len(train_dataset)} training example, {len(validation_dataset)} validation examples")
+    REPO_ID = f"anumafzal94/LLaVa-NeXT-Video-_step_{step}_frames_{NUM_FRAMES}_n_{len(train_dataset)}" # Change to your hf-hub repo
 
     if USE_QLORA or USE_LORA:
         if USE_QLORA:
@@ -400,8 +404,9 @@ if __name__ == '__main__':
         torch_dtype=torch.float16,
         device_map="auto",
     )
+    j = 1 if int(len(validation_dataset)/100) == 0 else int(len(validation_dataset)/100)
     print("Old Model")
-    for i in range(10):
+    for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
@@ -411,36 +416,39 @@ if __name__ == '__main__':
             device_map="auto",
         )
     print ("FT Model")
-    for i in range(10):
+    for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
     # ------------------------------- Test the trained model on whole Train Set ----------------------- #
     split_word = "ASSISTANT:"
     out_folder = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
-    out_folder = os.makedirs(os.path.join("logs", out_folder), exist_ok=True)
+    out_folder = os.path.join("logs", out_folder)
+    os.makedirs(out_folder, exist_ok=True)
     metrics_all_samples = []
-    for i in tqdm(range(len(test_dataset_raw))):
+    if n_test > 400:
+        n_test = 400
+    for i in tqdm(range(n_test)):
         # get sample
         mp4_file = test_dataset_raw[i]["video_path"]
         transcription_file = test_dataset_raw[i]["srt_path"]
 
         # create folder to store logs for each sample.
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
-        try:
-
-            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
+        #try:
+        print (out_folder)
+        feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
                                                                   init_skip_frames=10, step=step, ICL=False,
                                                                   split_word = split_word, processor=processor,
                                                               model=model, logs_dir=out_folder)
 
-            config = {"model": REPO_ID, "step": step, "# frame": NUM_FRAMES, "sample_name": sample_name,
+        config = {"model": REPO_ID, "step": step, "# frame": NUM_FRAMES, "sample_name": sample_name,
                           }
 
-            metrics_per_sample =  organize_metrics(feedback_loop_generation, config)
-            metrics_all_samples.append(metrics_per_sample)
-        except Exception as e:
-            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+        metrics_per_sample =  organize_metrics(feedback_loop_generation, config)
+        metrics_all_samples.append(metrics_per_sample)
+        #except Exception as e:
+        #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
 
     # Writing per experiments logs
@@ -453,8 +461,8 @@ if __name__ == '__main__':
     print(means_dict)
 
     import json
-    run_name = f"FT_step_{step}_frames_{NUM_FRAMES}"
-    with open(f'{run_name}_FT.json', 'w') as fp:
+    run_name = f"FT_step_{step}_frames_{NUM_FRAMES}_n_{len(df)}"
+    with open(f'{run_name}.json', 'w') as fp:
         json.dump(means_dict, fp)
 
 
