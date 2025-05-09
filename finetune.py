@@ -287,7 +287,7 @@ if __name__ == '__main__':
         hf_dataset_path = hf_dataset_path.replace("/", "")
     ft_dataset_path = f"{hf_dataset_path}_FT_frames_{NUM_FRAMES}_step_{step}_n_{len(train_dataset_raw)}"
 
-    if use_existing:
+    if use_existing == True:
         train_dataset = datasets.load_from_disk(ft_dataset_path)
     else:
         print("Creating training data from videos and srt files!")
