@@ -50,6 +50,7 @@ def get_FT_prompt(prev_generation):
 
 def collate_fn(example):
     video_clips = read_video(example["video"])
+    print (video_clips.shape)
     video_clips= np.transpose(video_clips, (0,3, 1, 2))
     prev_gen = example["prev_generations"]
     gt = example["gt"]
@@ -299,6 +300,7 @@ if __name__ == '__main__':
     if n == -1:
         n = len(train_dataset)
     train_dataset = train_dataset.select(range(n))
+    print(train_dataset)
 
     # set num_proc higher for faster processing
     #train_dataset = train_dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)

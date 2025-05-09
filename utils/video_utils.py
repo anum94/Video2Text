@@ -39,6 +39,7 @@ def process_video(video, num_frames, height=1080, width=1920, channels=3):
         video_fixed = video_fixed[:num_frames]
     return video_fixed
 def read_video(video_path):
+    print (video_path)
     cap = cv2.VideoCapture(video_path)
 
     frames = []
@@ -58,8 +59,43 @@ def read_video(video_path):
 
     #print("Shape of video numpy array:", video_np.shape)  # e.g., (num_frames, height, width, 3)
     return video_np
+def sample_frames(path, num_frames, start_frame=None, end_frame=None, format="images", save_debug=False):
+    video = cv2.VideoCapture(path)
+    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
 
+    if start_frame is None:
+        start_frame = 0
+    if end_frame is None:
+        end_frame = total_frames
 
+    start_frame = max(0, min(start_frame, total_frames - 1))
+    end_frame = max(start_frame + 1, min(end_frame, total_frames))
+
+    available_frames = end_frame - start_frame
+    num_frames = min(num_frames, available_frames)
+
+    # 均等にインデックスを計算
+    frame_indices = np.linspace(start_frame, end_frame - 1, num=num_frames, dtype=int)
+    frames = []
+    for idx in frame_indices:
+        video.set(cv2.CAP_PROP_POS_FRAMES, idx)
+        ret, frame = video.read()
+        if not ret:
+            continue
+        pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        frames.append(pil_img)
+        if save_debug:
+            debug_path = f"frame_{idx}_sample_debug.jpg"
+            pil_img.save(debug_path)
+
+    video.release()
+
+    if format == "video":
+        frames = [np.array(frame) for frame in frames]
+        frames = np.stack(frames, axis=0)
+
+    return frames
+'''
 def sample_frames(path, num_frames, start_frame = None, end_frame = None, format = "images"):
 
     video = cv2.VideoCapture(path)
@@ -97,7 +133,7 @@ def sample_frames(path, num_frames, start_frame = None, end_frame = None, format
         frames = [np.array(frame) for frame in frames]
         frames = np.stack(frames, axis=0)
     return frames
-
+'''
 def replace_video_with_images(text, frames):
   return text.replace("<video>", "<image>" * frames)
 
