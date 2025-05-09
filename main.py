@@ -1,12 +1,8 @@
-import os.path
 import random
 
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
 from datetime import datetime
-import torch
-import sys
-
 import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
@@ -14,6 +10,8 @@ from utils.logs import *
 from utils.data_utils import *
 from utils.video_utils import *
 import argparse
+from datasets import Dataset, load_dataset, concatenate_datasets
+import datasets
 def get_user_prompt(mode="baseline", context="", step = 1, force=False):
     #todo: move prompts to a yaml file
     if mode == "baseline":
@@ -54,6 +52,45 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
 
     return user_prompt
 
+def create_ds(folder):
+    video_directory = "recordings"
+    video_directory = os.path.join(folder, video_directory)
+
+    commentary_directory = "transcriptions_whole_data_english"
+    commentary_directory = os.path.join(folder, commentary_directory)
+    hf_dataset = []
+
+    all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
+                     os.path.isdir(os.path.join(video_directory, name))]
+
+    count = 0
+    for i, game_path in enumerate(all_game_path):
+        transcription_file = get_commentary_path(commentary_directory, game_path)
+        if transcription_file is not None:
+            mp4_file = [os.path.join(game_path, file) for file in os.listdir(game_path) if
+                        file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
+        else:
+            # print (f"kyakkan commentary not available for game: {game_path}")
+            count += 1
+            continue
+
+        sample_name = os.path.dirname(mp4_file).split('/')[-1]
+        dataset_item = {"sample_name": sample_name,
+                        "video_path": mp4_file,
+                        "srt_path": transcription_file, }
+        hf_dataset.append(dataset_item)
+        for i in range (50):
+            hf_dataset.append(dataset_item)
+
+    hf_dataset = Dataset.from_list(hf_dataset)
+    dataset_processed = hf_dataset.shuffle(seed=42)
+    print(f"kyakkan commentary not available for {count} samples.")
+    print(dataset_processed)
+    hf_dataset = dataset_processed.train_test_split(test_size=0.25)
+    dir = "RaceCommentaryEn/"
+    os.makedirs(dir, exist_ok=True)
+    hf_dataset.save_to_disk(dir)
+    return dir
 
 def get_utterence_timing(ground_truth,metadata):
     utterence_timing = [False] * int(metadata.get("duration"))
@@ -124,7 +161,9 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
     return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences
 
-def get_messages(user_prompt, ICL = False ):
+def get_messages(user_prompt, ICL = False , proc = None):
+    if proc is not None:
+        processor = proc
     conversation = []
     if ICL:
         for icl_number in range(len(ICL)):
@@ -214,8 +253,8 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
 
 
 def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False,init_skip_frames=5,
-                           ICL = False, split_word = "ASSISTANT:", k = 2):
-
+                           ICL = False, split_word = "ASSISTANT:", k = 2, processor = None,
+                           model = None, context_window = 4096, logs_dir = None):
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
     ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
@@ -262,7 +301,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             videos = []
             icl_examples = False
         videos.append(video)
-        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
+        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
+
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
                                  max_length=context_window).to(model.device)
 
@@ -303,7 +343,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     ref_timing = [ref_timing[ref] for ref in range(0,len(ref_timing),step)]
     ref_utterences = [ref_utterences[ref] for ref in range(0, len(ref_utterences), step)]
 
-
+    if logs_dir is not None:
+        out_folder = logs_dir
     pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step,  mode=mode, talking_speed_sample=icl_transcription_file)
     eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, pred_srt_file, transcription_file)
     if verbose:
@@ -341,6 +382,10 @@ if __name__ == '__main__':
     parser.add_argument("--frames", required=False, type=int, default=-1, help="Number of frames to use per step of generation")
     parser.add_argument("--context_window", required=False, type=int, default=5120,
                         help="Context Window to be used by LLM")
+    parser.add_argument("--max_new_tokens", required=False, type=int, default=50, help="number of examples for ICL")
+    parser.add_argument("--skip_frames", required=False, type=int, default=10, help="number of examples for ICL")
+
+
     args = parser.parse_args()
 
     folder = args.dir
@@ -351,33 +396,28 @@ if __name__ == '__main__':
     context_window = args.context_window
     icl = args.icl
     WB = args.wb
-    hf_dataset = args.hf_dataset
+    hf_dataset_path = args.hf_dataset
+    max_new_tokens = args.max_new_tokens
+    skip_frames = args.skip_frames
+
+    if hf_dataset_path is None and folder is None:
+        print (f"Either provide path to the dataset folder through --dir or path to HF dataset through --hf_dataset")
+        exit()
 
     if WB:
         wandb_setup()
 
     my_folder = os.path.join("logs", date_time)
-    # define directory paths
-    video_directory = "recordings"
-    video_directory = os.path.join(folder,video_directory)
+    if hf_dataset_path is None:
+        hf_dataset_path = create_ds(folder)
 
-    commentary_directory = "transcriptions_whole_data_english"
-    commentary_directory = os.path.join(folder,commentary_directory)
+    ds = datasets.load_from_disk(hf_dataset_path)
+    test_dataset = ds['test'].with_format("torch")
 
-    # define path for icl example
-    icl_path = os.path.join(video_directory,
-                               "AC_150221-130155_R_ks_porsche_macan_mugello_"
-                               )
-    icl_mp4_file = mp4_file = [os.path.join(icl_path,file)
-                               for file in os.listdir(icl_path) if
-                         file.endswith('.mp4') and os.path.isfile(os.path.join(icl_path, file)) and "客観" in file][0]
-    icl_transcription_file = transcription_file = get_commentary_path(commentary_directory,icl_path)
-    icl_example_paths = {'mp4_file':icl_mp4_file,
-                   'transcription': icl_transcription_file}
+    if n == -1:
+        n = len(test_dataset)
+    test_dataset = test_dataset.select(range(n))
 
-    #define hp
-    max_new_tokens = 50
-    skip_frames = 15
 
     if num_frames_to_use == -1:
         num_frames_to_use = step
@@ -390,39 +430,42 @@ if __name__ == '__main__':
     #split_word = "<|im_start|> assistant"
 
     model = None
-
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
-
-
     processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
     metrics_all_samples = []
-    # iterate over all samples
-    all_game_path = [os.path.join(video_directory,name) for name in os.listdir(video_directory) if os.path.isdir(os.path.join(video_directory, name))]
-    if n == -1:
-        n = len(all_game_path)
-    for i, game_path in enumerate(all_game_path[:n]):
-        transcription_file = get_commentary_path(commentary_directory,game_path)
-        if transcription_file is not None:
-            mp4_file = [os.path.join(game_path,file) for file in os.listdir(game_path) if
-                         file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
-        else:
-            print (f"kyakkan commentary not available for game: {game_path}")
-            continue
 
-        # Baseline without feedback loop
+    for i in tqdm(range(len(test_dataset))):
+        # get sample
+        mp4_file = test_dataset[i]["video_path"]
+        transcription_file = test_dataset[i]["srt_path"]
+
+        # create folder to store logs for each sample.
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
         out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}")
         os.makedirs(out_folder, exist_ok=True)
+
+        # define path for icl example
+        icl_index = random.sample(range(0, len(test_dataset)), k = 1)[0]
+        icl_example = test_dataset[icl_index]
+        icl_mp4_file = icl_example["video_path"]
+        icl_transcription_file = icl_example["srt_path"]
+        icl_example_paths = {'mp4_file': icl_mp4_file,
+                             'transcription': icl_transcription_file}
         try:
 
             baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                              init_skip_frames=skip_frames, step=step, ICL=False, split_word = split_word)
+                                                              init_skip_frames=skip_frames, step=step, ICL=False,
+                                                              split_word = split_word, processor=processor, model=model,
+                                                              context_window=context_window)
+
 
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                                   init_skip_frames=skip_frames, step=step,
-                                                                  ICL=icl_example_paths, split_word = split_word, k = 4)
+                                                                  ICL=icl_example_paths, split_word = split_word,
+                                                                  k = 4 , processor=processor, model=model,
+                                                                  context_window=context_window)
 
             run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
             config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
@@ -436,7 +479,7 @@ if __name__ == '__main__':
             print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
 
-
+    # Writing per experiments logs
     df = pd.DataFrame(metrics_all_samples)
     means_dict = df.select_dtypes(include='number').mean().to_dict()
     means_dict["n"] = len(df)
@@ -456,7 +499,7 @@ if __name__ == '__main__':
         wandb.log({"experiment_metrics": table}, commit=True)
         wandb.finish()
     import json
-    with open(f'{sample_name}_{str(date_time)}.json', 'w') as fp:
+    with open(f'{run_name}_{str(date_time)}.json', 'w') as fp:
         json.dump(means_dict, fp)
 
 

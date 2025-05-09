@@ -4,6 +4,7 @@ import os
 import nltk
 from sklearn.metrics import confusion_matrix
 import json
+from datetime import datetime
 import pysrt
 from difflib import SequenceMatcher
 from rouge_score import rouge_scorer
@@ -101,9 +102,8 @@ def read_srt(input_file_path):
     return subs
 
 def write_logs(out_folder, predictions,times, mode, talking_speed_sample=None):
-
     out_file = os.path.join(out_folder, f"logs_{mode}.txt")
-    print(f"Generation stored at {out_file}")
+    #print(f"Generation stored at {out_file}")
     with open(out_file, 'a') as the_file:
         for t, ut in zip(times, predictions):
             ut = ut.replace("\n", "")

@@ -5,6 +5,7 @@ import fsspec
 import numpy as np
 import shutil
 import pandas as pd
+from datetime import datetime
 from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
@@ -13,7 +14,7 @@ from datasets import Dataset, load_dataset, concatenate_datasets
 from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
 from transformers import AutoProcessor, BitsAndBytesConfig, LlavaNextVideoForConditionalGeneration
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
-from main import get_utterence_timing, extract_until_last_complete_sentence
+from main import get_utterence_timing, extract_until_last_complete_sentence, create_ds, baseline_feedback_loop
 import torch
 from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
@@ -68,6 +69,7 @@ def collate_fn(example):
             },
         ]
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=False)
+    #video_clips = video_clips.to(model.device)
     batch = processor(
         text=prompt,
         videos=video_clips,
@@ -75,6 +77,7 @@ def collate_fn(example):
         max_length=MAX_LENGTH,
         return_tensors="pt"
     )
+
     return batch
 def collate_fn_batch(examples):
     video_clips = [read_video(path) for path in examples["video"]]
@@ -115,47 +118,28 @@ def collate_fn_batch(examples):
 
     return batch
 
-def convert_to_hf_dataset(folder, step = 1, num_frames_to_use = 1):
+def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
     hf_dataset = []
+    if path[-1] == '/':
+        path = path.replace("/", "")
+    cache_video_folder = f"{path}_videos"
 
-    # define directory paths
-    video_directory = "recordings"
-    video_directory = os.path.join(folder,video_directory)
+    os.makedirs(cache_video_folder, exist_ok=True)
+    for i in tqdm(range(len(hf_ds))):
 
-    commentary_directory = "transcriptions_whole_data_english"
-    commentary_directory = os.path.join(folder,commentary_directory)
-
-    all_game_path = [os.path.join(video_directory, name) for name in os.listdir(video_directory) if
-                     os.path.isdir(os.path.join(video_directory, name))][:n]
-
-    path = f'CarRacingFT_{len(all_game_path)}_step_{step}_numframes_{num_frames_to_use}/'
-    os.makedirs(path, exist_ok=True)
-
-    for i, game_path in tqdm(enumerate(all_game_path), total = len(all_game_path)):
-
-        transcription_file = get_commentary_path(commentary_directory, game_path)
-        if transcription_file is not None:
-            mp4_file = [os.path.join(game_path, file) for file in os.listdir(game_path) if
-                        file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
-        else:
-            print(f"kyakkan commentary not available for game: {game_path}")
-            continue
-
-        # Baseline without feedback loop
-        sample_name = os.path.dirname(mp4_file).split('/')[-1]
-        os.makedirs(path.replace("/", "_videos/"), exist_ok=True)
+        mp4_file = hf_ds[i]["video_path"]
+        transcription_file = hf_ds[i]["srt_path"]
+        sample_name = hf_ds[i]["sample_name"]
 
         srt = read_srt(transcription_file)
-
         video_metadata = get_video_info(mp4_file)
-        #video_metadata["duration"] = 50
         ref_utterences, ref_timing = get_utterence_timing(srt, video_metadata)
         for t in range(0, video_metadata["duration"], step): #tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
 
             video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * video_metadata["frames_per_second"],
                                   end_frame=(t + 1) * video_metadata["frames_per_second"], format="video")
 
-            video_path = os.path.join(path.replace("/", "_videos/"), os.path.basename(mp4_file.replace('.mp4', f'_{t}.mp4')))
+            video_path = os.path.join(cache_video_folder, os.path.basename(mp4_file.replace('.mp4', f'_{t}.mp4')))
             write_video(video, video_path, video_metadata["frames_per_second"])
             prev_generations = " ".join(ref_utterences[:(t - step)])
             ground_truth = " ".join([ref_utterences[t - j] for j in reversed(range(step))])
@@ -216,13 +200,36 @@ def find_all_linear_names(model):
     return list(lora_module_names)
 
 
+def organize_metrics(feedback_loop_generation, config):
+    f_eval_metrics = feedback_loop_generation[2]
+
+
+    additional_columns = ["model_name", "sample", "# frame", "step"]
+    metrics_columns = (
+            additional_columns +
+            [f"feedback_{key}" for key in f_eval_metrics.keys()]
+    )
+
+    metrics_data = (
+            [config['model'], run_name, config['# frame'], config['step']] +
+            list(f_eval_metrics.values())
+    )
+    metrics = dict(zip(metrics_columns, metrics_data))
+    additional_columns += ["feedback_ref_timing", "feedback_pred_timing", "feedback_ROUGE_10%", ]
+    for k, v in metrics["feedback_ROUGE_10%"].items():
+        metrics[f"feedback_{k}"] = v
+
+    metrics_per_sample = {k: v for k, v in metrics.items() if k not in additional_columns}
+    return metrics_per_sample
+
 
 def run_inference(example, model):
     split_word = "ASSISTANT:"
     # Let's use chat template to format the prompt correctly, this time without the caption
     inputs_video = collate_fn(example)
+    inputs_video = inputs_video.to(model.device)
 
-    output = model.generate(**inputs_video, do_sample=True, max_new_tokens=50).to(model.device)
+    output = model.generate(**inputs_video, do_sample=True, max_new_tokens=50)
 
     generated_text = processor.decode(output[0][2:], skip_special_tokens=True)
     generated_text = generated_text.split(split_word)[-1]
@@ -237,9 +244,12 @@ if __name__ == '__main__':
                             "and respective commentary in recordings and transcriptions_whole_data_english folder",
                             default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary")
     parser.add_argument("--n", required=False, type=int, default=10, help="Number of samples to run")
+    parser.add_argument("--use_existing", required=False, type=str, help="Linking to previously preprocessed training/validaiton set", default=None)
     parser.add_argument("--step", required=False, type=int, default=2, help="Time Step for generation")
     parser.add_argument("--frames", required=False, type=int, default=2,
                         help="Number of frames to use per step of generation")
+    parser.add_argument("--hf_dataset", required=False, type=str,
+                        help="The directory containing hf_Dataset", default = "RaceCommentaryEn/")
     parser.add_argument("--context_window", required=False, type=int, default=5120,
                         help="Context Window to be used by LLM")
     args = parser.parse_args()
@@ -247,7 +257,7 @@ if __name__ == '__main__':
     folder = args.dir
     n = args.n
     step = args.step
-
+    hf_dataset_path = args.hf_dataset
     DATASET_PATH = args.dir
     MAX_LENGTH = args.context_window
     BATCH_SIZE = 2
@@ -256,39 +266,53 @@ if __name__ == '__main__':
     MODEL_ID = "llava-hf/LLaVa-NeXT-Video-7b-hf"
     USE_LORA = False
     USE_QLORA = True
+    use_existing = args.use_existing
     REPO_ID = "anumafzal94/LLaVa-NeXT-Video-demo" # Change to your hf-hub repo
 
     config = {"num_frames_to_use": NUM_FRAMES, "step":step, "max_length": MAX_LENGTH, "use_lora": USE_LORA,
               "q_lora": USE_QLORA}
 
+    if hf_dataset_path is None:
+        hf_dataset_path = create_ds(DATASET_PATH)
 
-    create_dataset = False
-    if create_dataset:
-        dataset =  convert_to_hf_dataset(DATASET_PATH, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
-        print (dataset)
-        dataset.push_to_hub("anumafzal94/test")
-    else:
-        dataset_path = "CarRacingFT_0_step_2_numframes_2/"
-        dataset = datasets.load_from_disk(dataset_path)
+    ft_dataset = datasets.load_from_disk(hf_dataset_path)
+    print (ft_dataset)
+    train_dataset_raw, test_dataset_raw = ft_dataset['train'].with_format("torch"), ft_dataset['test'].with_format("torch")
 
+    # enable this line for testing
+    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(200)), test_dataset_raw .select(range(50))
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
+
+    if use_existing is None:
+        print ("Creating training data from videos and srt files!")
+        if hf_dataset_path[-1] == '/':
+            hf_dataset_path = hf_dataset_path.replace("/", "")
+        ft_dataset_path = f"{hf_dataset_path}_FT_test"
+        train_dataset =  create_training_samples(train_dataset_raw, path = ft_dataset_path, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
+    else:
+        dataset_path = use_existing #"CarRacingFT_0_step_2_numframes_2/"
+        train_dataset = datasets.load_from_disk(dataset_path)
+
+    print(train_dataset)
+    if n == -1:
+        n = len(train_dataset)
+    train_dataset = train_dataset.select(range(n))
+
     # set num_proc higher for faster processing
-    #dataset = dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
-    n = 50000  # or any number you want
-    dataset = dataset.select(range(n))
-    dataset = dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=4)
-    cache_dir = "ds_cache/"
-    os.makedirs(cache_dir, exist_ok=True)
-    dataset.save_to_disk(cache_dir)
-    print (f"collated data saved to {cache_dir}")
+    #train_dataset = train_dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
+    dataset_processed = train_dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=4)
+    #os.makedirs(cache_dir, exist_ok=True)
+    #train_dataset.save_to_disk(cache_dir)
+    #print (f"collated data saved to {cache_dir}")
 
 
-    dataset_processed = dataset.shuffle(seed=42)
-    dataset = dataset_processed.train_test_split(test_size=0.2)
-    train_dataset, test_dataset = dataset['train'].with_format("torch"), dataset['test'].with_format("torch")
-    print (f"{len(train_dataset)} training example, {len(test_dataset)} testing examples")
+    dataset_processed = dataset_processed.shuffle(seed=42)
+    dataset_processed = dataset_processed.train_test_split(test_size=0.1)
+
+    train_dataset, validation_dataset = dataset_processed['train'].with_format("torch"), dataset_processed['test'].with_format("torch")
+    print (f"{len(train_dataset)} training example, {len(validation_dataset)} validation examples")
 
     if USE_QLORA or USE_LORA:
         if USE_QLORA:
@@ -362,27 +386,75 @@ if __name__ == '__main__':
         tokenizer=processor,
         data_collator=LlavaNextVideoDataCollatorWithPadding(processor=processor),
         train_dataset=train_dataset,
-        eval_dataset=test_dataset,
+        eval_dataset=validation_dataset,
         args=args,
     )
 
     trainer.train()
     trainer.model.push_to_hub(REPO_ID)
 
-    # ------------------------ Test the trained model -----------------------------------#
+    # ------------------------ Test the trained model on Validation Set-----------------------------------#
+
+    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+        MODEL_ID,
+        torch_dtype=torch.float16,
+        device_map="auto",
+    )
+    print("Old Model")
     for i in range(10):
-        example = test_dataset[i]
-        model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+        example = validation_dataset[i]
+        print(run_inference(example, model))
+
+    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
             REPO_ID,
             torch_dtype=torch.float16,
             device_map="auto",
         )
+    print ("FT Model")
+    for i in range(10):
+        example = validation_dataset[i]
+        print(run_inference(example, model))
 
-        print (run_inference(example, model))
+    # ------------------------------- Test the trained model on whole Train Set ----------------------- #
+    split_word = "ASSISTANT:"
+    out_folder = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
+    out_folder = os.makedirs(os.path.join("logs", out_folder), exist_ok=True)
+    metrics_all_samples = []
+    for i in tqdm(range(len(test_dataset_raw))):
+        # get sample
+        mp4_file = test_dataset_raw[i]["video_path"]
+        transcription_file = test_dataset_raw[i]["srt_path"]
 
-        old_model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-            MODEL_ID,
-            torch_dtype=torch.float16,
-            device_map="auto",
-        )
-        print(run_inference(example, old_model))
+        # create folder to store logs for each sample.
+        sample_name = os.path.dirname(mp4_file).split('/')[-1]
+        try:
+
+            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
+                                                                  init_skip_frames=10, step=step, ICL=False,
+                                                                  split_word = split_word, processor=processor,
+                                                              model=model, logs_dir=out_folder)
+
+            config = {"model": REPO_ID, "step": step, "# frame": NUM_FRAMES, "sample_name": sample_name,
+                          }
+
+            metrics_per_sample =  organize_metrics(feedback_loop_generation, config)
+            metrics_all_samples.append(metrics_per_sample)
+        except Exception as e:
+            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+
+
+    # Writing per experiments logs
+    df = pd.DataFrame(metrics_all_samples)
+    means_dict = df.select_dtypes(include='number').mean().to_dict()
+    means_dict["n"] = len(df)
+    means_dict["model_name"] = REPO_ID
+    means_dict["# frame"] = NUM_FRAMES
+    means_dict["step"] = step
+    print(means_dict)
+
+    import json
+    run_name = f"FT_step_{step}_frames_{NUM_FRAMES}"
+    with open(f'{run_name}_FT.json', 'w') as fp:
+        json.dump(means_dict, fp)
+
+
