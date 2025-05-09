@@ -6,6 +6,7 @@ import numpy as np
 import shutil
 import pandas as pd
 from datetime import datetime
+import time
 from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore")
@@ -278,7 +279,7 @@ if __name__ == '__main__':
     train_dataset_raw, test_dataset_raw = ft_dataset['train'].with_format("torch"), ft_dataset['test'].with_format("torch")
 
     # enable this line for testing
-    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(2)), test_dataset_raw .select(range(2))
+    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(100)), test_dataset_raw .select(range(50))
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
@@ -308,7 +309,7 @@ if __name__ == '__main__':
 
 
     dataset_processed = dataset_processed.shuffle(seed=42)
-    dataset_processed = dataset_processed.train_test_split(test_size=0.1)
+    dataset_processed = dataset_processed.train_test_split(test_size=0.2)
 
     train_dataset, validation_dataset = dataset_processed['train'].with_format("torch"), dataset_processed['test'].with_format("torch")
     print (f"{len(train_dataset)} training example, {len(validation_dataset)} validation examples")
@@ -401,7 +402,7 @@ if __name__ == '__main__':
         device_map="auto",
     )
     print("Old Model")
-    for i in range(1):
+    for i in range(10):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
@@ -411,7 +412,7 @@ if __name__ == '__main__':
             device_map="auto",
         )
     print ("FT Model")
-    for i in range(1):
+    for i in range(10):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
