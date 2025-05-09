@@ -120,9 +120,6 @@ def collate_fn_batch(examples):
 
 def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
     hf_dataset = []
-    if path[-1] == '/':
-        path = path.replace("/", "")
-    path = f"{path}_frames_{num_frames_to_use}_step_{step}_n_{len(hf_ds)}"
     cache_video_folder = f"{path}_videos"
 
     os.makedirs(cache_video_folder, exist_ok=True)
@@ -268,7 +265,7 @@ if __name__ == '__main__':
     USE_LORA = False
     USE_QLORA = True
     use_existing = args.use_existing
-    REPO_ID = "anumafzal94/LLaVa-NeXT-Video-demo" # Change to your hf-hub repo
+
 
     config = {"num_frames_to_use": NUM_FRAMES, "step":step, "max_length": MAX_LENGTH, "use_lora": USE_LORA,
               "q_lora": USE_QLORA}
@@ -286,15 +283,16 @@ if __name__ == '__main__':
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
 
-    if use_existing is None:
-        print ("Creating training data from videos and srt files!")
-        if hf_dataset_path[-1] == '/':
-            hf_dataset_path = hf_dataset_path.replace("/", "")
-        ft_dataset_path = f"{hf_dataset_path}_FT_test"
-        train_dataset =  create_training_samples(train_dataset_raw, path = ft_dataset_path, num_frames_to_use=config["num_frames_to_use"], step=config["step"])
+    if hf_dataset_path[-1] == '/':
+        hf_dataset_path = hf_dataset_path.replace("/", "")
+    ft_dataset_path = f"{hf_dataset_path}_FT_frames_{NUM_FRAMES}_step_{step}_n_{len(train_dataset_raw)}"
+
+    if use_existing:
+        train_dataset = datasets.load_from_disk(ft_dataset_path)
     else:
-        dataset_path = use_existing #"CarRacingFT_0_step_2_numframes_2/"
-        train_dataset = datasets.load_from_disk(dataset_path)
+        print("Creating training data from videos and srt files!")
+        train_dataset = create_training_samples(train_dataset_raw, path=ft_dataset_path,
+                                                num_frames_to_use=config["num_frames_to_use"], step=config["step"])
 
     print(train_dataset)
     if n == -1:
@@ -314,6 +312,7 @@ if __name__ == '__main__':
 
     train_dataset, validation_dataset = dataset_processed['train'].with_format("torch"), dataset_processed['test'].with_format("torch")
     print (f"{len(train_dataset)} training example, {len(validation_dataset)} validation examples")
+    REPO_ID = f"anumafzal94/LLaVa-NeXT-Video-_step_{step}_frames_{NUM_FRAMES}_n_{len(train_dataset)}" # Change to your hf-hub repo
 
     if USE_QLORA or USE_LORA:
         if USE_QLORA:
@@ -402,7 +401,7 @@ if __name__ == '__main__':
         device_map="auto",
     )
     print("Old Model")
-    for i in range(10):
+    for i in range(1):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
@@ -412,7 +411,7 @@ if __name__ == '__main__':
             device_map="auto",
         )
     print ("FT Model")
-    for i in range(10):
+    for i in range(1):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
@@ -454,7 +453,7 @@ if __name__ == '__main__':
     print(means_dict)
 
     import json
-    run_name = f"FT_step_{step}_frames_{NUM_FRAMES}_n_{len(len(df))}"
+    run_name = f"FT_step_{step}_frames_{NUM_FRAMES}_n_{len(df)}"
     with open(f'{run_name}.json', 'w') as fp:
         json.dump(means_dict, fp)
 
