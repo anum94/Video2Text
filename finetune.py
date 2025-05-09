@@ -454,8 +454,8 @@ if __name__ == '__main__':
     print(means_dict)
 
     import json
-    run_name = f"FT_step_{step}_frames_{NUM_FRAMES}"
-    with open(f'{run_name}_FT.json', 'w') as fp:
+    run_name = f"FT_step_{step}_frames_{NUM_FRAMES}_n_{len(len(df))}"
+    with open(f'{run_name}.json', 'w') as fp:
         json.dump(means_dict, fp)
 
 
