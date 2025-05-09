@@ -342,8 +342,9 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
     ref_timing = [ref_timing[ref] for ref in range(0,len(ref_timing),step)]
     ref_utterences = [ref_utterences[ref] for ref in range(0, len(ref_utterences), step)]
-
-    if logs_dir is not None:
+    print (logs_dir)
+    if logs_dir:
+        print(logs_dir)
         out_folder = logs_dir
     pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step,  mode=mode, talking_speed_sample=icl_transcription_file)
     eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, pred_srt_file, transcription_file)

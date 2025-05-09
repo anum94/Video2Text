@@ -242,7 +242,7 @@ if __name__ == '__main__':
                             "and respective commentary in recordings and transcriptions_whole_data_english folder",
                             default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary")
     parser.add_argument("--n", required=False, type=int, default=10, help="Number of samples to run")
-    parser.add_argument("--use_existing", required=False, type=str, help="Linking to previously preprocessed training/validaiton set", default=None)
+    parser.add_argument("--use_existing", required=False, type=bool, help="Linking to previously preprocessed training/validaiton set", default=None)
     parser.add_argument("--step", required=False, type=int, default=2, help="Time Step for generation")
     parser.add_argument("--frames", required=False, type=int, default=2,
                         help="Number of frames to use per step of generation")
