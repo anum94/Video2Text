@@ -19,3 +19,4 @@ nltk
 scikit-learn
 bitsandbytes
 bert_score
+huggingface_hub[hf_xet]

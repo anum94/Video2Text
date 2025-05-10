@@ -472,9 +472,9 @@ def simulate_speaking(pred_utterance, words_per_sec=4.0):
     delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
 
     for word in words:
-        print(word, end=' ', flush=True)
+        #print(word, end=' ', flush=True)
         time.sleep(delay)
-    print()  # 行末で改行
+    #print()  # 行末で改行
 def extract_until_last_complete_sentence(paragraph):
     # Find the position of the last period in the text
     last_period_pos = paragraph.rfind('.')
