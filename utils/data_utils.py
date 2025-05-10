@@ -5,6 +5,7 @@ import nltk
 from sklearn.metrics import confusion_matrix
 import json
 from datetime import datetime
+from bert_score import BERTScorer
 import pysrt
 from difflib import SequenceMatcher
 from rouge_score import rouge_scorer
@@ -183,6 +184,16 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
     rouge_1  = rouge['rouge1'].fmeasure
     rouge_L = rouge['rougeL'].fmeasure
 
+
+    # Example texts
+    reference = "This is a reference text example."
+    candidate = "This is a candidate text example."
+    # BERTScore calculation
+    scorer = BERTScorer(model_type='bert-base-uncased')
+    P, R, bert_F1 = scorer.score([pred_commentary], [ref_commentary])
+    #print(f"BERTScore Precision: {P.mean():.4f}, Recall: {R.mean():.4f}, F1: {F1.mean():.4f}")
+
+
     #flatten_2d_dict(rouge)
 
 
@@ -204,7 +215,7 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
 
     res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE_1": rouge_1, "ROUGE_L": rouge_L,
             "BLEU": BLEUscore,  "ref_timing": list(ref_timing),
-            "pred_timing": list(pred_timing), "ROUGE_10%": rouge_intervals,
+            "pred_timing": list(pred_timing), "ROUGE_10%": rouge_intervals, "BERTScore": bert_F1,
             'LAAL': laal, "LA": la}
     return res
 
