@@ -2,7 +2,7 @@ import random
 
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
-from datetime import datetime
+from datetime import datetime, time
 import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
@@ -465,7 +465,14 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
     return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences
 
+def simulate_speaking(pred_utterance, words_per_sec=4.0):
+    words = pred_utterance.strip().split()
+    delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
 
+    for word in words:
+        print(word, end=' ', flush=True)
+        time.sleep(delay)
+    print()  # 行末で改行
 def extract_until_last_complete_sentence(paragraph):
     # Find the position of the last period in the text
     last_period_pos = paragraph.rfind('.')
@@ -573,11 +580,11 @@ if __name__ == '__main__':
                                                               split_word = split_word, processor=processor, model=model,
                                                               context_window=context_window, logs_dir=out_folder)
 
-            #realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-            #                                                  init_skip_frames=skip_frames, step=step, ICL=False,
-            #                                                  split_word=split_word)
+            realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                              init_skip_frames=skip_frames, step=step, ICL=False,
+                                                              split_word=split_word)
 
-            realtime_loop_generation = feedback_loop_generation # temporary
+            #realtime_loop_generation = feedback_loop_generation # temporary
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                                   init_skip_frames=skip_frames, step=step,
                                                                   ICL=icl_example_paths, split_word = split_word,
