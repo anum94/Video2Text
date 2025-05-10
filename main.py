@@ -2,7 +2,8 @@ import random
 
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
-from datetime import datetime, time
+from datetime import datetime
+import time
 import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
