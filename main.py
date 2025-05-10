@@ -364,7 +364,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         print(eval_metrics)
         print(f"Complete Commentary: {pred_utterences}")
 
-    return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences
+    return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences_s
 def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False,init_skip_frames=5,
                            ICL = False, split_word = "ASSISTANT:", k = 2, processor = None,
                            model = None, context_window = 4096, logs_dir = None):
@@ -572,8 +572,8 @@ if __name__ == '__main__':
         icl_transcription_file = icl_example["srt_path"]
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
-        try:
-        #if True:
+        #try:
+        if True:
 
             baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
@@ -601,8 +601,8 @@ if __name__ == '__main__':
                         icl_output = icl_feedback_loop_generation, realtime_output=realtime_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
-        except Exception as e:
-            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+        #except Exception as e:
+        #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
 
     # Writing per experiments logs
