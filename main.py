@@ -351,8 +351,8 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
     # 書き出しと評価
     mode = "realtime_icl_feedback_loop" if ICL else "realtime_feedback_loop"
-    ref_timing_s = [ref_timing[i] for i in range(0, len(ref_timing), step)]
-    ref_utterences_s = [ref_utterences[i] for i in range(0, len(ref_utterences), step)]
+    ref_timing_s = ref_timing[pred_utterences_step]
+    ref_utterences_s = ref_utterences[pred_utterences_step]
 
     pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step, mode=mode,
                                talking_speed_sample=icl_transcription_file)
@@ -574,16 +574,16 @@ if __name__ == '__main__':
         #try:
         if True:
 
-            baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+            #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                              init_skip_frames=skip_frames, step=step, ICL=False,
-                                                              split_word = split_word, processor=processor, model=model,
-                                                              context_window=context_window, logs_dir=out_folder)
+            #feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+            #                                                  init_skip_frames=skip_frames, step=step, ICL=False,
+            #                                                  split_word = split_word, processor=processor, model=model,
+            #                                                  context_window=context_window, logs_dir=out_folder)
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                              init_skip_frames=skip_frames, step=step, ICL=False,
-                                                              split_word=split_word)
+                                                              init_skip_frames=skip_frames, step=step,
+                                                              split_word=split_word, ICL=icl_example_paths)
 
             #realtime_loop_generation = feedback_loop_generation # temporary
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
