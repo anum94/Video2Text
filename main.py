@@ -572,15 +572,15 @@ if __name__ == '__main__':
         icl_transcription_file = icl_example["srt_path"]
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
-        #try:
-        if True:
+        try:
+        #if True:
 
-            #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+            baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-            #feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-            #                                                  init_skip_frames=skip_frames, step=step, ICL=False,
-            #                                                  split_word = split_word, processor=processor, model=model,
-            #                                                  context_window=context_window, logs_dir=out_folder)
+            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                              init_skip_frames=skip_frames, step=step, ICL=False,
+                                                              split_word = split_word, processor=processor, model=model,
+                                                              context_window=context_window, logs_dir=out_folder)
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
@@ -601,8 +601,8 @@ if __name__ == '__main__':
                         icl_output = icl_feedback_loop_generation, realtime_output=realtime_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
-        #except Exception as e:
-        #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+        except Exception as e:
+            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
 
     # Writing per experiments logs
