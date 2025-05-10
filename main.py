@@ -610,6 +610,7 @@ if __name__ == '__main__':
     means_dict["model_name"] = model_id
     means_dict["# frame"] = num_frames_to_use
     means_dict["step"] = step
+    means_dict["k"] = k
     print(means_dict)
     if WB:
         project_name = "CommGen"
