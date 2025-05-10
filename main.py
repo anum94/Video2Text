@@ -129,7 +129,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt",
                                  max_length = context_window).to(model.device)
 
-        output = model.generate(**inputs_video,  do_sample=False, max_new_tokens=50)
+        output = model.generate(**inputs_video,  do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
         pred_utterence = extract_until_last_complete_sentence(pred_utterence)
@@ -312,7 +312,8 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                               end_frame=t * num_frames_per_second,
                               format="video")
         videos.append(video)
-        videos = [video]  # use only the target video
+        if ICL == False:
+            videos = [video]  # use only the target video
 
         # プロンプト生成と推論
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
@@ -334,19 +335,19 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             pred_utterences.append("<WAIT>")
             pred_utterences_step.append(t)
             wait_count += 1
-            print(str(t), "WAIT")
+            #print(str(t), "WAIT")
         else:
             pred_timing.append(True)
             pred_utterences.append(pred_utterance)
             pred_utterences_step.append(t)
             output_buffer_str += f"utterance generated at {str(t)} seconds from the start: " + pred_utterance + "\n"
-            print(output_buffer_str)
+            #print(output_buffer_str)
             wait_count = 0
             if t == 0:
                 init_str = pred_utterance
 
             # 🗣 語単位で話すように出力
-            print(t)
+            #print(t)
             simulate_speaking(pred_utterance, words_per_sec=4.0)
 
     # 書き出しと評価
@@ -418,7 +419,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
                                  max_length=context_window).to(model.device)
 
-        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp)
+        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp, no_repeat_ngram_size=4)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
         pred_utterence = extract_until_last_complete_sentence(pred_utterence)
@@ -583,7 +584,7 @@ if __name__ == '__main__':
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
-                                                              split_word=split_word, ICL=False)
+                                                              split_word=split_word, ICL=icl_example_paths)
 
             #realtime_loop_generation = feedback_loop_generation # temporary
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
