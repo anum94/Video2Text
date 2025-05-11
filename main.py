@@ -294,7 +294,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         else:
             force_flag = wait_count >= int(20 / step)
             user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step, force=force_flag)
-            user_prompt += "\nPrevious generated commentary: " + output_buffer_str + "\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say."
+            user_prompt += "\nPrevious generated commentary: " + output_buffer_str + "\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say. If you have nothing to say, generate a <WAIT> token."
             max_new_tokens = 50
             do_sample = False
             temp = 1.0 if force_flag else 1.2
