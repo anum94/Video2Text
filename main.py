@@ -299,28 +299,25 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             do_sample = False
             temp = 1.0 if force_flag else 1.2
 
-        # ICL例の取得
-        if ICL:
-            icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
-            videos = [ex['video'] for ex in icl_examples]
-        else:
-            videos = []
-            icl_examples = False
-
         video = sample_frames(mp4_file, num_frames_to_use,
                               start_frame=(prev_elapsed) * num_frames_per_second,
                               # start_frame=(t-5)*num_frames_per_second,
                               end_frame=t * num_frames_per_second,
                               format="video")
+        # ICL例の取得
+        if ICL:
+            icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
+            videos = [icl_examples[i]['video'] for i in range(len(icl_examples))]
+        else:
+            videos = []
+            icl_examples = False
         videos.append(video)
-        if ICL == False:
-            videos = [video]  # use only the target video
 
         # プロンプト生成と推論
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
-        print(prompt)
-        inputs_video = processor(text=prompt, padding=True, videos=videos,
-                                 return_tensors="pt", max_length=context_window).to(model.device)
+
+        inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
+                                 max_length=context_window).to(model.device)
 
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens,
                                do_sample=do_sample, temperature=temp,
