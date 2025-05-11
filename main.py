@@ -255,6 +255,8 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
 
 def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step=1, verbose=False,
                            init_skip_frames=5, ICL=False, split_word="ASSISTANT:", k=2):
+    print (mp4_file)
+    print(transcription_file)
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
     ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
