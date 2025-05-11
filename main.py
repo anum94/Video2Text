@@ -200,6 +200,7 @@ def get_messages(user_prompt, ICL = False , proc = None):
             }
         )
     print(conversation)
+    print(len(conversation))
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True, padding=True)
     return prompt
 def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_frames = 20,):
