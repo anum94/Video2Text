@@ -170,7 +170,7 @@ def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
     return rouge_dict
 
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, generated_srt, reference_srt):
-
+    print (len(ref_timing), len(pred_timing))
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
     cm = confusion_matrix(ref_timing, pred_timing)
 
@@ -268,7 +268,7 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
                 srt_file.write("\n")
 
         test = read_srt(srt_filename)
-        print(f"SRT file '{srt_filename}' created successfully.")
+        #print(f"SRT file '{srt_filename}' created successfully.")
         return srt_filename
 def rename_mp4_files(directory):
     for dirpath, _, filenames in os.walk(directory):

@@ -39,7 +39,7 @@ def process_video(video, num_frames, height=1080, width=1920, channels=3):
         video_fixed = video_fixed[:num_frames]
     return video_fixed
 def read_video(video_path):
-    print (video_path)
+    #print (video_path)
     cap = cv2.VideoCapture(video_path)
 
     frames = []

@@ -88,6 +88,10 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
         axs[1,1].plot(x, i_pred_timing, marker='o', label='icl_pred_timing', linestyle='-', color='y')
         axs[1,1].legend()
 
+        #print (len(x), len(r_pred_timing))
+        x = np.arange(len(r_pred_timing))
+        #print(len(x), len(r_pred_timing))
+
         axs[2, 0].plot(x, r_pred_timing, marker='o', label='realtime_pred_timing', linestyle='-', color='m')
         axs[2, 0].legend()
 
