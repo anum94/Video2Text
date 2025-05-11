@@ -576,12 +576,12 @@ if __name__ == '__main__':
         #try:
         if True:
 
-            #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+            baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-            #feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-            #                                                  init_skip_frames=skip_frames, step=step, ICL=False,
-            #                                                  split_word = split_word, processor=processor, model=model,
-            #                                                  context_window=context_window, logs_dir=out_folder)
+            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                              init_skip_frames=skip_frames, step=step, ICL=False,
+                                                              split_word = split_word, processor=processor, model=model,
+                                                              context_window=context_window, logs_dir=out_folder)
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
