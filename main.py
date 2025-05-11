@@ -182,7 +182,7 @@ def get_messages(user_prompt, ICL = False , proc = None):
             conversation.append(
                 {
 
-                    "role": "user",
+                    "role": "assistant",
                     "content": [
                         {"type": "text", "text": ICL[icl_number]['generation']},
                         #{"type": "video"},
@@ -199,7 +199,7 @@ def get_messages(user_prompt, ICL = False , proc = None):
                 ],
             }
         )
-
+    print (len(conversation))
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True, padding=True)
     return prompt
 def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_frames = 20,):
@@ -255,8 +255,6 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
 
 def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step=1, verbose=False,
                            init_skip_frames=5, ICL=False, split_word="ASSISTANT:", k=2):
-    print (mp4_file)
-    print(transcription_file)
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
     ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
@@ -296,7 +294,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         else:
             force_flag = wait_count >= int(20 / step)
             user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step, force=force_flag)
-            user_prompt += "\nPrevious generated commentary: " + output_buffer_str + "\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say. If you have nothing to say, generate a <WAIT> token."
+            user_prompt += "\nPrevious generated commentary: \n" + output_buffer_str + "\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say. If you have nothing to say, generate a <WAIT> token."
             max_new_tokens = 50
             do_sample = False
             temp = 1.0 if force_flag else 1.2
@@ -357,7 +355,6 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
     # 書き出しと評価
     mode = "realtime_icl_feedback_loop" if ICL else "realtime_feedback_loop"
-    print (len(pred_utterences_step))
     ref_timing_s = [ref_timing[i] for i in pred_utterences_step]
     ref_utterences_s = [ref_utterences[i]  for i in pred_utterences_step]
 
