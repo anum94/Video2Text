@@ -332,11 +332,12 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         pred_utterance = extract_until_last_complete_sentence(pred_utterance)
 
         if "WAIT" in pred_utterance:
+
             pred_timing.append(False)
             pred_utterences.append("<WAIT>")
             pred_utterences_step.append(t)
             wait_count += 1
-            #print(str(t), "WAIT")
+            print(str(t), "WAIT")
         else:
             pred_timing.append(True)
             pred_utterences.append(pred_utterance)
@@ -344,15 +345,17 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             output_buffer_str += f"utterance generated at {str(t)} seconds from the start: " + pred_utterance + "\n"
             #print(output_buffer_str)
             wait_count = 0
-            if t == 0:
+            if t < init_skip_frames:
                 init_str = pred_utterance
 
             # 🗣 語単位で話すように出力
+            print()
             print(t)
             simulate_speaking(pred_utterance, words_per_sec=4.0)
 
     # 書き出しと評価
     mode = "realtime_icl_feedback_loop" if ICL else "realtime_feedback_loop"
+    print (len(pred_utterences_step))
     ref_timing_s = [ref_timing[i] for i in pred_utterences_step]
     ref_utterences_s = [ref_utterences[i]  for i in pred_utterences_step]
 
