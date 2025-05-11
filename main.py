@@ -182,7 +182,7 @@ def get_messages(user_prompt, ICL = False , proc = None):
             conversation.append(
                 {
 
-                    "role": "user",
+                    "role": "assistant",
                     "content": [
                         {"type": "text", "text": ICL[icl_number]['generation']},
                         #{"type": "video"},
@@ -199,7 +199,6 @@ def get_messages(user_prompt, ICL = False , proc = None):
                 ],
             }
         )
-
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True, padding=True)
     return prompt
 def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_frames = 20,):
@@ -287,40 +286,37 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                 do_sample = False
                 init = False
             else:
-                pred_timing.append(False)
-                pred_utterences.append("<WAIT>")
-                pred_utterences_step.append(t)
+                #pred_timing.append(False)
+                #pred_utterences.append("<WAIT>")
+                #pred_utterences_step.append(t)
                 continue
         else:
             force_flag = wait_count >= int(20 / step)
             user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step, force=force_flag)
-            user_prompt += "\nPrevious generated commentary: " + output_buffer_str + "\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say."
+            user_prompt += "\nPrevious generated commentary: \n" + output_buffer_str + "\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say. If you have nothing to say, generate a <WAIT> token."
             max_new_tokens = 50
             do_sample = False
             temp = 1.0 if force_flag else 1.2
-
-        # ICL例の取得
-        if ICL:
-            icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
-            videos = [ex['video'] for ex in icl_examples]
-        else:
-            videos = []
-            icl_examples = False
 
         video = sample_frames(mp4_file, num_frames_to_use,
                               start_frame=(prev_elapsed) * num_frames_per_second,
                               # start_frame=(t-5)*num_frames_per_second,
                               end_frame=t * num_frames_per_second,
                               format="video")
+        # ICL例の取得
+        if ICL:
+            icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
+            videos = [icl_example['video'] for icl_example in icl_examples]
+        else:
+            videos = []
+            icl_examples = False
         videos.append(video)
-        if ICL == False:
-            videos = [video]  # use only the target video
 
         # プロンプト生成と推論
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
-        # print(prompt)
-        inputs_video = processor(text=prompt, padding=True, videos=videos,
-                                 return_tensors="pt", max_length=context_window).to(model.device)
+
+        inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
+                                 max_length=context_window).to(model.device)
 
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens,
                                do_sample=do_sample, temperature=temp,
@@ -332,6 +328,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         pred_utterance = extract_until_last_complete_sentence(pred_utterance)
 
         if "WAIT" in pred_utterance:
+
             pred_timing.append(False)
             pred_utterences.append("<WAIT>")
             pred_utterences_step.append(t)
@@ -344,10 +341,11 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             output_buffer_str += f"utterance generated at {str(t)} seconds from the start: " + pred_utterance + "\n"
             #print(output_buffer_str)
             wait_count = 0
-            if t == 0:
+            if t < init_skip_frames:
                 init_str = pred_utterance
 
             # 🗣 語単位で話すように出力
+            #print()
             #print(t)
             simulate_speaking(pred_utterance, words_per_sec=4.0)
 
@@ -473,7 +471,7 @@ def simulate_speaking(pred_utterance, words_per_sec=4.0):
     delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
 
     for word in words:
-        #print(word, end=' ', flush=True)
+        print(word, end=' ', flush=True)
         time.sleep(delay)
     #print()  # 行末で改行
 def extract_until_last_complete_sentence(paragraph):
@@ -585,7 +583,7 @@ if __name__ == '__main__':
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
-                                                              split_word=split_word, ICL=icl_example_paths)
+                                                              split_word=split_word, ICL=False)
 
             #realtime_loop_generation = feedback_loop_generation # temporary
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
