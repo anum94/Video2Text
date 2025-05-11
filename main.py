@@ -307,7 +307,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         # ICL例の取得
         if ICL:
             icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
-            videos = [icl_examples[i]['video'] for i in range(len(icl_examples))]
+            videos = [icl_example['video'] for icl_example in icl_examples]
         else:
             videos = []
             icl_examples = False
@@ -584,7 +584,7 @@ if __name__ == '__main__':
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
-                                                              split_word=split_word, ICL=icl_example_paths)
+                                                              split_word=split_word, ICL=False)
 
             #realtime_loop_generation = feedback_loop_generation # temporary
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
