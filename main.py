@@ -334,7 +334,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             pred_utterences.append("<WAIT>")
             pred_utterences_step.append(t)
             wait_count += 1
-            print(str(t), "WAIT")
+            #print(str(t), "WAIT")
         else:
             pred_timing.append(True)
             pred_utterences.append(pred_utterance)
@@ -346,8 +346,8 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                 init_str = pred_utterance
 
             # 🗣 語単位で話すように出力
-            print()
-            print(t)
+            #print()
+            #print(t)
             simulate_speaking(pred_utterance, words_per_sec=4.0)
 
     # 書き出しと評価
