@@ -306,7 +306,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                               end_frame=t * num_frames_per_second,
                               format="video")
 
-        print (type(video))
+        print (video.shape)
         # ICL例の取得
         if ICL:
             icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
@@ -315,7 +315,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             videos = []
             icl_examples = False
         videos.append(video)
-        print (np.array(videos).shape)
+        print ((np.array(videos)).shape)
         print (videos)
 
         # プロンプト生成と推論
