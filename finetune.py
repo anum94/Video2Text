@@ -305,7 +305,7 @@ if __name__ == '__main__':
 
     # set num_proc higher for faster processing
     #train_dataset = train_dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
-    dataset_processed = train_dataset.map(collate_fn, batched=False, fn_kwargs={}, num_proc=4)
+    dataset_processed = train_dataset.map(collate_fn, batched=False, fn_kwargs={},)# num_proc=)
     #os.makedirs(cache_dir, exist_ok=True)
     #train_dataset.save_to_disk(cache_dir)
     #print (f"collated data saved to {cache_dir}")
