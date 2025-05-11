@@ -199,6 +199,7 @@ def get_messages(user_prompt, ICL = False , proc = None):
                 ],
             }
         )
+    print(conversation)
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True, padding=True)
     return prompt
 def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_frames = 20,):
@@ -311,9 +312,11 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             videos = []
             icl_examples = False
         videos.append(video)
+        print (len(videos))
 
         # プロンプト生成と推論
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
+        print(len(prompt))
 
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
                                  max_length=context_window).to(model.device)
@@ -583,7 +586,7 @@ if __name__ == '__main__':
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
-                                                              split_word=split_word, ICL=False)
+                                                              split_word=split_word, ICL=icl_example_paths)
 
 
             #icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
