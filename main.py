@@ -34,7 +34,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
         if force:
             user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
                 "from an ongoing car racing game and commentary generated for the game so far."
-                 f"Previous generated Commentary: {context}"
+                 f"\nPrevious generated Commentary: \n{context}\n"
                  "Your task is to compare the given video with the previously generated commentary. "
                 "1) Identify if the video has any new development as compared to the already provided commentary."
                 "2) Ignore the background information and refrain the describing the scenery too much."
@@ -43,7 +43,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
         else:
             user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
                 "from an ongoing car racing game and commentary generated for the game so far."
-                 f"Previous generated Commentary: {context}"
+                 f"\nPrevious generated Commentary: \n{context}\n"
                  "Your task is to compare the given video with the previously generated commentary. "
                 "1) Identify if the video has any new development as compared to the already provided commentary."
                 "2) Ignore the background information and refrain the describing the scenery too much."
@@ -305,6 +305,8 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                               # start_frame=(t-5)*num_frames_per_second,
                               end_frame=t * num_frames_per_second,
                               format="video")
+
+        print (type(video))
         # ICL例の取得
         if ICL:
             icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
@@ -313,7 +315,8 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             videos = []
             icl_examples = False
         videos.append(video)
-        print (len(videos))
+        print (np.array(videos).shape)
+        print (videos)
 
         # プロンプト生成と推論
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
