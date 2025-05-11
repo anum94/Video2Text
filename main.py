@@ -287,9 +287,9 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                 do_sample = False
                 init = False
             else:
-                pred_timing.append(False)
-                pred_utterences.append("<WAIT>")
-                pred_utterences_step.append(t)
+                #pred_timing.append(False)
+                #pred_utterences.append("<WAIT>")
+                #pred_utterences_step.append(t)
                 continue
         else:
             force_flag = wait_count >= int(20 / step)
