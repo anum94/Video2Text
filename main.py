@@ -574,23 +574,26 @@ if __name__ == '__main__':
         try:
         #if True:
 
-            baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+            #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                              init_skip_frames=skip_frames, step=step, ICL=False,
-                                                              split_word = split_word, processor=processor, model=model,
-                                                              context_window=context_window, logs_dir=out_folder)
+            #feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+            #                                                  init_skip_frames=skip_frames, step=step, ICL=False,
+            #                                                  split_word = split_word, processor=processor, model=model,
+            #                                                  context_window=context_window, logs_dir=out_folder)
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
                                                               split_word=split_word, ICL=False)
 
-            #realtime_loop_generation = feedback_loop_generation # temporary
-            icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                                  init_skip_frames=skip_frames, step=step,
-                                                                  ICL=icl_example_paths, split_word = split_word,
-                                                                  k = 4 , processor=processor, model=model,
-                                                                  context_window=context_window, logs_dir=out_folder)
+
+            #icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+            #                                                      init_skip_frames=skip_frames, step=step,
+            #                                                      ICL=icl_example_paths, split_word = split_word,
+            #                                                      k = 4 , processor=processor, model=model,
+            #                                                      context_window=context_window, logs_dir=out_folder)
+            baseline_generation = realtime_loop_generation
+            icl_feedback_loop_generation = realtime_loop_generation
+            feedback_loop_generation = realtime_loop_generation
 
             run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
             config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
@@ -620,7 +623,7 @@ if __name__ == '__main__':
         wandb_mode = "online"
 
         wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
-               mode=wandb_mode, group="global")
+               mode=wandb_mode, group="global_realtime")
         table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
         wandb.log({"experiment_metrics": table}, commit=True)
         wandb.finish()
