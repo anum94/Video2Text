@@ -270,7 +270,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
     start_time = time.time()
     prev_elapsed = 0
-
+    init = True
     while True:
         current_time = time.time()
         t = int(current_time - start_time)
@@ -281,10 +281,11 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
         # 初期スキップ処理
         if t < init_skip_frames:
-            if t == 0:
+            if init:
                 user_prompt = get_user_prompt("feedback_loop_init")
-                max_new_tokens = 150
+                max_new_tokens = 100
                 do_sample = False
+                init = False
             else:
                 pred_timing.append(False)
                 pred_utterences.append("<WAIT>")
@@ -322,8 +323,8 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                                  return_tensors="pt", max_length=context_window).to(model.device)
 
         output = model.generate(**inputs_video, max_new_tokens=max_new_tokens,
-                                do_sample=do_sample, temperature=temp,
-                                no_repeat_ngram_size=4)
+                               do_sample=do_sample, temperature=temp,
+                               no_repeat_ngram_size=4)
 
         prev_elapsed = t
         pred_utterance = processor.decode(output[0][2:], skip_special_tokens=True)
@@ -575,18 +576,18 @@ if __name__ == '__main__':
         #try:
         if True:
 
-            baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+            #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
-            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                              init_skip_frames=skip_frames, step=step, ICL=False,
-                                                              split_word = split_word, processor=processor, model=model,
-                                                              context_window=context_window, logs_dir=out_folder)
+            #feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+            #                                                  init_skip_frames=skip_frames, step=step, ICL=False,
+            #                                                  split_word = split_word, processor=processor, model=model,
+            #                                                  context_window=context_window, logs_dir=out_folder)
 
-            #realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-            #                                                  init_skip_frames=skip_frames, step=step,
-            #                                                  split_word=split_word, ICL=icl_example_paths)
+            realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                              init_skip_frames=skip_frames, step=step,
+                                                              split_word=split_word, ICL=icl_example_paths)
 
-            realtime_loop_generation = feedback_loop_generation # temporary
+            #realtime_loop_generation = feedback_loop_generation # temporary
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                                   init_skip_frames=skip_frames, step=step,
                                                                   ICL=icl_example_paths, split_word = split_word,
@@ -613,7 +614,7 @@ if __name__ == '__main__':
     means_dict["# frame"] = num_frames_to_use
     means_dict["step"] = step
     means_dict["k"] = k
-    print(means_dict)
+    #print(means_dict)
     if WB:
         project_name = "CommGen"
         entity = "anum-afzal-technical-university-of-munich"

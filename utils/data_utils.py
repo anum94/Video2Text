@@ -170,7 +170,7 @@ def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
     return rouge_dict
 
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, generated_srt, reference_srt):
-    print (ref_timing, pred_timing)
+    print (len(ref_timing), len(pred_timing))
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
     cm = confusion_matrix(ref_timing, pred_timing)
 
