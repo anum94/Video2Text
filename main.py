@@ -560,8 +560,6 @@ if __name__ == '__main__':
     metrics_all_samples = []
 
     for i in tqdm(range(len(test_dataset))):
-        if i == 0:
-            continue
         # get sample
         mp4_file = test_dataset[i]["video_path"]
         transcription_file = test_dataset[i]["srt_path"]
