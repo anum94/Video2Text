@@ -86,7 +86,7 @@ def create_ds(folder):
     hf_dataset = Dataset.from_list(hf_dataset)
     dataset_processed = hf_dataset.shuffle(seed=42)
     print(f"kyakkan commentary not available for {count} samples.")
-    print(dataset_processed)
+    #print(dataset_processed)
     hf_dataset = dataset_processed.train_test_split(test_size=0.25)
     dir = "RaceCommentaryEn/"
     os.makedirs(dir, exist_ok=True)
@@ -471,7 +471,7 @@ def simulate_speaking(pred_utterance, words_per_sec=4.0):
     delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
 
     for word in words:
-        print(word, end=' ', flush=True)
+        #print(word, end=' ', flush=True)
         time.sleep(delay)
     #print()  # 行末で改行
 def extract_until_last_complete_sentence(paragraph):
