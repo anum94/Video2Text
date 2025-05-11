@@ -318,7 +318,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
         # プロンプト生成と推論
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
-        # print(prompt)
+        print(prompt)
         inputs_video = processor(text=prompt, padding=True, videos=videos,
                                  return_tensors="pt", max_length=context_window).to(model.device)
 
