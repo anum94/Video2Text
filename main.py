@@ -1,4 +1,6 @@
+import os.path
 import random
+from platform import processor
 
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
@@ -6,6 +8,12 @@ from datetime import datetime
 import time
 import pandas as pd
 import warnings
+from openai import OpenAI
+import base64
+import requests
+from PIL import Image
+from io import BytesIO
+
 warnings.filterwarnings("ignore")
 from utils.logs import *
 from utils.data_utils import *
@@ -17,13 +25,13 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
     #todo: move prompts to a yaml file
     if mode == "baseline":
         user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
-                       "from an ongoing car racing game and commentary generated for the game so far."
-                       "Your task is to generate 1 - 2 line of commentary to describe it"
-                       "1) Ignore the background information and refrain the describing the scenery too much."
+                       "from an ongoing car racing game and commentary generated for the game so far. \n"
+                       "Your task is to generate 1 - 2 line of commentary to describe it. Ignore the background information and refrain the describing the scenery too much."
+                       "\nDescribe this scene as a single-sentence commentary for making audience immersed.  If you have nothing to say, generate a <WAIT> token."
                        )
 
     elif mode == "feedback_loop_init":
-        user_prompt = ("You are a professional commentator for car racing games. You will be provided with a video interval"
+        user_prompt = ("You are a professional commentator for car racing games. You will be provided with a video clip"
                        "which represents the start of a race. Your task is to generate one sentences of commentary. "
                        "1) You should identify the number of players and their names along with cars. "
                        "2) Ignore the background information and refrain the describing the scenery."
@@ -35,20 +43,20 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
             user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
                 "from an ongoing car racing game and commentary generated for the game so far."
                  f"\nPrevious generated Commentary: \n{context}\n"
-                 "Your task is to compare the given video with the previously generated commentary. "
-                "1) Identify if the video has any new development as compared to the already provided commentary."
-                "2) Ignore the background information and refrain the describing the scenery too much."
-                "3) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
+                 "Your task is to compare the given video with the previously generated commentary. \n"
+                "1) Identify if the video has any new development as compared to the already provided commentary. \n"
+                "2) Ignore the background information and refrain the describing the scenery too much. \n"
+                "3) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it. \n"
             )
         else:
             user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
                 "from an ongoing car racing game and commentary generated for the game so far."
                  f"\nPrevious generated Commentary: \n{context}\n"
-                 "Your task is to compare the given video with the previously generated commentary. "
-                "1) Identify if the video has any new development as compared to the already provided commentary."
-                "2) Ignore the background information and refrain the describing the scenery too much."
-                "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
-                "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
+                 "Your task is to compare the given video with the previously generated commentary. \n "
+                "1) Identify if the video has any new development as compared to the already provided commentary. \n"
+                "2) Ignore the background information and refrain the describing the scenery too much.\n"
+                "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>\n"
+                "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it.\n"
             )
 
     return user_prompt
@@ -93,6 +101,48 @@ def create_ds(folder):
     hf_dataset.save_to_disk(dir)
     return dir
 
+def encode_frame(frame):
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    im_pil = Image.fromarray(rgb)
+    buf = BytesIO()
+    im_pil.save(buf, format="JPEG")
+    return base64.b64encode(buf.getvalue()).decode('utf-8')
+def get_messages_openai(frames_b64, prompt="Describe what's happening in this video", ICL = False):
+    messages = []
+    if ICL:
+        for ex in ICL:
+            content = [{"type": "text", "text": ex['prompt']}]
+            ex_frames = [encode_frame(f) for f in ex['video']]
+            for img_b64 in ex_frames:
+                content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{img_b64}"
+                    }
+                })
+            messages.append(
+                {"role": "user", "content": content}
+            )
+            messages.append(
+                {"role": "assistant", "content": ex['generation']}
+
+            )
+
+    content = [{"type": "text", "text": prompt}]
+    for img_b64 in frames_b64:
+        content.append({
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:image/jpeg;base64,{img_b64}"
+            }
+        })
+    messages.append(
+            {"role": "user", "content": content}
+
+    )
+    return messages
+
+
 def get_utterence_timing(ground_truth,metadata):
     utterence_timing = [False] * int(metadata.get("duration"))
     utterences = [""] * int(metadata.get("duration"))
@@ -106,11 +156,39 @@ def get_utterence_timing(ground_truth,metadata):
 
     return utterences, utterence_timing
 
+def run_inference(model_name, model, processor, prompt, video, ICL=False):
+    if "gpt" in model_name:
+        encoded_frames = [encode_frame(f) for f in video]
+        messages = get_messages_openai(encoded_frames, prompt=prompt, ICL=ICL)
+
+        client = OpenAI()
+
+        response = client.chat.completions.create(
+            model="gpt-4.1",
+            messages=messages,
+            max_tokens=max_new_tokens,
+        )
+
+        pred_utterence = response.choices[0].message.content.strip()
+        print (pred_utterence)
+
+
+    else:
+        messages = get_messages(prompt, ICL=ICL)
+        prompt = processor.apply_chat_template(messages, add_generation_prompt=True, padding=True)
+        inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt",
+                                 max_length=context_window).to(model.device)
+
+        output = model.generate(**inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4)
+        pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
+        pred_utterence = pred_utterence.split(split_word)[-1]
+    pred_utterence = extract_until_last_complete_sentence(pred_utterence)
+    return pred_utterence
+
 
 def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False, split_word = "ASSISTANT:", ):
 
     user_prompt = get_user_prompt("baseline")
-    prompt = get_messages(user_prompt, ICL=False, proc=processor)
 
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
@@ -123,27 +201,22 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
 
     for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
 
+
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * num_frames_per_second,
                               end_frame=(t + 1) * num_frames_per_second, format="video")
 
-        inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt",
-                                 max_length = context_window).to(model.device)
+        pred_utterence = run_inference(model_name, model, processor, user_prompt, video)
 
-        output = model.generate(**inputs_video,  do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4)
-        pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
-        pred_utterence = pred_utterence.split(split_word)[-1]
-        pred_utterence = extract_until_last_complete_sentence(pred_utterence)
         if "WAIT" in pred_utterence:
             pred_timing.append(False)
-        else:
-            pred_timing.append(True)
-
-        if pred_utterence.strip() == previous_generation.strip():
             pred_utterences.append("<WAIT>")
         else:
+            pred_timing.append(True)
             pred_utterences.append(pred_utterence)
-            pred_utterences_step.append(t)
             previous_generation = pred_utterence
+        pred_utterences_step.append(t)
+
+
         if t % 10 == 0 and verbose:
             print(f"{t}: {pred_utterence}")
 
@@ -199,10 +272,8 @@ def get_messages(user_prompt, ICL = False , proc = None):
                 ],
             }
         )
-    print(conversation)
-    print(len(conversation))
-    prompt = processor.apply_chat_template(conversation, add_generation_prompt=True, padding=True)
-    return prompt
+
+    return conversation
 def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_frames = 20,):
     icl_examples = []
     transcriptions = read_srt(example['transcription'])
@@ -306,7 +377,6 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                               end_frame=t * num_frames_per_second,
                               format="video")
 
-        print (video.shape)
         # ICL例の取得
         if ICL:
             icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
@@ -315,12 +385,9 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             videos = []
             icl_examples = False
         videos.append(video)
-        print ((np.array(videos)).shape)
-        print (videos)
 
         # プロンプト生成と推論
-        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
-        print(len(prompt))
+        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
 
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
                                  max_length=context_window).to(model.device)
@@ -420,21 +487,14 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             videos = []
             icl_examples = False
         videos.append(video)
-        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
 
-        inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
-                                 max_length=context_window).to(model.device)
-
-        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens, do_sample=do_sample, temperature = temp, no_repeat_ngram_size=4)
-        pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
-        pred_utterence = pred_utterence.split(split_word)[-1]
-        pred_utterence = extract_until_last_complete_sentence(pred_utterence)
-        #print(pred_utterence)
+        pred_utterence = run_inference(model_name, model, processor, user_prompt, video, ICL=icl_examples)
 
 
         if "WAIT" in pred_utterence:
             pred_timing.append(False)
             wait_count +=1
+            pred_utterences.append("<WAIT>")
         else:
             pred_timing.append(True)
 
@@ -443,9 +503,10 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             #else:
             previous_generation = pred_utterence
             output_buffer_str += pred_utterence
+            pred_utterences.append(pred_utterence)
                 #if pred_utterence[:25].strip() == previous_generation[:25].strip():
             #    pass
-        pred_utterences.append(pred_utterence)
+
         pred_utterences_step.append(t)
         if t ==0:
             init_str = pred_utterence
@@ -463,7 +524,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     ref_utterences = [ref_utterences[ref] for ref in range(0, len(ref_utterences), step)]
 
     if logs_dir:
-        out_folder = logs_dir
+
+        out_folder = os.path.join(logs_dir, os.path.dirname(mp4_file).split('/')[-1])
         icl_transcription_file = transcription_file
     pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step,  mode=mode, talking_speed_sample=icl_transcription_file)
     eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, pred_srt_file, transcription_file)
@@ -506,7 +568,8 @@ if __name__ == '__main__':
     parser.add_argument("--k", required=False, type=int,default=2, help="number of examples for ICL")
     parser.add_argument("--step", required=False, type=int,default=1, help="Time Step for generation")
     parser.add_argument("--wb", required=False, type=bool, default=True, help="Whether or not to push results to W&B")
-    parser.add_argument("--frames", required=False, type=int, default=-1, help="Number of frames to use per step of generation")
+    parser.add_argument("--model_name", required=False, type=str, default="llava7b", help="Name of the model to be used")
+    parser.add_argument("--frames", required=False, type=int, default=1, help="Number of frames to use per step of generation")
     parser.add_argument("--context_window", required=False, type=int, default=5120,
                         help="Context Window to be used by LLM")
     parser.add_argument("--max_new_tokens", required=False, type=int, default=50, help="number of examples for ICL")
@@ -514,9 +577,9 @@ if __name__ == '__main__':
 
 
     args = parser.parse_args()
-
     folder = args.dir
     n = args.n
+    model_name = args.model_name
     step = args.step
     k = args.k
     num_frames_to_use = args.frames
@@ -550,15 +613,30 @@ if __name__ == '__main__':
         num_frames_to_use = step
 
     #define model
+    model_name_dict = {"llava7b": "llava-hf/LLaVA-NeXT-Video-7B-hf",
+                       "llava34b": "llava-hf/LLaVA-NeXT-Video-34B-hf",
+                       "gpt-4o-mini":"gpt-4o-mini-2024-07-18"}
 
-    model_id = "llava-hf/LLaVA-NeXT-Video-7B-hf"
-    split_word = "ASSISTANT:"
-    #model_id = "llava-hf/LLaVA-NeXT-Video-34B-hf"
-    #split_word = "<|im_start|> assistant"
+    split_word_dict = {"llava7b": "ASSISTANT:",
+                       "llava34b": "<|im_start|> assistant",
+                       "gpt-4o-mini":"",
+                       }
 
-    model = None
-    model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
-    processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
+    model_type_dict = {"llava7b": "hf",
+                       "llava34b": "hf",
+                       "gpt-4o-mini":"closed"}
+
+    model_id = model_name_dict[model_name]
+    split_word = split_word_dict[model_name]
+    model_type = model_type_dict[model_name]
+
+    if model_type == "hf":
+        model = None
+        model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
+        processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
+    else:
+        model = None
+        processor = None
     metrics_all_samples = []
 
     for i in tqdm(range(len(test_dataset))):
@@ -578,8 +656,9 @@ if __name__ == '__main__':
         icl_transcription_file = icl_example["srt_path"]
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
-        try:
-        #if True:
+        #try:
+        if True:
+
 
             baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
@@ -608,8 +687,8 @@ if __name__ == '__main__':
                         icl_output = icl_feedback_loop_generation, realtime_output=realtime_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
-        except Exception as e:
-            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+        #except Exception as e:
+        #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
 
     # Writing per experiments logs
