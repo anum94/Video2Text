@@ -316,7 +316,7 @@ if __name__ == '__main__':
 
     train_dataset, validation_dataset = dataset_processed['train'].with_format("torch"), dataset_processed['test'].with_format("torch")
     print (f"{len(train_dataset)} training example, {len(validation_dataset)} validation examples")
-    REPO_ID = f"anumafzal94/LLaVa-NeXT-Video-_step_{step}_frames_{NUM_FRAMES}_n_{len(train_dataset)}" # Change to your hf-hub repo
+    REPO_ID = f"anumafzal94/FT_LLaVa-NeXT-Video-_step_{step}_frames_{NUM_FRAMES}_n_{len(train_dataset)}" # Change to your hf-hub repo
 
     if USE_QLORA or USE_LORA:
         if USE_QLORA:
