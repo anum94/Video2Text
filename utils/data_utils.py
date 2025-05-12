@@ -5,6 +5,7 @@ import nltk
 from sklearn.metrics import confusion_matrix
 import json
 from datetime import datetime
+from scipy.stats import pearsonr
 from bert_score import BERTScorer
 import pysrt
 from difflib import SequenceMatcher
@@ -170,8 +171,9 @@ def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
     return rouge_dict
 
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, generated_srt, reference_srt):
-    print (len(ref_timing), len(pred_timing))
+    #print (len(ref_timing), len(pred_timing))
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
+    p_corr, _ = pearsonr(ref_timing, pred_timing)
     cm = confusion_matrix(ref_timing, pred_timing)
 
     rouge_intervals = compute_10_percent_rouge(ref_utterences, pred_utterences)
@@ -213,8 +215,8 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
     #print("Longest Aligned Action Location (LAAL):", laal)
 
 
-    res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE_1": rouge_1, "ROUGE_L": rouge_L,
-            "BLEU": BLEUscore,  "ref_timing": list(ref_timing),
+    res =  {"correlation":(correlations.count(1))/len(correlations),  "ROUGE_1": rouge_1, "ROUGE_L": rouge_L,
+            "BLEU": BLEUscore,  "ref_timing": list(ref_timing), "pearson": p_corr,
             "pred_timing": list(pred_timing), "ROUGE_10%": rouge_intervals, "BERTScore": bert_F1,
             'LAAL': laal, "LA": la}
     return res

@@ -34,7 +34,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
         if force:
             user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
                 "from an ongoing car racing game and commentary generated for the game so far."
-                 f"Previous generated Commentary: {context}"
+                 f"\nPrevious generated Commentary: \n{context}\n"
                  "Your task is to compare the given video with the previously generated commentary. "
                 "1) Identify if the video has any new development as compared to the already provided commentary."
                 "2) Ignore the background information and refrain the describing the scenery too much."
@@ -43,7 +43,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
         else:
             user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
                 "from an ongoing car racing game and commentary generated for the game so far."
-                 f"Previous generated Commentary: {context}"
+                 f"\nPrevious generated Commentary: \n{context}\n"
                  "Your task is to compare the given video with the previously generated commentary. "
                 "1) Identify if the video has any new development as compared to the already provided commentary."
                 "2) Ignore the background information and refrain the describing the scenery too much."
@@ -86,7 +86,7 @@ def create_ds(folder):
     hf_dataset = Dataset.from_list(hf_dataset)
     dataset_processed = hf_dataset.shuffle(seed=42)
     print(f"kyakkan commentary not available for {count} samples.")
-    print(dataset_processed)
+    #print(dataset_processed)
     hf_dataset = dataset_processed.train_test_split(test_size=0.25)
     dir = "RaceCommentaryEn/"
     os.makedirs(dir, exist_ok=True)
@@ -199,6 +199,8 @@ def get_messages(user_prompt, ICL = False , proc = None):
                 ],
             }
         )
+    print(conversation)
+    print(len(conversation))
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True, padding=True)
     return prompt
 def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_frames = 20,):
@@ -303,6 +305,8 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                               # start_frame=(t-5)*num_frames_per_second,
                               end_frame=t * num_frames_per_second,
                               format="video")
+
+        print (video.shape)
         # ICL例の取得
         if ICL:
             icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
@@ -311,9 +315,12 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             videos = []
             icl_examples = False
         videos.append(video)
+        print ((np.array(videos)).shape)
+        print (videos)
 
         # プロンプト生成と推論
         prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
+        print(len(prompt))
 
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
                                  max_length=context_window).to(model.device)
@@ -471,7 +478,7 @@ def simulate_speaking(pred_utterance, words_per_sec=4.0):
     delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
 
     for word in words:
-        print(word, end=' ', flush=True)
+        #print(word, end=' ', flush=True)
         time.sleep(delay)
     #print()  # 行末で改行
 def extract_until_last_complete_sentence(paragraph):
@@ -583,14 +590,15 @@ if __name__ == '__main__':
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
-                                                              split_word=split_word, ICL=False)
+                                                              split_word=split_word, ICL=icl_example_paths)
 
-            #realtime_loop_generation = feedback_loop_generation # temporary
+
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                                   init_skip_frames=skip_frames, step=step,
                                                                   ICL=icl_example_paths, split_word = split_word,
                                                                   k = 4 , processor=processor, model=model,
                                                                   context_window=context_window, logs_dir=out_folder)
+
 
             run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
             config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
@@ -620,7 +628,7 @@ if __name__ == '__main__':
         wandb_mode = "online"
 
         wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
-               mode=wandb_mode, group="global")
+               mode=wandb_mode, group="global_realtime")
         table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
         wandb.log({"experiment_metrics": table}, commit=True)
         wandb.finish()
