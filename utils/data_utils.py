@@ -159,7 +159,7 @@ def interval_indices(length, n_intervals=10):
 
 def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
     assert len(pred_list) == len(ref_list), "Lists must be of the same length"
-    scorer = rouge_scorer.RougeScorer(['rouge1'], use_stemmer=True)
+    scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
     intervals = interval_indices(len(pred_list), n_intervals)
     rouge_dict = {}
     for i, (start, end) in enumerate(intervals):
@@ -187,9 +187,6 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
     rouge_L = rouge['rougeL'].fmeasure
 
 
-    # Example texts
-    reference = "This is a reference text example."
-    candidate = "This is a candidate text example."
     # BERTScore calculation
     scorer = BERTScorer(model_type='bert-base-uncased')
     P, R, bert_F1 = scorer.score([pred_commentary], [ref_commentary])

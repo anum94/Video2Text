@@ -2,10 +2,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import glob
-import json
-def get_json_files(directory):
+
+import pandas as pd
+
+from main import read_srt
+
+def get_srt_files(directory):
     # Use glob to find all .json files in the specified directory
-    json_files = glob.glob(os.path.join(directory, '*.json'))
+    json_files = glob.glob(os.path.join(directory, '*.srt'))
     return json_files
 def plot_fig(pred_timing, ref_timing):
     # Convert to integers for plotting
@@ -29,7 +33,7 @@ def plot_fig(pred_timing, ref_timing):
     # plt.yticks([0, 1], ['False', 'True'])
     # plt.xticks(x)
 
-    plt.title(f"{os.path.basename(log).replace('.json', '')}_{logs_folder.split('/')[-1]}")
+    plt.title(f"{os.path.basename(logs_file).replace('.csv', '')}")
     plt.legend()
 
     # Show grid
@@ -38,16 +42,14 @@ def plot_fig(pred_timing, ref_timing):
     # Show the plot
     plt.show()
 
-logs_folder = "/Users/anumafzal/PycharmProjects/video2Text/logs/llava-hf_LLaVA-NeXT-Video-7B-hf/step_5"
-logs = get_json_files(logs_folder)
-for log in logs:
-    with open(log, 'r') as file:
-        data = json.load(file)
-    print (f"File: {log}")
-    print (f"ROUGE: {data['rouge']}")
-    print(f"BLUE: {data['blue']}")
-    pred_timing = data['pred_timing']
-    ref_timing = data['ref_timing']
+logs_file = "/Users/anumafzal/PycharmProjects/video2Text/utils/plot_data/pred_timing.csv"
+df = pd.read_csv(logs_file)
+print (df['baseline_pred_timing'])
+baseline_pred_timing = [str(i) for i in df['baseline_pred_timing'][0].split(',')]
+ref_timing = [str(i)  for i in df['baseline_ref_timing'][0].split(',')]
 
-    plot_fig(pred_timing, ref_timing)
+baseline_pred_timing = [1 if i == 'true' else 0 for i in baseline_pred_timing]
+ref_timing = [1 if i == 'true' else 0 for i in ref_timing]
+
+plot_fig(baseline_pred_timing, ref_timing)
 
