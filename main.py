@@ -662,21 +662,21 @@ if __name__ == '__main__':
         #try:
         if True:
 
-
+            print ("Baseline")
             baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
-
+            print("Feedback")
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step, ICL=False,
                                                               split_word = split_word, processor=processor, model=model,
                                                               context_window=context_window, model_name=model_name
                                                               , logs_dir=out_folder
                                                               )
-
+            print("Realtime")
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
                                                               split_word=split_word, ICL=icl_example_paths)
 
-
+            print("Feedback ICL")
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                                   init_skip_frames=skip_frames, step=step,
                                                                   ICL=icl_example_paths, split_word = split_word,
