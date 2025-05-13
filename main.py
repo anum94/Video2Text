@@ -534,9 +534,9 @@ def simulate_speaking(pred_utterance, words_per_sec=4.0):
     delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
 
     for word in words:
-        print(word, end=' ', flush=True)
+        #print(word, end=' ', flush=True)
         time.sleep(delay)
-    print()  # 行末で改行
+    #print()  # 行末で改行
 
 def extract_until_last_complete_sentence(paragraph):
     # Find the position of the last period in the text
@@ -678,7 +678,6 @@ if __name__ == '__main__':
                                                               context_window=context_window, model_name=model_name
                                                               , logs_dir=out_folder
                                                               )
-            print("Realtime")
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
