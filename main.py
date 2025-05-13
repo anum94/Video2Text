@@ -627,16 +627,16 @@ if __name__ == '__main__':
     #define model
     model_name_dict = {"llava7b": "llava-hf/LLaVA-NeXT-Video-7B-hf",
                        "llava34b": "llava-hf/LLaVA-NeXT-Video-34B-hf",
-                       "gpt-4o-mini":"gpt-4o-mini-2024-07-18"}
+                       "gpt-4.1":"gpt-4o-mini-2024-07-18"}
 
     split_word_dict = {"llava7b": "ASSISTANT:",
                        "llava34b": "<|im_start|> assistant",
-                       "gpt-4o-mini":"",
+                       "gpt-4.1":"",
                        }
 
     model_type_dict = {"llava7b": "hf",
                        "llava34b": "hf",
-                       "gpt-4o-mini":"closed"}
+                       "gpt-4.1":"closed"}
 
     model_id = model_name_dict[model_name]
     split_word = split_word_dict[model_name]
@@ -658,7 +658,7 @@ if __name__ == '__main__':
 
         # create folder to store logs for each sample.
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
-        out_folder = os.path.join(my_folder, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}")
+        out_folder = os.path.join(my_folder, hf_dataset_path, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}")
         os.makedirs(out_folder, exist_ok=True)
 
         # define path for icl example
@@ -709,16 +709,9 @@ if __name__ == '__main__':
 
 
         # Writing per experiments logs every loop
-        df = pd.DataFrame(metrics_per_sample)
-        means_dict = df.select_dtypes(include='number').mean().to_dict()
-        means_dict["n"] = len(df)
-        means_dict["model_name"] = model_id
-        means_dict["# frame"] = num_frames_to_use
-        means_dict["step"] = step
-        means_dict["k"] = k
         #print(means_dict)
         with open(f'{out_folder}/{run_name}_{str(date_time)}.json', 'w') as fp:
-            json.dump(means_dict, fp)
+            json.dump(metrics_per_sample, fp)
     if WB:
         project_name = "CommGen"
         entity = "anum-afzal-technical-university-of-munich"

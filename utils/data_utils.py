@@ -158,18 +158,27 @@ def interval_indices(length, n_intervals=10):
     return indices
 
 
-def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
+def compute_10_percent(ref_list, pred_list, n_intervals = 10):
     assert len(pred_list) == len(ref_list), "Lists must be of the same length"
-    scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
+
+
+    rouge = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
+    bertscore = BERTScorer(model_type='bert-base-uncased')
     intervals = interval_indices(len(pred_list), n_intervals)
-    rouge_dict = {}
+    score_dict = {}
     for i, (start, end) in enumerate(intervals):
         hyp = " ".join(pred_list[start:end])
         ref = " ".join(ref_list[start:end])
-        score = scorer.score(ref, hyp)
+        rouge_score = rouge.score(ref, hyp)
+        _, _, bert_F1 = rouge_score.score([hyp], [ref])
+        BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref], [hyp], weights=(0.5, 0.5))
 
-        rouge_dict[ f"{i * 10}-{(i + 1) * 10}%"] = score['rougeL'].fmeasure
-    return rouge_dict
+
+        score_dict[ f"rouge_{i * 10}-{(i + 1) * 10}%"] = rouge_score['rougeL'].fmeasure
+        score_dict[f"bertscore_{i * 10}-{(i + 1) * 10}%"] = bert_F1
+        score_dict[f"bleu_{i * 10}-{(i + 1) * 10}%"] = BLEUscore
+
+    return score_dict
 
 
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, generated_srt, reference_srt):
@@ -180,7 +189,7 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
                          [1 if i==True else 0 for i in pred_timing])
     cm = confusion_matrix(ref_timing, pred_timing)
 
-    rouge_intervals = compute_10_percent_rouge(ref_utterences, pred_utterences)
+    metrics_over_intervals = compute_10_percent(ref_utterences, pred_utterences)
 
 
     pred_commentary = "\n".join(pred_utterences)
@@ -217,7 +226,7 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
 
     res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE_L": rouge_L,
             "BLEU": BLEUscore,  "ref_timing": list(ref_timing), "pearson": p_corr,
-            "pred_timing": list(pred_timing), "ROUGE_10%": rouge_intervals, "BERTScore": bert_F1,
+            "pred_timing": list(pred_timing), "bins": metrics_over_intervals, "BERTScore": bert_F1,
             'LAAL': laal, "LA": la}
     return res
 
