@@ -11,7 +11,8 @@ import base64
 import requests
 from PIL import Image
 from io import BytesIO
-
+from transformers import Qwen2_5_VLForConditionalGeneration, AutoTokenizer, AutoProcessor
+from qwen_vl_utils import process_vision_info
 warnings.filterwarnings("ignore")
 from utils.logs import *
 from utils.data_utils import *
@@ -186,16 +187,29 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
 
     else:
         messages = get_messages(prompt, ICL=ICL)
-
-        prompt = processor.apply_chat_template(messages, add_generation_prompt=True, padding=True)
-        inputs_video = processor(text=prompt, videos=videos, padding=True, return_tensors="pt",
+        if "qwen" in model_name:
+            # Preparation for inference
+            text = processor.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True
+            )
+            images, videos = process_vision_info(messages)
+            inputs_video = processor(
+                text=[text],
+                #images=images,
+                videos=videos,
+                padding=True,
+                return_tensors="pt",
+            )
+        else:
+            prompt = processor.apply_chat_template(messages, add_generation_prompt=True, padding=True)
+            inputs_video = processor(text=prompt, videos=videos, padding=True, return_tensors="pt",
                                  max_length=context_window).to(model.device)
 
         output = model.generate(**inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4, temperature=1.0)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
-
+    print (pred_utterence)
     return pred_utterence
 
 
@@ -654,8 +668,12 @@ if __name__ == '__main__':
     model_type = model_type_dict[model_name]
 
     if model_type == "hf":
-        model = None
-        model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
+        if "qwen" in model_name:
+            model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                model_id, torch_dtype="auto", device_map="auto"
+            )
+        else:
+            model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
         processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
     else:
         model = None
