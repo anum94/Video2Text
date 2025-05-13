@@ -174,6 +174,7 @@ def run_inference(model_name, model, processor, prompt, video, ICL=False, contex
 
     else:
         messages = get_messages(prompt, ICL=ICL)
+
         prompt = processor.apply_chat_template(messages, add_generation_prompt=True, padding=True)
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt",
                                  max_length=context_window).to(model.device)
@@ -271,7 +272,7 @@ def get_messages(user_prompt, ICL = False , proc = None):
                 ],
             }
         )
-
+    print (conversation)
     return conversation
 def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_frames = 20,):
     icl_examples = []
@@ -387,6 +388,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
             videos = []
             icl_examples = False
         videos.append(video)
+        print (video.shape)
 
         # プロンプト生成と推論
         pred_utterance = run_inference(model_name, model, processor, user_prompt, video, ICL=icl_examples,
