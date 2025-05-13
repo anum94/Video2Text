@@ -183,6 +183,7 @@ def run_inference(model_name, model, processor, prompt, video, ICL=False, contex
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
+    print (pred_utterence)
     return pred_utterence
 
 
