@@ -388,7 +388,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
             videos = []
             icl_examples = False
         videos.append(video)
-        print (np.array(videos).shape)
+
 
         # プロンプト生成と推論
         pred_utterance = run_inference(model_name, model, processor, user_prompt, videos, ICL=icl_examples,
