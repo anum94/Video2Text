@@ -161,9 +161,9 @@ def get_utterence_timing(ground_truth,metadata):
         if i >= 0 and i < len(utterence_timing):
             utterence_timing[i] = True
             utterences[i] = gt.text
-        else:
+        #else:
             #print (f"i: {i}")
-            print ()
+
 
     return utterences, utterence_timing
 
@@ -218,7 +218,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * num_frames_per_second,
                               end_frame=(t + 1) * num_frames_per_second, format="video")
 
-        pred_utterence = run_inference(model_name, model, processor, user_prompt, video,context_window=context_window)
+        pred_utterence = run_inference(model_name, model, processor, user_prompt, [video],context_window=context_window)
 
         if "WAIT" in pred_utterence:
             pred_timing.append(False)
