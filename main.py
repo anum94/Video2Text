@@ -101,6 +101,17 @@ def create_ds(folder):
     return dir
 
 def encode_frame(frame):
+    if frame is None:
+        raise ValueError("Received None as frame.")
+    if not isinstance(frame, np.ndarray):
+        raise TypeError("Frame is not a numpy array.")
+    if frame.ndim != 3 or frame.shape[2] != 3:
+        raise ValueError(f"Unexpected frame shape: {frame.shape}")
+
+    if frame.dtype != np.uint8:
+        frame = frame.astype(np.uint8)
+    frame = frame.copy()
+
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     im_pil = Image.fromarray(rgb)
     buf = BytesIO()
@@ -156,9 +167,9 @@ def get_utterence_timing(ground_truth,metadata):
 
     return utterences, utterence_timing
 
-def run_inference(model_name, model, processor, prompt, video, ICL=False, context_window = 4096, split_word = "ASSISTANT:" ):
+def run_inference(model_name, model, processor, prompt, videos, ICL=False, context_window = 4096, split_word = "ASSISTANT:" ):
     if "gpt" in model_name:
-        encoded_frames = [encode_frame(f) for f in video]
+        encoded_frames = [encode_frame(f) for f in videos]
         messages = get_messages_openai(encoded_frames, prompt=prompt, ICL=ICL)
 
         client = OpenAI()
@@ -177,7 +188,7 @@ def run_inference(model_name, model, processor, prompt, video, ICL=False, contex
         messages = get_messages(prompt, ICL=ICL)
 
         prompt = processor.apply_chat_template(messages, add_generation_prompt=True, padding=True)
-        inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt",
+        inputs_video = processor(text=prompt, videos=videos, padding=True, return_tensors="pt",
                                  max_length=context_window).to(model.device)
 
         output = model.generate(**inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4, temperature=1.0)
@@ -390,6 +401,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
         else:
             videos = []
             icl_examples = False
+
         videos.append(video)
 
 
@@ -484,8 +496,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         else:
             videos = []
             icl_examples = False
-        videos.append(video)
 
+        videos.append(video)
         pred_utterence = run_inference(model_name, model, processor, user_prompt, videos, ICL=icl_examples,
                                        context_window=context_window, split_word=split_word)
 
