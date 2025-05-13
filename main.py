@@ -162,7 +162,8 @@ def get_utterence_timing(ground_truth,metadata):
             utterence_timing[i] = True
             utterences[i] = gt.text
         else:
-            print (f"i: {i}")
+            #print (f"i: {i}")
+            print ()
 
     return utterences, utterence_timing
 
