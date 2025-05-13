@@ -450,6 +450,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     sample_name = os.path.dirname(mp4_file).split('/')[-1]
     if sample_name not in logs_dir:
         logs_dir = os.path.join(logs_dir, sample_name )
+        os.makedirs(logs_dir, exist_ok=True)
     icl_transcription_file = transcription_file
 
 
