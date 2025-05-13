@@ -670,19 +670,19 @@ if __name__ == '__main__':
     if model_type == "hf":
         if "qwen" in model_name:
             model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-                model_id, torch_dtype="auto", device_map="auto"
+                model_id, torch_dtype="auto", device_map="auto", load_in_8bit=True, low_cpu_mem_usage=True
             )
+            processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
+
         else:
-            model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
-        processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
+            model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_8bit=True,).to(0)
+            processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
     else:
         model = None
         processor = None
     metrics_all_samples = []
 
     for i in tqdm(range(len(test_dataset))):
-        if i == 0:
-            continue
         # get sample
         mp4_file = test_dataset[i]["video_path"]
         transcription_file = test_dataset[i]["srt_path"]
