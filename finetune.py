@@ -214,16 +214,16 @@ def organize_metrics(feedback_loop_generation, config):
             list(f_eval_metrics.values())
     )
     metrics = dict(zip(metrics_columns, metrics_data))
-    additional_columns += ["feedback_ref_timing", "feedback_pred_timing", "feedback_ROUGE_10%", ]
-    for k, v in metrics["feedback_ROUGE_10%"].items():
+    additional_columns += ["feedback_ref_timing", "feedback_pred_timing", "feedback_bins", ]
+    for k, v in metrics["feedback_bins"].items():
         metrics[f"feedback_{k}"] = v
 
     metrics_per_sample = {k: v for k, v in metrics.items() if k not in additional_columns}
     return metrics_per_sample
 
 
-def run_inference(example, model):
-    split_word = "ASSISTANT:"
+def run_inference(example, model, split_word = "ASSISTANT:"):
+
     # Let's use chat template to format the prompt correctly, this time without the caption
     inputs_video = collate_fn(example)
     inputs_video = inputs_video.to(model.device)
@@ -317,7 +317,7 @@ if __name__ == '__main__':
     train_dataset, validation_dataset = dataset_processed['train'].with_format("torch"), dataset_processed['test'].with_format("torch")
     print (f"{len(train_dataset)} training example, {len(validation_dataset)} validation examples")
     REPO_ID = f"anumafzal94/FT_LLaVa-NeXT-Video-_step_{step}_frames_{NUM_FRAMES}_n_{len(train_dataset)}" # Change to your hf-hub repo
-
+    '''
     if USE_QLORA or USE_LORA:
         if USE_QLORA:
             bnb_config = BitsAndBytesConfig(
@@ -404,11 +404,13 @@ if __name__ == '__main__':
         torch_dtype=torch.float16,
         device_map="auto",
     )
-    j = 1 if int(len(validation_dataset)/100) == 0 else int(len(validation_dataset)/100)
+    j = [1 if int(len(validation_dataset)/100) == 0 else int(len(validation_dataset)/100)]
     print("Old Model")
     for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
+    
+    
 
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(
             REPO_ID,
@@ -419,12 +421,17 @@ if __name__ == '__main__':
     for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
-
+    '''
     # ------------------------------- Test the trained model on whole Train Set ----------------------- #
+    REPO_ID = "anumafzal94/LLaVa-NeXT-Video-_step_2_frames_1_n_40000"
+    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+            REPO_ID,
+            torch_dtype=torch.float16,
+            device_map="auto",
+        )
     split_word = "ASSISTANT:"
-    out_folder = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
-    out_folder = os.path.join("logs", out_folder)
-    os.makedirs(out_folder, exist_ok=True)
+    date = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
+
     metrics_all_samples = []
     if n_test > 400:
         n_test = 400
@@ -436,17 +443,25 @@ if __name__ == '__main__':
         # create folder to store logs for each sample.
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
         #try:
-        print (out_folder)
-        feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
-                                                                  init_skip_frames=10, step=step, ICL=False,
-                                                                  split_word = split_word, processor=processor,
-                                                              model=model, logs_dir=out_folder)
+        if True:
+            out_folder = os.path.join("logs", date, hf_dataset_path, REPO_ID.replace('/', '_'), sample_name,
+                                      f"step_{step}_frames-used_{NUM_FRAMES}_k_0")
+            print(out_folder)
+            os.makedirs(out_folder, exist_ok=True)
 
-        config = {"model": REPO_ID, "step": step, "# frame": NUM_FRAMES, "sample_name": sample_name,
-                          }
+            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
+                                                                      init_skip_frames=10, step=step, ICL=False,
+                                                                      split_word = split_word, processor=processor,
+                                                                  model=model, logs_dir=out_folder, model_name = REPO_ID,
+                                                              context_window = 4096)
 
-        metrics_per_sample =  organize_metrics(feedback_loop_generation, config)
-        metrics_all_samples.append(metrics_per_sample)
+
+
+            config = {"model": REPO_ID, "step": step, "# frame": NUM_FRAMES, "sample_name": sample_name,
+                              }
+
+            metrics_per_sample =  organize_metrics(feedback_loop_generation, config)
+            metrics_all_samples.append(metrics_per_sample)
         #except Exception as e:
         #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
@@ -461,7 +476,7 @@ if __name__ == '__main__':
     print(means_dict)
 
     import json
-    run_name = f"FT_step_{step}_frames_{NUM_FRAMES}_n_{len(df)}"
+    run_name = f"final_FT_step_{step}_frames_{NUM_FRAMES}_n_{len(df)}"
     with open(f'{run_name}.json', 'w') as fp:
         json.dump(means_dict, fp)
 

@@ -36,7 +36,7 @@ def create_ds(folder):
     print(f"kyakkan commentary not available for {count} samples.")
     print(dataset_processed)
     hf_dataset = dataset_processed.train_test_split(test_size=400)
-    dir = "RaceCommentaryEn/"
+    dir = f"{os.path.basename(folder)}_HF"#"RaceCommentaryEn/"
     os.makedirs(dir, exist_ok=True)
     hf_dataset.save_to_disk(dir)
     return dir

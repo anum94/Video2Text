@@ -113,6 +113,7 @@ def write_logs(out_folder, predictions,times, mode, talking_speed_sample=None):
 
     out_file = convert_text_to_srt(out_file, talking_speed_sample)
     return out_file
+
 def get_commentary_path(commentary_directory, game_path):
     game_path = os.path.basename(game_path)
     commentary_path = [os.path.join(commentary_directory, file) for file in os.listdir(commentary_directory) if
@@ -157,42 +158,52 @@ def interval_indices(length, n_intervals=10):
     return indices
 
 
-def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
+def compute_10_percent(ref_list, pred_list, n_intervals = 10):
     assert len(pred_list) == len(ref_list), "Lists must be of the same length"
-    scorer = rouge_scorer.RougeScorer(['rouge1'], use_stemmer=True)
+
+
+    rouge = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
+    bertscore = BERTScorer(model_type='bert-base-uncased')
     intervals = interval_indices(len(pred_list), n_intervals)
-    rouge_dict = {}
+    score_dict = {}
     for i, (start, end) in enumerate(intervals):
         hyp = " ".join(pred_list[start:end])
         ref = " ".join(ref_list[start:end])
-        score = scorer.score(ref, hyp)
+        rouge_score = rouge.score(ref, hyp)
+        _, _, bert_F1 = bertscore.score([hyp], [ref])
+        bert_F1 = float((bert_F1.numpy())[0])
+        BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref], [hyp], weights=(0.5, 0.5))
 
-        rouge_dict[ f"{i * 10}-{(i + 1) * 10}%"] = score['rouge1'].fmeasure
-    return rouge_dict
+
+        score_dict[ f"rouge_{i * 10}-{(i + 1) * 10}%"] = rouge_score['rougeL'].fmeasure
+        score_dict[f"bertscore_{i * 10}-{(i + 1) * 10}%"] = bert_F1
+        score_dict[f"bleu_{i * 10}-{(i + 1) * 10}%"] = BLEUscore
+
+    return score_dict
+
 
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, generated_srt, reference_srt):
     #print (len(ref_timing), len(pred_timing))
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
-    p_corr, _ = pearsonr(ref_timing, pred_timing)
+
+    p_corr, _ = pearsonr([1 if i==True else 0 for i in ref_timing],
+                         [1 if i==True else 0 for i in pred_timing])
     cm = confusion_matrix(ref_timing, pred_timing)
 
-    rouge_intervals = compute_10_percent_rouge(ref_utterences, pred_utterences)
+    metrics_over_intervals = compute_10_percent(ref_utterences, pred_utterences)
 
 
     pred_commentary = "\n".join(pred_utterences)
     ref_commentary = "\n".join(ref_utterences)
-    r_scorer = rouge_scorer.RougeScorer(['rouge1', 'rougeL'], use_stemmer=True)
+    r_scorer = rouge_scorer.RougeScorer([ 'rougeL'], use_stemmer=True)
     rouge = r_scorer.score(ref_commentary, pred_commentary)
-    rouge_1  = rouge['rouge1'].fmeasure
     rouge_L = rouge['rougeL'].fmeasure
 
 
-    # Example texts
-    reference = "This is a reference text example."
-    candidate = "This is a candidate text example."
     # BERTScore calculation
     scorer = BERTScorer(model_type='bert-base-uncased')
     P, R, bert_F1 = scorer.score([pred_commentary], [ref_commentary])
+    bert_F1 = float((bert_F1.numpy())[0])
     #print(f"BERTScore Precision: {P.mean():.4f}, Recall: {R.mean():.4f}, F1: {F1.mean():.4f}")
 
 
@@ -215,9 +226,9 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
     #print("Longest Aligned Action Location (LAAL):", laal)
 
 
-    res =  {"correlation":(correlations.count(1))/len(correlations),  "ROUGE_1": rouge_1, "ROUGE_L": rouge_L,
+    res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE_L": rouge_L,
             "BLEU": BLEUscore,  "ref_timing": list(ref_timing), "pearson": p_corr,
-            "pred_timing": list(pred_timing), "ROUGE_10%": rouge_intervals, "BERTScore": bert_F1,
+            "pred_timing": list(pred_timing), "bins": metrics_over_intervals, "BERTScore": bert_F1,
             'LAAL': laal, "LA": la}
     return res
 
@@ -237,8 +248,9 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
     if file_path is None:
         print("r Filepath with timestamps should be provided")
         exit()
-    seconds_per_word = estimate_talking_speed(
-        sample_file=talking_speed_sample)
+    # seconds_per_word = estimate_talking_speed(
+    #     sample_file=talking_speed_sample)
+    seconds_per_word = 1 / estimate_talking_speed(sample_file=talking_speed_sample)
     if file_path is not None:
         timestamps = []
         utterances = []

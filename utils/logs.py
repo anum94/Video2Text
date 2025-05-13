@@ -144,14 +144,14 @@ def write_to_wb(run_name, baseline_output:tuple, feedback_output:tuple, icl_outp
     metrics = dict(zip(metrics_columns, metrics_data))
     additional_columns+= ["baseline_ref_timing", "baseline_pred_timing", "feedback_ref_timing",
                           "feedback_pred_timing", "icl_ref_timing", "icl_pred_timing",
-                          "feedback_ROUGE_10%", "realtime_ref_timing", "realtime_pred_timing",
-                          "baseline_ROUGE_10%", "icl_ROUGE_10%"]
-    for k,v in metrics["feedback_ROUGE_10%"].items():
+                          "feedback_bins", "realtime_ref_timing", "realtime_pred_timing",
+                          "baseline_bins", "icl_bins" , "realtime_bins"]
+    for k,v in metrics["feedback_bins"].items():
         metrics[f"feedback_{k}"] = v
-    for k,v in metrics["baseline_ROUGE_10%"].items():
+    for k,v in metrics["baseline_bins"].items():
         metrics[f"baseline_{k}"] = v
-    for k,v in metrics["icl_ROUGE_10%"].items():
+    for k,v in metrics["icl_bins"].items():
         metrics[f"icl_{k}"] = v
-    for k,v in metrics["realtime_ROUGE_10%"].items():
+    for k,v in metrics["realtime_bins"].items():
         metrics[f"realtime_{k}"] = v
     return {k: v for k, v in metrics.items() if k not in additional_columns}
