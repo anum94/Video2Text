@@ -171,7 +171,7 @@ def compute_10_percent(ref_list, pred_list, n_intervals = 10):
         ref = " ".join(ref_list[start:end])
         rouge_score = rouge.score(ref, hyp)
         _, _, bert_F1 = bertscore.score([hyp], [ref])
-        bert_F1 = (bert_F1.numpy())[0]
+        bert_F1 = float((bert_F1.numpy())[0])
         BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref], [hyp], weights=(0.5, 0.5))
 
 
@@ -203,7 +203,7 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
     # BERTScore calculation
     scorer = BERTScorer(model_type='bert-base-uncased')
     P, R, bert_F1 = scorer.score([pred_commentary], [ref_commentary])
-    bert_F1 = (bert_F1.numpy())[0]
+    bert_F1 = float((bert_F1.numpy())[0])
     #print(f"BERTScore Precision: {P.mean():.4f}, Recall: {R.mean():.4f}, F1: {F1.mean():.4f}")
 
 
