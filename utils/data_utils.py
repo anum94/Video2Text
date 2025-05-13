@@ -171,7 +171,7 @@ def compute_10_percent(ref_list, pred_list, n_intervals = 10):
         ref = " ".join(ref_list[start:end])
         rouge_score = rouge.score(ref, hyp)
         _, _, bert_F1 = bertscore.score([hyp], [ref])
-        print(bert_F1[0])
+        print(bert_F1[0].item)
         BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref], [hyp], weights=(0.5, 0.5))
 
 
