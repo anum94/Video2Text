@@ -209,7 +209,7 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
-    print (pred_utterence)
+    #print (pred_utterence)
     return pred_utterence
 
 
@@ -756,7 +756,7 @@ if __name__ == '__main__':
     means_dict["k"] = k
     run_name = f"step_{step}_k_{k}_frames_{num_frames_to_use}"
     json_file = f"{hf_dataset_path}_{model_id.replace('/', '_')}_{run_name}_{str(date_time)}.json"
-    print (json_file)
+    #print (json_file)
     with open(json_file, 'w') as fp:
         json.dump(means_dict, fp)
 
