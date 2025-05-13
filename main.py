@@ -156,7 +156,7 @@ def get_utterence_timing(ground_truth,metadata):
 
     return utterences, utterence_timing
 
-def run_inference(model_name, model, processor, prompt, video, ICL=False, context_window = 4096):
+def run_inference(model_name, model, processor, prompt, video, ICL=False, context_window = 4096, split_word = "ASSISTANT:" ):
     if "gpt" in model_name:
         encoded_frames = [encode_frame(f) for f in video]
         messages = get_messages_openai(encoded_frames, prompt=prompt, ICL=ICL)
@@ -495,7 +495,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             icl_examples = False
         videos.append(video)
 
-        pred_utterence = run_inference(model_name, model, processor, user_prompt, video, ICL=icl_examples ,context_window=context_window)
+        pred_utterence = run_inference(model_name, model, processor, user_prompt, video, ICL=icl_examples,
+                                       context_window=context_window, split_word=split_word)
 
 
         if "WAIT" in pred_utterence:
