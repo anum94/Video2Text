@@ -1,6 +1,4 @@
-import os.path
 import random
-from platform import processor
 
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
@@ -19,6 +17,7 @@ from utils.logs import *
 from utils.data_utils import *
 from utils.video_utils import *
 import argparse
+import json
 from datasets import Dataset, load_dataset, concatenate_datasets
 import datasets
 def get_user_prompt(mode="baseline", context="", step = 1, force=False):
@@ -352,6 +351,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             break
 
         # 初期スキップ処理
+        # print(t)
         if t < init_skip_frames:
             if init:
                 user_prompt = get_user_prompt("feedback_loop_init")
@@ -387,7 +387,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         videos.append(video)
 
         # プロンプト生成と推論
-        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples)
+        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
 
         inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
                                  max_length=context_window).to(model.device)
@@ -401,26 +401,22 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         pred_utterance = pred_utterance.split(split_word)[-1]
         pred_utterance = extract_until_last_complete_sentence(pred_utterance)
 
-        if "WAIT" in pred_utterance:
+        if "wait" in pred_utterance.lower():
 
             pred_timing.append(False)
             pred_utterences.append("<WAIT>")
             pred_utterences_step.append(t)
             wait_count += 1
-            #print(str(t), "WAIT")
         else:
             pred_timing.append(True)
             pred_utterences.append(pred_utterance)
             pred_utterences_step.append(t)
             output_buffer_str += f"utterance generated at {str(t)} seconds from the start: " + pred_utterance + "\n"
-            #print(output_buffer_str)
             wait_count = 0
             if t < init_skip_frames:
                 init_str = pred_utterance
 
             # 🗣 語単位で話すように出力
-            #print()
-            #print(t)
             simulate_speaking(pred_utterance, words_per_sec=4.0)
 
     # 書き出しと評価
@@ -545,9 +541,10 @@ def simulate_speaking(pred_utterance, words_per_sec=4.0):
     delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
 
     for word in words:
-        #print(word, end=' ', flush=True)
+        print(word, end=' ', flush=True)
         time.sleep(delay)
-    #print()  # 行末で改行
+    print()  # 行末で改行
+
 def extract_until_last_complete_sentence(paragraph):
     # Find the position of the last period in the text
     last_period_pos = paragraph.rfind('.')
@@ -558,6 +555,17 @@ def extract_until_last_complete_sentence(paragraph):
 
     # Extract text till the last period
     return paragraph[:last_period_pos + 1]
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 if __name__ == '__main__':
     date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
 
@@ -572,9 +580,9 @@ if __name__ == '__main__':
     parser.add_argument("--icl", required=False, type=bool, default=False, help="If ICL should be used. Currently disabled")
     parser.add_argument("--k", required=False, type=int,default=2, help="number of examples for ICL")
     parser.add_argument("--step", required=False, type=int,default=1, help="Time Step for generation")
-    parser.add_argument("--wb", required=False, type=bool, default=True, help="Whether or not to push results to W&B")
-    parser.add_argument("--model_name", required=False, type=str, default="llava7b", help="Name of the model to be used")
-    parser.add_argument("--frames", required=False, type=int, default=1, help="Number of frames to use per step of generation")
+    parser.add_argument("--wb", required=False, type=str2bool, default=True, nargs='?', const=True,
+                        help="Whether or not to push results to W&B (true/false)") # the use of action="store_true" is natural for me.
+    parser.add_argument("--frames", required=False, type=int, default=-1, help="Number of frames to use per step of generation")
     parser.add_argument("--context_window", required=False, type=int, default=5120,
                         help="Context Window to be used by LLM")
     parser.add_argument("--max_new_tokens", required=False, type=int, default=50, help="number of examples for ICL")
@@ -661,12 +669,12 @@ if __name__ == '__main__':
         icl_transcription_file = icl_example["srt_path"]
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
-        #try:
-        if True:
+        run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
+        try:
+        #if True:
 
-            print ("Baseline")
             baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
-            print("Feedback")
+
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step, ICL=False,
                                                               split_word = split_word, processor=processor, model=model,
@@ -675,13 +683,11 @@ if __name__ == '__main__':
                                                               )
             print("Realtime")
 
-            #realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-            #                                                  init_skip_frames=skip_frames, step=step,
-            #                                                  split_word=split_word, ICL=False,
-            #                                                  )
+            realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+                                                          init_skip_frames=skip_frames, step=step,
+                                                          split_word=split_word, ICL=icl_example_paths)
 
-            print("Feedback ICL")
-            realtime_loop_generation = feedback_loop_generation
+
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                                   init_skip_frames=skip_frames, step=step,
                                                                   ICL=icl_example_paths, split_word = split_word,
@@ -698,19 +704,21 @@ if __name__ == '__main__':
                         icl_output = icl_feedback_loop_generation, realtime_output=realtime_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
-        #except Exception as e:
-        #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+        except Exception as e:
+            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
 
-    # Writing per experiments logs
-    df = pd.DataFrame(metrics_all_samples)
-    means_dict = df.select_dtypes(include='number').mean().to_dict()
-    means_dict["n"] = len(df)
-    means_dict["model_name"] = model_id
-    means_dict["# frame"] = num_frames_to_use
-    means_dict["step"] = step
-    means_dict["k"] = k
-    #print(means_dict)
+        # Writing per experiments logs every loop
+        df = pd.DataFrame(metrics_all_samples)
+        means_dict = df.select_dtypes(include='number').mean().to_dict()
+        means_dict["n"] = len(df)
+        means_dict["model_name"] = model_id
+        means_dict["# frame"] = num_frames_to_use
+        means_dict["step"] = step
+        means_dict["k"] = k
+        #print(means_dict)
+        with open(f'{run_name}_{str(date_time)}.json', 'w') as fp:
+            json.dump(means_dict, fp)
     if WB:
         project_name = "CommGen"
         entity = "anum-afzal-technical-university-of-munich"
@@ -722,7 +730,7 @@ if __name__ == '__main__':
         table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
         wandb.log({"experiment_metrics": table}, commit=True)
         wandb.finish()
-    import json
+
     with open(f'{run_name}_{str(date_time)}.json', 'w') as fp:
         json.dump(means_dict, fp)
 

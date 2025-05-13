@@ -113,6 +113,7 @@ def write_logs(out_folder, predictions,times, mode, talking_speed_sample=None):
 
     out_file = convert_text_to_srt(out_file, talking_speed_sample)
     return out_file
+
 def get_commentary_path(commentary_directory, game_path):
     game_path = os.path.basename(game_path)
     commentary_path = [os.path.join(commentary_directory, file) for file in os.listdir(commentary_directory) if
@@ -235,8 +236,9 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
     if file_path is None:
         print("r Filepath with timestamps should be provided")
         exit()
-    seconds_per_word = estimate_talking_speed(
-        sample_file=talking_speed_sample)
+    # seconds_per_word = estimate_talking_speed(
+    #     sample_file=talking_speed_sample)
+    seconds_per_word = 1 / estimate_talking_speed(sample_file=talking_speed_sample)
     if file_path is not None:
         timestamps = []
         utterances = []
