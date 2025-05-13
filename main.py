@@ -491,6 +491,17 @@ def extract_until_last_complete_sentence(paragraph):
 
     # Extract text till the last period
     return paragraph[:last_period_pos + 1]
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 if __name__ == '__main__':
     date_time = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
 
@@ -505,7 +516,8 @@ if __name__ == '__main__':
     parser.add_argument("--icl", required=False, type=bool, default=False, help="If ICL should be used. Currently disabled")
     parser.add_argument("--k", required=False, type=int,default=2, help="number of examples for ICL")
     parser.add_argument("--step", required=False, type=int,default=1, help="Time Step for generation")
-    parser.add_argument("--wb", required=False, type=bool, default=True, help="Whether or not to push results to W&B")
+    parser.add_argument("--wb", required=False, type=str2bool, default=True, nargs='?', const=True,
+                        help="Whether or not to push results to W&B (true/false)") # the use of action="store_true" is natural for me.
     parser.add_argument("--frames", required=False, type=int, default=-1, help="Number of frames to use per step of generation")
     parser.add_argument("--context_window", required=False, type=int, default=5120,
                         help="Context Window to be used by LLM")
