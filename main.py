@@ -169,7 +169,7 @@ def run_inference(model_name, model, processor, prompt, video, ICL=False, contex
         )
 
         pred_utterence = response.choices[0].message.content.strip()
-        print (pred_utterence)
+        #print (pred_utterence)
 
 
     else:
@@ -178,7 +178,7 @@ def run_inference(model_name, model, processor, prompt, video, ICL=False, contex
         inputs_video = processor(text=prompt, videos=video, padding=True, return_tensors="pt",
                                  max_length=context_window).to(model.device)
 
-        output = model.generate(**inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4)
+        output = model.generate(**inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4, temperature=1.0)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
@@ -324,8 +324,10 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
     return icl_examples
 
 
-def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step=1, verbose=False,
-                           init_skip_frames=5, ICL=False, split_word="ASSISTANT:", k=2):
+def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, processor,
+                            model,  model_name, step=1, verbose=False, init_skip_frames=5, ICL=False,
+                           split_word="ASSISTANT:", k=2,  context_window=4096,):
+
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
     ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
@@ -387,19 +389,10 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
         videos.append(video)
 
         # プロンプト生成と推論
-        prompt = get_messages(user_prompt=user_prompt, ICL=icl_examples, proc=processor)
-
-        inputs_video = processor(text=prompt, padding = True, videos=videos, return_tensors="pt",
-                                 max_length=context_window).to(model.device)
-
-        output = model.generate(**inputs_video, max_new_tokens=max_new_tokens,
-                               do_sample=do_sample, temperature=temp,
-                               no_repeat_ngram_size=4)
+        pred_utterance = run_inference(model_name, model, processor, user_prompt, video, ICL=icl_examples,
+                                       context_window=context_window, split_word=split_word)
 
         prev_elapsed = t
-        pred_utterance = processor.decode(output[0][2:], skip_special_tokens=True)
-        pred_utterance = pred_utterance.split(split_word)[-1]
-        pred_utterance = extract_until_last_complete_sentence(pred_utterance)
 
         if "wait" in pred_utterance.lower():
 
@@ -582,6 +575,9 @@ if __name__ == '__main__':
     parser.add_argument("--step", required=False, type=int,default=1, help="Time Step for generation")
     parser.add_argument("--wb", required=False, type=str2bool, default=True, nargs='?', const=True,
                         help="Whether or not to push results to W&B (true/false)") # the use of action="store_true" is natural for me.
+    parser.add_argument("--model_name", required=False, type=str, default="llava7b",
+                        help="Name of the model to be used")
+
     parser.add_argument("--frames", required=False, type=int, default=-1, help="Number of frames to use per step of generation")
     parser.add_argument("--context_window", required=False, type=int, default=5120,
                         help="Context Window to be used by LLM")
@@ -670,8 +666,9 @@ if __name__ == '__main__':
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
         run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
-        try:
-        #if True:
+        #try:
+        if True:
+
 
             baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
@@ -684,9 +681,9 @@ if __name__ == '__main__':
             print("Realtime")
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                          init_skip_frames=skip_frames, step=step,
-                                                          split_word=split_word, ICL=icl_example_paths)
-
+                                                              init_skip_frames=skip_frames, step=step,
+                                                              split_word=split_word, ICL=icl_example_paths, processor=processor,
+                                                              model=model, context_window=context_window, model_name=model_name)
 
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                                   init_skip_frames=skip_frames, step=step,
@@ -704,12 +701,12 @@ if __name__ == '__main__':
                         icl_output = icl_feedback_loop_generation, realtime_output=realtime_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
-        except Exception as e:
-            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+        #except Exception as e:
+        #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
 
         # Writing per experiments logs every loop
-        df = pd.DataFrame(metrics_all_samples)
+        df = pd.DataFrame(metrics_per_sample)
         means_dict = df.select_dtypes(include='number').mean().to_dict()
         means_dict["n"] = len(df)
         means_dict["model_name"] = model_id
@@ -717,7 +714,7 @@ if __name__ == '__main__':
         means_dict["step"] = step
         means_dict["k"] = k
         #print(means_dict)
-        with open(f'{run_name}_{str(date_time)}.json', 'w') as fp:
+        with open(f'{out_folder}/{run_name}_{str(date_time)}.json', 'w') as fp:
             json.dump(means_dict, fp)
     if WB:
         project_name = "CommGen"
@@ -730,7 +727,15 @@ if __name__ == '__main__':
         table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
         wandb.log({"experiment_metrics": table}, commit=True)
         wandb.finish()
-
+    # Writing per experiments logs every loop
+    df = pd.DataFrame(metrics_all_samples)
+    means_dict = df.select_dtypes(include='number').mean().to_dict()
+    means_dict["n"] = len(df)
+    means_dict["model_name"] = model_id
+    means_dict["# frame"] = num_frames_to_use
+    means_dict["step"] = step
+    means_dict["k"] = k
+    run_name = f"step_{step}_k_{k}_frames_{num_frames_to_use}"
     with open(f'{run_name}_{str(date_time)}.json', 'w') as fp:
         json.dump(means_dict, fp)
 
