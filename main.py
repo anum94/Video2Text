@@ -672,8 +672,8 @@ if __name__ == '__main__':
         #try:
         if True:
 
-            #print ("Baseline")
-            #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+            print ("Baseline")
+            baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
             print ("Feedback")
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step, ICL=False,
