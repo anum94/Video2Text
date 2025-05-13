@@ -635,15 +635,18 @@ if __name__ == '__main__':
     #define model
     model_name_dict = {"llava7b": "llava-hf/LLaVA-NeXT-Video-7B-hf",
                        "llava34b": "llava-hf/LLaVA-NeXT-Video-34B-hf",
-                       "gpt-4.1":"gpt-4o-mini-2024-07-18"}
+                       "gpt-4.1":"gpt-4o-mini-2024-07-18",
+                       "qwen7b": "Qwen/Qwen2.5-VL-7B-Instruct"}
 
     split_word_dict = {"llava7b": "ASSISTANT:",
                        "llava34b": "<|im_start|> assistant",
                        "gpt-4.1":"",
+                       "qwen7b": "",
                        }
 
     model_type_dict = {"llava7b": "hf",
                        "llava34b": "hf",
+                       "qwen7b": "hf",
                        "gpt-4.1":"closed"}
 
     model_id = model_name_dict[model_name]

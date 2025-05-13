@@ -214,8 +214,8 @@ def organize_metrics(feedback_loop_generation, config):
             list(f_eval_metrics.values())
     )
     metrics = dict(zip(metrics_columns, metrics_data))
-    additional_columns += ["feedback_ref_timing", "feedback_pred_timing", "feedback_ROUGE_10%", ]
-    for k, v in metrics["feedback_ROUGE_10%"].items():
+    additional_columns += ["feedback_ref_timing", "feedback_pred_timing", "feedback_bins", ]
+    for k, v in metrics["feedback_bins"].items():
         metrics[f"feedback_{k}"] = v
 
     metrics_per_sample = {k: v for k, v in metrics.items() if k not in additional_columns}
