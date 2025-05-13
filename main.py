@@ -156,7 +156,7 @@ def get_utterence_timing(ground_truth,metadata):
 
     return utterences, utterence_timing
 
-def run_inference(model_name, model, processor, prompt, video, ICL=False):
+def run_inference(model_name, model, processor, prompt, video, ICL=False, context_window = 4096):
     if "gpt" in model_name:
         encoded_frames = [encode_frame(f) for f in video]
         messages = get_messages_openai(encoded_frames, prompt=prompt, ICL=ICL)
@@ -205,7 +205,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * num_frames_per_second,
                               end_frame=(t + 1) * num_frames_per_second, format="video")
 
-        pred_utterence = run_inference(model_name, model, processor, user_prompt, video)
+        pred_utterence = run_inference(model_name, model, processor, user_prompt, video,context_window=context_window)
 
         if "WAIT" in pred_utterence:
             pred_timing.append(False)
@@ -450,7 +450,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     sample_name = os.path.dirname(mp4_file).split('/')[-1]
     if sample_name not in logs_dir:
         logs_dir = os.path.join(logs_dir, sample_name )
-        icl_transcription_file = transcription_file
+    icl_transcription_file = transcription_file
 
 
     pred_timing = []
@@ -495,7 +495,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             icl_examples = False
         videos.append(video)
 
-        pred_utterence = run_inference(model_name, model, processor, user_prompt, video, ICL=icl_examples)
+        pred_utterence = run_inference(model_name, model, processor, user_prompt, video, ICL=icl_examples ,context_window=context_window)
 
 
         if "WAIT" in pred_utterence:
@@ -672,11 +672,14 @@ if __name__ == '__main__':
                                                               , logs_dir=out_folder
                                                               )
             print("Realtime")
-            realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                              init_skip_frames=skip_frames, step=step,
-                                                              split_word=split_word, ICL=icl_example_paths)
+
+            #realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+            #                                                  init_skip_frames=skip_frames, step=step,
+            #                                                  split_word=split_word, ICL=False,
+            #                                                  )
 
             print("Feedback ICL")
+            realtime_loop_generation = feedback_loop_generation
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                                   init_skip_frames=skip_frames, step=step,
                                                                   ICL=icl_example_paths, split_word = split_word,
