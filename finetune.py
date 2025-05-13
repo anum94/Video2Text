@@ -430,9 +430,8 @@ if __name__ == '__main__':
             device_map="auto",
         )
     split_word = "ASSISTANT:"
-    out_folder = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
-    out_folder = os.path.join("logs", out_folder)
-    os.makedirs(out_folder, exist_ok=True)
+    date = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
+
     metrics_all_samples = []
     if n_test > 400:
         n_test = 400
@@ -445,7 +444,11 @@ if __name__ == '__main__':
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
         #try:
         if True:
-            print (out_folder)
+            out_folder = os.path.join("logs", date, hf_dataset_path, REPO_ID.replace('/', '_'), sample_name,
+                                      f"step_{step}_frames-used_{NUM_FRAMES}_k_0")
+            print(out_folder)
+            os.makedirs(out_folder, exist_ok=True)
+
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
                                                                       init_skip_frames=10, step=step, ICL=False,
                                                                       split_word = split_word, processor=processor,

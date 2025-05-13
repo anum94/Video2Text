@@ -95,7 +95,7 @@ def create_ds(folder):
     print(f"kyakkan commentary not available for {count} samples.")
     #print(dataset_processed)
     hf_dataset = dataset_processed.train_test_split(test_size=0.25)
-    dir = "RaceCommentaryEn/"
+    dir = f"{os.path.basename(folder)}_HF" #"RaceCommentaryEn/"
     os.makedirs(dir, exist_ok=True)
     hf_dataset.save_to_disk(dir)
     return dir
@@ -121,10 +121,9 @@ def encode_frame(frame):
 def get_messages_openai(frames_b64, prompt="Describe what's happening in this video", ICL = False):
     messages = []
     if ICL:
-        for ex in ICL:
+        for i, ex in enumerate(ICL):
             content = [{"type": "text", "text": ex['prompt']}]
-            ex_frames = [encode_frame(f) for f in ex['video']]
-            for img_b64 in ex_frames:
+            for img_b64 in frames_b64[i]:
                 content.append({
                     "type": "image_url",
                     "image_url": {
@@ -140,7 +139,7 @@ def get_messages_openai(frames_b64, prompt="Describe what's happening in this vi
             )
 
     content = [{"type": "text", "text": prompt}]
-    for img_b64 in frames_b64:
+    for img_b64 in frames_b64[-1]:
         content.append({
             "type": "image_url",
             "image_url": {
@@ -169,7 +168,7 @@ def get_utterence_timing(ground_truth,metadata):
 
 def run_inference(model_name, model, processor, prompt, videos, ICL=False, context_window = 4096, split_word = "ASSISTANT:" ):
     if "gpt" in model_name:
-        encoded_frames = [encode_frame(f) for f in videos]
+        encoded_frames = [[encode_frame(f) for f in video] for video in videos]
         messages = get_messages_openai(encoded_frames, prompt=prompt, ICL=ICL)
 
         client = OpenAI()
@@ -196,7 +195,6 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
         pred_utterence = pred_utterence.split(split_word)[-1]
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
 
-    print (pred_utterence)
     return pred_utterence
 
 
@@ -410,7 +408,6 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
                                        context_window=context_window, split_word=split_word)
 
         prev_elapsed = t
-        print(t)
 
         if "wait" in pred_utterance.lower():
 
@@ -547,9 +544,9 @@ def simulate_speaking(pred_utterance, words_per_sec=4.0):
     delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
 
     for word in words:
-        print(word, end=' ', flush=True)
+        #print(word, end=' ', flush=True)
         time.sleep(delay)
-    #print()  # 行末で改行
+    ##print()  # 行末で改行
 
 def extract_until_last_complete_sentence(paragraph):
     # Find the position of the last period in the text
@@ -716,7 +713,6 @@ if __name__ == '__main__':
                         icl_output = icl_feedback_loop_generation, realtime_output=realtime_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
-            print (metrics_per_sample)
         #except Exception as e:
         #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
@@ -735,6 +731,7 @@ if __name__ == '__main__':
     means_dict["step"] = step
     means_dict["k"] = k
     run_name = f"step_{step}_k_{k}_frames_{num_frames_to_use}"
+    print (f'{run_name}_{str(date_time)}.json')
     with open(f'{run_name}_{str(date_time)}.json', 'w') as fp:
         json.dump(means_dict, fp)
 
