@@ -656,8 +656,8 @@ if __name__ == '__main__':
 
     split_word_dict = {"llava7b": "ASSISTANT:",
                        "llava34b": "<|im_start|> assistant",
-                       "gpt-4.1":"assistant",
-                       "qwen7b": "",
+                       "gpt-4.1":"",
+                       "qwen7b": "assistant",
                        }
 
     model_type_dict = {"llava7b": "hf",
