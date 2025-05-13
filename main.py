@@ -707,6 +707,7 @@ if __name__ == '__main__':
 
             run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
             config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
+                      "dataset": hf_dataset_path
                       }
 
             metrics_per_sample = write_to_wb(run_name=run_name, baseline_output = baseline_generation, feedback_output = feedback_loop_generation,
@@ -731,8 +732,9 @@ if __name__ == '__main__':
     means_dict["step"] = step
     means_dict["k"] = k
     run_name = f"step_{step}_k_{k}_frames_{num_frames_to_use}"
-    print (f'{run_name}_{str(date_time)}.json')
-    with open(f'{run_name}_{str(date_time)}.json', 'w') as fp:
+    json_file = f"{hf_dataset_path}_{model_id.replace('/', '_')}_{run_name}_{str(date_time)}.json"
+    print (json_file)
+    with open(json_file, 'w') as fp:
         json.dump(means_dict, fp)
 
     if WB:
