@@ -192,9 +192,9 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
             text = processor.apply_chat_template(
                 messages, tokenize=False, add_generation_prompt=True
             )
-            images, videos = process_vision_info(messages)
+            #images, videos = process_vision_info(messages)
             inputs_video = processor(
-                text=[text],
+                text=text,
                 #images=images,
                 videos=videos,
                 padding=True,

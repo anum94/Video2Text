@@ -222,8 +222,8 @@ def organize_metrics(feedback_loop_generation, config):
     return metrics_per_sample
 
 
-def run_inference(example, model):
-    split_word = "ASSISTANT:"
+def run_inference(example, model, split_word = "ASSISTANT:"):
+
     # Let's use chat template to format the prompt correctly, this time without the caption
     inputs_video = collate_fn(example)
     inputs_video = inputs_video.to(model.device)
