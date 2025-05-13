@@ -199,7 +199,7 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
                 videos=videos,
                 padding=True,
                 return_tensors="pt",
-            )
+            ).to(model.device)
         else:
             prompt = processor.apply_chat_template(messages, add_generation_prompt=True, padding=True)
             inputs_video = processor(text=prompt, videos=videos, padding=True, return_tensors="pt",
@@ -209,7 +209,7 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
-    #print (pred_utterence)
+    print (pred_utterence)
     return pred_utterence
 
 
@@ -232,7 +232,8 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * num_frames_per_second,
                               end_frame=(t + 1) * num_frames_per_second, format="video")
 
-        pred_utterence = run_inference(model_name, model, processor, user_prompt, [video],context_window=context_window)
+        pred_utterence = run_inference(model_name, model, processor, user_prompt, [video],
+                                       context_window=context_window, split_word=split_word)
 
         if "WAIT" in pred_utterence:
             pred_timing.append(False)
@@ -655,7 +656,7 @@ if __name__ == '__main__':
     split_word_dict = {"llava7b": "ASSISTANT:",
                        "llava34b": "<|im_start|> assistant",
                        "gpt-4.1":"",
-                       "qwen7b": "",
+                       "qwen7b": "assistant",
                        }
 
     model_type_dict = {"llava7b": "hf",
@@ -670,8 +671,8 @@ if __name__ == '__main__':
     if model_type == "hf":
         if "qwen" in model_name:
             model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-                model_id, torch_dtype="auto", device_map="auto", load_in_8bit=True, low_cpu_mem_usage=True
-            )
+                model_id, torch_dtype="auto", load_in_4bit=True, low_cpu_mem_usage=True
+            ).to(0)
             processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
 
 
