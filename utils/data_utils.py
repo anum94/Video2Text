@@ -171,9 +171,11 @@ def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
         rouge_dict[ f"{i * 10}-{(i + 1) * 10}%"] = score['rougeL'].fmeasure
     return rouge_dict
 
+
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, generated_srt, reference_srt):
     #print (len(ref_timing), len(pred_timing))
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
+
     p_corr, _ = pearsonr([1 if i==True else 0 for i in ref_timing],
                          [1 if i==True else 0 for i in pred_timing])
     cm = confusion_matrix(ref_timing, pred_timing)
@@ -183,9 +185,8 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
 
     pred_commentary = "\n".join(pred_utterences)
     ref_commentary = "\n".join(ref_utterences)
-    r_scorer = rouge_scorer.RougeScorer(['rouge1', 'rougeL'], use_stemmer=True)
+    r_scorer = rouge_scorer.RougeScorer([ 'rougeL'], use_stemmer=True)
     rouge = r_scorer.score(ref_commentary, pred_commentary)
-    rouge_1  = rouge['rouge1'].fmeasure
     rouge_L = rouge['rougeL'].fmeasure
 
 
@@ -214,7 +215,7 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
     #print("Longest Aligned Action Location (LAAL):", laal)
 
 
-    res =  {"correlation":(correlations.count(1))/len(correlations),  "ROUGE_1": rouge_1, "ROUGE_L": rouge_L,
+    res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE_L": rouge_L,
             "BLEU": BLEUscore,  "ref_timing": list(ref_timing), "pearson": p_corr,
             "pred_timing": list(pred_timing), "ROUGE_10%": rouge_intervals, "BERTScore": bert_F1,
             'LAAL': laal, "LA": la}
