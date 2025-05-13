@@ -233,7 +233,8 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
         video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * num_frames_per_second,
                               end_frame=(t + 1) * num_frames_per_second, format="video")
 
-        pred_utterence = run_inference(model_name, model, processor, user_prompt, [video],context_window=context_window)
+        pred_utterence = run_inference(model_name, model, processor, user_prompt, [video],
+                                       context_window=context_window, split_word=split_word)
 
         if "WAIT" in pred_utterence:
             pred_timing.append(False)
