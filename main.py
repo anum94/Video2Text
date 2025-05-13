@@ -106,6 +106,7 @@ def encode_frame(frame):
     buf = BytesIO()
     im_pil.save(buf, format="JPEG")
     return base64.b64encode(buf.getvalue()).decode('utf-8')
+
 def get_messages_openai(frames_b64, prompt="Describe what's happening in this video", ICL = False):
     messages = []
     if ICL:
@@ -439,11 +440,6 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
     num_frames_per_second = video_metadata["frames_per_second"]
 
-
-    sample_name = os.path.dirname(mp4_file).split('/')[-1]
-    if sample_name not in logs_dir:
-        logs_dir = os.path.join(logs_dir, sample_name )
-        os.makedirs(logs_dir, exist_ok=True)
     icl_transcription_file = transcription_file
 
 
@@ -705,6 +701,7 @@ if __name__ == '__main__':
                         icl_output = icl_feedback_loop_generation, realtime_output=realtime_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
+            print (metrics_per_sample)
         #except Exception as e:
         #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
@@ -713,17 +710,7 @@ if __name__ == '__main__':
         #print(means_dict)
         with open(f'{out_folder}/{run_name}_{str(date_time)}.json', 'w') as fp:
             json.dump(metrics_per_sample, fp)
-    if WB:
-        project_name = "CommGen"
-        entity = "anum-afzal-technical-university-of-munich"
-        wandb_setup()
-        wandb_mode = "online"
 
-        wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
-               mode=wandb_mode, group="global_realtime")
-        table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
-        wandb.log({"experiment_metrics": table}, commit=True)
-        wandb.finish()
     # Writing per experiments logs every loop
     df = pd.DataFrame(metrics_all_samples)
     means_dict = df.select_dtypes(include='number').mean().to_dict()
@@ -735,6 +722,18 @@ if __name__ == '__main__':
     run_name = f"step_{step}_k_{k}_frames_{num_frames_to_use}"
     with open(f'{run_name}_{str(date_time)}.json', 'w') as fp:
         json.dump(means_dict, fp)
+
+    if WB:
+        project_name = "CommGen"
+        entity = "anum-afzal-technical-university-of-munich"
+        wandb_setup()
+        wandb_mode = "online"
+
+        wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
+               mode=wandb_mode, group="global_realtime")
+        table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
+        wandb.log({"experiment_metrics": table}, commit=True)
+        wandb.finish()
 
 
 
