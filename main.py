@@ -670,7 +670,7 @@ if __name__ == '__main__':
     if model_type == "hf":
         if "qwen" in model_name:
             model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-                model_id, torch_dtype="auto", device_map="auto", load_in_8bit=True, low_cpu_mem_usage=True
+                model_id, torch_dtype="auto", device_map="auto", load_in_4bit=True, low_cpu_mem_usage=True
             ).to(0)
             processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
 
