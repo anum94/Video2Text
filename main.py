@@ -440,11 +440,18 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences_s
 def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False,init_skip_frames=5,
                            ICL = False, split_word = "ASSISTANT:", k = 2, processor = None,
-                           model = None, context_window = 4096, logs_dir = None):
+                           model = None, context_window = 4096, logs_dir = None, m_name = None):
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
     ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
     num_frames_per_second = video_metadata["frames_per_second"]
+
+
+    sample_name = os.path.dirname(mp4_file).split('/')[-1]
+    if sample_name not in logs_dir:
+        logs_dir = os.path.join(logs_dir, sample_name )
+        icl_transcription_file = transcription_file
+        model_name = m_name
 
     pred_timing = []
     pred_utterences = []
@@ -523,11 +530,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     ref_timing = [ref_timing[ref] for ref in range(0,len(ref_timing),step)]
     ref_utterences = [ref_utterences[ref] for ref in range(0, len(ref_utterences), step)]
 
-    if logs_dir:
-
-        out_folder = os.path.join(logs_dir, os.path.dirname(mp4_file).split('/')[-1])
-        icl_transcription_file = transcription_file
-    pred_srt_file = write_logs(out_folder, pred_utterences, pred_utterences_step,  mode=mode, talking_speed_sample=icl_transcription_file)
+    pred_srt_file = write_logs(logs_dir, pred_utterences, pred_utterences_step,  mode=mode, talking_speed_sample=icl_transcription_file)
     eval_metrics = compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, pred_srt_file, transcription_file)
     if verbose:
         print(eval_metrics)
@@ -666,7 +669,7 @@ if __name__ == '__main__':
                                                               init_skip_frames=skip_frames, step=step, ICL=False,
                                                               split_word = split_word, processor=processor, model=model,
                                                               context_window=context_window
-                                                              #, logs_dir=out_folder
+                                                              , logs_dir=out_folder
                                                               )
 
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
