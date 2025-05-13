@@ -272,7 +272,7 @@ def get_messages(user_prompt, ICL = False , proc = None):
                 ],
             }
         )
-    print (conversation)
+    #print (conversation)
     return conversation
 def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_frames = 20,):
     icl_examples = []
@@ -536,7 +536,7 @@ def simulate_speaking(pred_utterance, words_per_sec=4.0):
     delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
 
     for word in words:
-        #print(word, end=' ', flush=True)
+        print(word, end=' ', flush=True)
         time.sleep(delay)
     #print()  # 行末で改行
 
@@ -681,11 +681,12 @@ if __name__ == '__main__':
                                                               , logs_dir=out_folder
                                                               )
             '''
+            print ("REaltime")
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
                                                               split_word=split_word, ICL=icl_example_paths, processor=processor,
                                                               model=model, context_window=context_window, model_name=model_name)
-
+            print ("ICL Feedback")
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                                   init_skip_frames=skip_frames, step=step,
                                                                   ICL=icl_example_paths, split_word = split_word,
