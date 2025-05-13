@@ -404,13 +404,13 @@ if __name__ == '__main__':
         torch_dtype=torch.float16,
         device_map="auto",
     )
-    j = 1 if int(len(validation_dataset)/100) == 0 else int(len(validation_dataset)/100)
+    j = [1 if int(len(validation_dataset)/100) == 0 else int(len(validation_dataset)/100)]
     print("Old Model")
     for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
-    '''
-    REPO_ID = "anumafzal94/LLaVa-NeXT-Video-_step_2_frames_1_n_40000"
+    
+    
 
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(
             REPO_ID,
@@ -421,8 +421,14 @@ if __name__ == '__main__':
     for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
-
+    '''
     # ------------------------------- Test the trained model on whole Train Set ----------------------- #
+    REPO_ID = "anumafzal94/LLaVa-NeXT-Video-_step_2_frames_1_n_40000"
+    model = LlavaNextVideoForConditionalGeneration.from_pretrained(
+            REPO_ID,
+            torch_dtype=torch.float16,
+            device_map="auto",
+        )
     split_word = "ASSISTANT:"
     out_folder = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
     out_folder = os.path.join("logs", out_folder)

@@ -173,7 +173,8 @@ def compute_10_percent_rouge(ref_list, pred_list, n_intervals = 10):
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, generated_srt, reference_srt):
     #print (len(ref_timing), len(pred_timing))
     correlations = [1 if a == b else 0 for a, b in zip(ref_timing, pred_timing)]
-    p_corr, _ = pearsonr(ref_timing, pred_timing)
+    p_corr, _ = pearsonr([1 if i==True else 0 for i in ref_timing],
+                         [1 if i==True else 0 for i in pred_timing])
     cm = confusion_matrix(ref_timing, pred_timing)
 
     rouge_intervals = compute_10_percent_rouge(ref_utterences, pred_utterences)

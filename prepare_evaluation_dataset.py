@@ -23,6 +23,8 @@ def get_video_path(sample):
     except:
         #print(sample)
         return np.nan
+
+
 logs_directory = "/Users/anumafzal/PycharmProjects/video2Text/logs/logs"
 logs_list = []
 for file_path in findDirWithFileInLevel(logs_directory, 3):
@@ -48,7 +50,7 @@ for file_path in findDirWithFileInLevel(logs_directory, 3):
      logs_list.append(sample_dict)
 evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Logical_Coherence"]
 df = pd.DataFrame(logs_list).dropna()
-#df = df.loc[(df['step'] == 2) & (df['frames_used'] == 1) & (df['k'].isin([6,8]))]
+df = df.loc[(df['step'] == 2) & (df['frames_used'] == 1) & (df['k'].isin([6,8]))]
 df_samples = df.groupby('sample')
 excel_columns = []
 samples = []
