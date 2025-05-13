@@ -395,6 +395,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
                                        context_window=context_window, split_word=split_word)
 
         prev_elapsed = t
+        print(t)
 
         if "wait" in pred_utterance.lower():
 
@@ -487,7 +488,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
             icl_examples = False
         videos.append(video)
 
-        pred_utterence = run_inference(model_name, model, processor, user_prompt, video, ICL=icl_examples,
+        pred_utterence = run_inference(model_name, model, processor, user_prompt, videos, ICL=icl_examples,
                                        context_window=context_window, split_word=split_word)
 
 
@@ -671,7 +672,7 @@ if __name__ == '__main__':
         #try:
         if True:
 
-            '''
+
             baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
@@ -680,7 +681,7 @@ if __name__ == '__main__':
                                                               context_window=context_window, model_name=model_name
                                                               , logs_dir=out_folder
                                                               )
-            '''
+
             print ("REaltime")
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
