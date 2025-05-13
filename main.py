@@ -440,7 +440,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences_s
 def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False,init_skip_frames=5,
                            ICL = False, split_word = "ASSISTANT:", k = 2, processor = None,
-                           model = None, context_window = 4096, logs_dir = None, m_name = None):
+                           model = None, context_window = 4096, logs_dir = None, model_name = None):
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
     ref_utterences, ref_timing = get_utterence_timing(ground_truth, video_metadata)
@@ -451,7 +451,7 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
     if sample_name not in logs_dir:
         logs_dir = os.path.join(logs_dir, sample_name )
         icl_transcription_file = transcription_file
-        model_name = m_name
+
 
     pred_timing = []
     pred_utterences = []
@@ -668,7 +668,7 @@ if __name__ == '__main__':
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step, ICL=False,
                                                               split_word = split_word, processor=processor, model=model,
-                                                              context_window=context_window
+                                                              context_window=context_window, model_name=model_name
                                                               , logs_dir=out_folder
                                                               )
 
@@ -681,7 +681,8 @@ if __name__ == '__main__':
                                                                   init_skip_frames=skip_frames, step=step,
                                                                   ICL=icl_example_paths, split_word = split_word,
                                                                   k = 4 , processor=processor, model=model,
-                                                                  context_window=context_window, logs_dir=out_folder)
+                                                                  context_window=context_window, logs_dir=out_folder,
+                                                                  model_name=model_name)
 
 
             run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"

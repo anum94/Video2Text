@@ -448,7 +448,8 @@ if __name__ == '__main__':
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
                                                                       init_skip_frames=10, step=step, ICL=False,
                                                                       split_word = split_word, processor=processor,
-                                                                  model=model, logs_dir=out_folder, m_name = REPO_ID)
+                                                                  model=model, logs_dir=out_folder, model_name = REPO_ID,
+                                                              context_window = 4096)
 
 
 
