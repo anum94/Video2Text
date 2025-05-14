@@ -255,23 +255,31 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
     if file_path is not None:
         timestamps = []
         utterances = []
+        pattern = r'(\d+):\s*(.+)'
         with open(file_path, 'r') as file:
             lines = file.readlines()
         for line in lines:
             print (line)
-            l = line.split(':')
-            t = int(l[0])
-            ut = str(l[1]).strip()
-            if ut and "WAIT" not in ut:
-                if contains_japanese(ut):
-                    num_of_words = len(ut)
-                    seconds_per_word = 1 / 7.0 # average speed 
-                else:
-                    num_of_words = len(ut.split())
-                start_time = seconds_to_timestamp(t)
-                end_time = seconds_to_timestamp(t+(num_of_words*seconds_per_word))
-                timestamps.append((start_time, end_time))
-                utterances.append(ut)
+            # Perform the match
+            match = re.match(pattern, line)
+            if match:
+                number = int(match.group(1))
+                string_part = match.group(2)
+                print("Number:", number)
+                print("Text:", string_part)
+
+                t = int(number)
+                ut = str(str).strip()
+                if ut and "WAIT" not in ut:
+                    if contains_japanese(ut):
+                        num_of_words = len(ut)
+                        seconds_per_word = 1 / 7.0 # average speed
+                    else:
+                        num_of_words = len(ut.split())
+                    start_time = seconds_to_timestamp(t)
+                    end_time = seconds_to_timestamp(t+(num_of_words*seconds_per_word))
+                    timestamps.append((start_time, end_time))
+                    utterances.append(ut)
         # Define the filename for the .srt file
         srt_filename = file_path.replace('.txt','.srt')
 
