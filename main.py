@@ -29,6 +29,12 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                        "Your task is to generate 1 - 2 line of commentary to describe it. Ignore the background information and refrain the describing the scenery too much."
                        "\nDescribe this scene as a single-sentence commentary for making audience immersed.  If you have nothing to say, generate a <WAIT> token."
                        )
+        
+    elif mode == "baseline_ja":
+        user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                       "このシーンを1〜2文で説明する日本語の実況を生成してください。\n"
+                       "背景情報や風景の描写は避け、レースの展開に集中してください。\n"
+                       "観客が没入できるような自然な実況を心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
     elif mode == "feedback_loop_init":
         user_prompt = ("You are a professional commentator for car racing games. You will be provided with a video clip"
@@ -37,6 +43,13 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                        "2) Ignore the background information and refrain the describing the scenery."
                        "3) Initial information about the game without being too verbose."
                        )
+        
+    elif mode == "feedback_loop_init_ja":
+        user_prompt = ("あなたはカーレースのプロの実況者です。これからレース開始時のビデオクリップが提示されます。\n"
+                       "それに対して1文の日本語実況を生成してください。\n"
+                       "1) 登場するプレイヤーの人数、名前、車種を特定してください。\n"
+                       "2) 背景情報や風景の描写は避けてください。\n"
+                       "3) 冗長になりすぎず、レースの初期情報を伝えてください。")
 
     elif mode == "feedback_loop":
         if force:
@@ -58,6 +71,23 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                 "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>\n"
                 "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it.\n"
             )
+    elif mode == "feedback_loop_ja":
+        if force:
+            user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                           f"\nこれまでの実況:\n{context}\n"
+                           "ビデオに新たな展開があるかどうかを比較・分析し、以下のルールに従って日本語実況を1〜2文生成してください：\n"
+                           "1) 新たな展開があるかどうかを特定してください。\n"
+                           "2) 背景や風景の描写は避けてください。\n"
+                           "3) 変化がある場合は、それを説明する1〜2文の実況を生成してください。\n")
+        else:
+            user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                           f"\nこれまでの実況:\n{context}\n"
+                           "ビデオに新たな展開があるかどうかを比較・分析し、以下のルールに従って日本語実況を生成してください：\n"
+                           "1) 新たな展開があるかどうかを特定してください。\n"
+                           "2) 背景や風景の描写は避けてください。\n"
+                           "3) 状況に変化がなければ <WAIT> を出力してください。\n"
+                           "4) 明確な変化があれば、それを説明する1〜2文の実況を生成してください。\n")
+
 
     return user_prompt
 
