@@ -162,15 +162,12 @@ def interval_indices(length, n_intervals=10):
 
 def compute_10_percent(ref_list, pred_list, n_intervals = 10):
     assert len(pred_list) == len(ref_list), "Lists must be of the same length"
-    print (pred_list)
-    print(ref_list)
 
     rouge = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
     bertscore = BERTScorer(model_type='bert-base-uncased')
     intervals = interval_indices(len(pred_list), n_intervals)
     score_dict = {}
     for i, (start, end) in enumerate(intervals):
-        print (start, end)
         hyp = " ".join(pred_list[start:end])
         ref = " ".join(ref_list[start:end])
         rouge_score = rouge.score(ref, hyp)
