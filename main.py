@@ -787,8 +787,8 @@ if __name__ == '__main__':
             icl_feedback_loop_generation = baseline_generation
             feedback_loop_generation = baseline_generation
             realtime_loop_generation = baseline_generation
-            run_name = f"FP{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
-            config = {"model": f"{model_id}_FP", "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
+            run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
+            config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
                       "dataset": hf_dataset_path
                       }
 
