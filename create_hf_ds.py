@@ -3,6 +3,7 @@ from main import get_commentary_path
 from pandas import DataFrame
 from datasets import Dataset
 
+
 def create_ds(folder):
     # video_directory = "recordings"
     video_directory = args.recordings_dir
@@ -38,10 +39,11 @@ def create_ds(folder):
     print(f"kyakkan commentary not available for {count} samples.")
     print(dataset_processed)
     hf_dataset = dataset_processed.train_test_split(test_size=200)
-    dir = f"{os.path.basename(folder)}_HF"#"RaceCommentaryEn/"
+    dir = f"{os.path.basename(folder)}_HF"  # "RaceCommentaryEn/"
     os.makedirs(dir, exist_ok=True)
     hf_dataset.save_to_disk(dir)
     return dir
+
 
 def create_ds_smabra(folder):
     print("Reading Smabra dataset...")
@@ -73,10 +75,11 @@ def create_ds_smabra(folder):
     print(f"kyakkan commentary not available for {count} samples.")
     print(dataset_processed)
     hf_dataset = dataset_processed.train_test_split(test_size=60)
-    dir = f"{os.path.basename(folder)}_HF"#"RaceCommentaryEn/"
+    dir = f"{os.path.basename(folder)}_HF"  # "RaceCommentaryEn/"
     os.makedirs(dir, exist_ok=True)
     hf_dataset.save_to_disk(dir)
     return dir
+
 
 if __name__ == '__main__':
 
@@ -84,24 +87,22 @@ if __name__ == '__main__':
         description="Generates commentary as per the defined settings"
     )
     parser.add_argument("--dir", required=True, type=str, help="Directory containing the videos"
-                        "and respective commentary in recordings and transcriptions_whole_data_english folder")
-    parser.add_argument("--recordings_dir", required=False, default="recordings", type=str, help="Directory containing the videos. ")
-    parser.add_argument("--transcriptions_dir", required=False, default="transcriptions_whole_data_english", type=str, help="Directory containing the videos "
-                        "and respective commentary in recordings and transcriptions_whole_data_english folder")
+                                                               "and respective commentary in recordings and transcriptions_whole_data_english folder")
+    parser.add_argument("--recordings_dir", required=False, default="recordings", type=str,
+                        help="Directory containing the videos. ")
+    parser.add_argument("--transcriptions_dir", required=False, default="transcriptions_whole_data_english", type=str,
+                        help="Directory containing the videos "
+                             "and respective commentary in recordings and transcriptions_whole_data_english folder")
 
     args = parser.parse_args()
 
     folder = args.dir
-    
+
     if "SmabraData" in folder:
         print("Start loading Smabra data...")
         create_ds_smabra(folder=folder)
     else:
         create_ds(folder=folder)
 
-    #train_dataset, test_dataset = hf_dataset['train'].with_format("torch"), hf_dataset['test'].with_format("torch")
-
-
-
-
+    # train_dataset, test_dataset = hf_dataset['train'].with_format("torch"), hf_dataset['test'].with_format("torch")
 
