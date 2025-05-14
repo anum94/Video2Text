@@ -270,7 +270,7 @@ def identify_dataset(transcription_file):
     elif "smabra_ja" in transcription_file:
         return "_smabra" # smash corpus
     else:
-        return "" # race game in English
+        return "_ja" # race game in English
 
 
 def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False, split_word = "ASSISTANT:", ):

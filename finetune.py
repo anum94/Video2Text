@@ -35,15 +35,17 @@ def get_commentary_path(commentary_directory, game_path):
     else:
         commentary_path = None
     return commentary_path
-def identify_language(hf_dataset_path):
+def identify_dataset(hf_dataset_path):
     if "Ja" in hf_dataset_path:
-        return "ja"
+        if "sambra" in hf_dataset_path.lower():
+            return "sambra_ja"
+        else:
+            return "ja"
     else:
-
         return "en"
 
 def get_FT_prompt(prev_generation):
-    if lang == "en":
+    if ds == "en":
         prompt =    ("You are a professional commentator for car racing games. You are provided with a video clip"
                     "from an ongoing car racing game and commentary generated for the game so far."
                      f"Previous generated Commentary: {prev_generation}"
@@ -53,22 +55,20 @@ def get_FT_prompt(prev_generation):
                     "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
                     "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
                 )
-    elif lang == "ja":
+    elif ds == "ja":
     
-
-    prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+       prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
                 f"\nこれまでの実況:\n{prev_generation}\n"
                 "以下のルールに従って日本語実況を1文生成してください：\n"
                 "1) 新たな展開があるかどうかを特定してください。\n"
                 "2) 背景や風景の描写は避けてください。\n"
                 "3) 変化がある場合は、それを説明する1文の実況を生成してください。\n"
                 "4) 人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．")
-
-    prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
-                    f"\nこれまでの実況:\n{prev_generation}\n"
-                    "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
-                    "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
-
+    elif ds == "sambra_ja":
+        prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                              f"\nこれまでの実況:\n{prev_generation}\n"
+                              "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                              "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
     return prompt
 
@@ -263,7 +263,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description="Generates commentary as per the defined settings"
         )
-    parser.add_argument("--dir", required=True, type=str, help="Directory containing the videos "
+    parser.add_argument("--dir", required=False, type=str, help="Directory containing the videos "
                             "and respective commentary in recordings and transcriptions_whole_data_english folder",
                             default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary")
     parser.add_argument("--n_train", required=False, type=int, default=10, help="Number of samples for training")
@@ -305,7 +305,7 @@ if __name__ == '__main__':
     train_dataset_raw, test_dataset_raw = ft_dataset['train'].with_format("torch"), ft_dataset['test'].with_format("torch")
 
     # enable this line for testing
-    #train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(2)), test_dataset_raw .select(range(2))
+    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(300)), test_dataset_raw .select(range(200))
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
@@ -314,6 +314,8 @@ if __name__ == '__main__':
         hf_dataset_path = hf_dataset_path.replace("/", "")
     ft_dataset_path = f"{hf_dataset_path}_FT_frames_{NUM_FRAMES}_step_{step}_n_{len(train_dataset_raw)}"
 
+    ds = identify_dataset(hf_dataset_path)
+    use_existing = False
     if use_existing == True:
         train_dataset = datasets.load_from_disk(ft_dataset_path)
     else:
@@ -341,7 +343,7 @@ if __name__ == '__main__':
     train_dataset, validation_dataset = dataset_processed['train'].with_format("torch"), dataset_processed['test'].with_format("torch")
     print (f"{len(train_dataset)} training example, {len(validation_dataset)} validation examples")
     REPO_ID = f"anumafzal94/FT_LLaVa-NeXT-Video-_step_{step}_frames_{NUM_FRAMES}_n_{len(train_dataset)}" # Change to your hf-hub repo
-    '''
+    
     if USE_QLORA or USE_LORA:
         if USE_QLORA:
             bnb_config = BitsAndBytesConfig(
@@ -445,9 +447,9 @@ if __name__ == '__main__':
     for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
-    '''
+
     # ------------------------------- Test the trained model on whole Train Set ----------------------- #
-    REPO_ID = "anumafzal94/LLaVa-NeXT-Video-_step_2_frames_1_n_40000"
+    #REPO_ID = "anumafzal94/LLaVa-NeXT-Video-_step_2_frames_1_n_40000"
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(
             REPO_ID,
             torch_dtype=torch.float16,
