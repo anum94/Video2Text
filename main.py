@@ -746,7 +746,7 @@ if __name__ == '__main__':
 
         # create folder to store logs for each sample.
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
-        out_folder = os.path.join(my_folder, hf_dataset_path, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}")
+        out_folder = os.path.join(my_folder, hf_dataset_path, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}_FP")
         os.makedirs(out_folder, exist_ok=True)
 
         # define path for icl example
@@ -823,7 +823,7 @@ if __name__ == '__main__':
         wandb_mode = "online"
 
         wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
-               mode=wandb_mode, group="final")
+               mode=wandb_mode, group="final_FP")
         table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
         wandb.log({"experiment_metrics": table}, commit=True)
         wandb.finish()
