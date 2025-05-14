@@ -1,6 +1,7 @@
 import numpy as np
 import pysrt
 import os
+import re
 import nltk
 from sklearn.metrics import confusion_matrix
 import json
@@ -244,6 +245,9 @@ def estimate_talking_speed(sample_file):
 
     return np.mean(words_per_second)
 
+def contains_japanese(text):
+    return bool(re.search(r'[\u3040-\u30FF\u4E00-\u9FFF]', text))
+
 def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../RaceCommentary/transcriptions_whole_data_english/AC_120221-180622_R_ks_audi_r8_plus_ks_nurburgring_layout_sprint_a_kyakkan.merged.mp4_translated.srt" ):
     if file_path is None:
         print("r Filepath with timestamps should be provided")
@@ -261,7 +265,11 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
             t = int(l[0])
             ut = str(l[1]).strip()
             if ut and "WAIT" not in ut:
-                num_of_words = len(ut.split())
+                if contains_japanese(ut):
+                    num_of_words = len(ut)
+                    seconds_per_word = 1 / 7.0 # average speed 
+                else:
+                    num_of_words = len(ut.split())
                 start_time = seconds_to_timestamp(t)
                 end_time = seconds_to_timestamp(t+(num_of_words*seconds_per_word))
                 timestamps.append((start_time, end_time))
