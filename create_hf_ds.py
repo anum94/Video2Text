@@ -37,7 +37,7 @@ def create_ds(folder):
     dataset_processed = hf_dataset.shuffle(seed=42)
     print(f"kyakkan commentary not available for {count} samples.")
     print(dataset_processed)
-    hf_dataset = dataset_processed.train_test_split(test_size=400)
+    hf_dataset = dataset_processed.train_test_split(test_size=200)
     dir = f"{os.path.basename(folder)}_HF"#"RaceCommentaryEn/"
     os.makedirs(dir, exist_ok=True)
     hf_dataset.save_to_disk(dir)
