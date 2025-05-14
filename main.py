@@ -779,6 +779,7 @@ if __name__ == '__main__':
         icl_transcription_file = icl_example["srt_path"]
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
+        run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
         #try:
         if True:
 
