@@ -1,6 +1,5 @@
 import random
 
-import numpy as np
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
 from datetime import datetime
@@ -262,13 +261,13 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
-    #print (pred_utterence)
+    print (pred_utterence)
     return pred_utterence
 
 def identify_dataset(transcription_file):
     if "transcriptions_whole_data_english" in transcription_file:
         return "" # race game in English
-    elif "transcriptions_smabra" in transcription_file:
+    elif "smabra_ja" in transcription_file:
         return "_smabra" # smash corpus
     else:
         return "_ja" # race game in Japanese
@@ -779,6 +778,7 @@ if __name__ == '__main__':
         icl_transcription_file = icl_example["srt_path"]
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
+        run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
         try:
         #if True:
 
@@ -792,7 +792,7 @@ if __name__ == '__main__':
                                                               context_window=context_window, model_name=model_name
                                                               , logs_dir=out_folder
                                                               )
-            
+
             print ("Realtime")
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
@@ -806,9 +806,7 @@ if __name__ == '__main__':
                                                                   context_window=context_window, logs_dir=out_folder,
                                                                   model_name=model_name)
 
-            icl_feedback_loop_generation = baseline_generation
-            feedback_loop_generation = baseline_generation
-            realtime_loop_generation = baseline_generation
+
             run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
             config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
                       "dataset": hf_dataset_path
