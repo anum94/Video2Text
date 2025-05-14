@@ -1,5 +1,6 @@
 import random
 
+import numpy as np
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
 from datetime import datetime
@@ -261,7 +262,7 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
-    print (pred_utterence)
+    #print (pred_utterence)
     return pred_utterence
 
 def identify_dataset(transcription_file):
@@ -270,7 +271,7 @@ def identify_dataset(transcription_file):
     elif "smabra_ja" in transcription_file:
         return "_smabra" # smash corpus
     else:
-        return "_ja" # race game in English
+        return "_ja" # race game in Japanese
 
 
 def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False, split_word = "ASSISTANT:", ):
@@ -285,7 +286,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
     pred_utterences = []
     pred_utterences_step =[]
     pred_timing = []
-    print(transcription_file)
+    #print(transcription_file)
 
 
     for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
@@ -778,12 +779,12 @@ if __name__ == '__main__':
         icl_transcription_file = icl_example["srt_path"]
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
-        run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
         try:
         #if True:
 
             print ("Baseline")
             baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+
             print ("Feedback")
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step, ICL=False,
@@ -791,7 +792,7 @@ if __name__ == '__main__':
                                                               context_window=context_window, model_name=model_name
                                                               , logs_dir=out_folder
                                                               )
-
+            
             print ("Realtime")
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
