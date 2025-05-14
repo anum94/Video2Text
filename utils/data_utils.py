@@ -259,15 +259,11 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
         with open(file_path, 'r') as file:
             lines = file.readlines()
         for line in lines:
-            print (line)
             # Perform the match
             match = re.match(pattern, line)
             if match:
                 number = int(match.group(1))
                 string_part = match.group(2)
-                print("Number:", number)
-                print("Text:", string_part)
-
                 t = int(number)
                 ut = str(str).strip()
                 if ut and "WAIT" not in ut:
