@@ -8,6 +8,7 @@ import time
 import pandas as pd
 import warnings
 from openai import OpenAI
+import sacrebleu
 import base64
 import requests
 from PIL import Image

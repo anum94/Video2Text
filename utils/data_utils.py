@@ -6,6 +6,7 @@ import nltk
 from sklearn.metrics import confusion_matrix
 import json
 from datetime import datetime
+from nltk.translate.bleu_score import SmoothingFunction
 from scipy.stats import pearsonr
 from bert_score import BERTScorer
 import pysrt
@@ -173,7 +174,8 @@ def compute_10_percent(ref_list, pred_list, n_intervals = 10):
         rouge_score = rouge.score(ref, hyp)
         _, _, bert_F1 = bertscore.score([hyp], [ref])
         bert_F1 = float((bert_F1.numpy())[0])
-        BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref], [hyp], weights=(0.5, 0.5))
+        smoothie = SmoothingFunction().method4
+        BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref], [hyp],smoothing_function=smoothie)
 
 
         score_dict[ f"rouge_{i * 10}-{(i + 1) * 10}%"] = rouge_score['rougeL'].fmeasure
@@ -212,8 +214,8 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
 
     #flatten_2d_dict(rouge)
 
-
-    BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights=(0.5, 0.5))
+    smoothie = SmoothingFunction().method4
+    BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, smoothing_function=smoothie)
 
 
     ref_lines = parse_srt(reference_srt)
