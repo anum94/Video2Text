@@ -169,10 +169,10 @@ def compute_10_percent(ref_list, pred_list, n_intervals = 10):
     intervals = interval_indices(len(pred_list), n_intervals)
     score_dict = {}
     for i, (start, end) in enumerate(intervals):
-        hyp = " ".join()
-        ref = " ".join()
-        rouge_score = rouge.score(ref_list[start:end], pred_list[start:end])
-        _, _, bert_F1 = bertscore.score(pred_list[start:end], ref_list[start:end])
+        hyp = " ".join(pred_list[start:end])
+        ref = " ".join(ref_list[start:end])
+        rouge_score = rouge.score(ref, hyp)
+        _, _, bert_F1 = bertscore.score([hyp], [ref])
         bert_F1 = float((bert_F1.numpy())[0])
         smoothie = SmoothingFunction().method4
         BLEUscore = nltk.translate.bleu_score.sentence_bleu(ref_list[start:end], pred_list[start:end],smoothing_function=smoothie)
@@ -183,6 +183,7 @@ def compute_10_percent(ref_list, pred_list, n_intervals = 10):
         score_dict[f"bleu_{i * 10}-{(i + 1) * 10}%"] = BLEUscore
 
     return score_dict
+
 
 
 def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, generated_srt, reference_srt):
@@ -197,48 +198,39 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
 
     metrics_over_intervals = compute_10_percent(ref_utterences, pred_utterences)
 
-
-    #pred_commentary = "\n".join(pred_utterences)
-    #ref_commentary = "\n".join(ref_utterences)
-    r_scorer = rouge_scorer.RougeScorer([ 'rougeL'], use_stemmer=True)
-    rouge = r_scorer.score(ref_utterences, pred_utterences)
+    pred_commentary = "\n".join(pred_utterences)
+    ref_commentary = "\n".join(ref_utterences)
+    r_scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
+    rouge = r_scorer.score(ref_commentary, pred_commentary)
     rouge_L = rouge['rougeL'].fmeasure
-
 
     # BERTScore calculation
     scorer = BERTScorer(model_type='bert-base-uncased')
-    P, R, bert_F1 = scorer.score(pred_utterences, ref_utterences)
+    P, R, bert_F1 = scorer.score([pred_commentary], [ref_commentary])
     bert_F1 = float((bert_F1.numpy())[0])
-    #print(f"BERTScore Precision: {P.mean():.4f}, Recall: {R.mean():.4f}, F1: {F1.mean():.4f}")
+    # print(f"BERTScore Precision: {P.mean():.4f}, Recall: {R.mean():.4f}, F1: {F1.mean():.4f}")
 
+    # flatten_2d_dict(rouge)
 
-    #flatten_2d_dict(rouge)
-
-    smoothie = SmoothingFunction().method4
-    pred_commentary = "\n".join(pred_utterences)
-    BLEUscore = nltk.translate.bleu_score.sentence_bleu(ref_utterences, pred_commentary, smoothing_function=smoothie)
-
+    BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights)
 
     ref_lines = parse_srt(reference_srt)
     hyp_lines = parse_srt(generated_srt)
 
     # LA: longest contiguous block
     la, _ = compute_LA(ref_lines, hyp_lines)
-    #print("Longest Alignment (LA):", la)
-
+    # print("Longest Alignment (LA):", la)
 
     # LAAL: fraction of reference actions aligned
     laal = compute_LAAL(ref_lines, hyp_lines)
-    #print("Longest Aligned Action Location (LAAL):", laal)
+    # print("Longest Aligned Action Location (LAAL):", laal)
 
+    res = {"correlation": (correlations.count(1)) / len(correlations), "ROUGE_L": rouge_L,
+           "BLEU": BLEUscore, "ref_timing": list(ref_timing), "pearson": p_corr,
+           "pred_timing": list(pred_timing), "bins": metrics_over_intervals, "BERTScore": bert_F1,
+           'LAAL': laal, "LA": la}
 
-    res =  {"correlation":(correlations.count(1))/len(correlations), "ROUGE_L": rouge_L,
-            "BLEU": BLEUscore,  "ref_timing": list(ref_timing), "pearson": p_corr,
-            "pred_timing": list(pred_timing), "bins": metrics_over_intervals, "BERTScore": bert_F1,
-            'LAAL': laal, "LA": la}
-    print (res)
     return res
-
 
 def estimate_talking_speed(sample_file):
     sample_commentary = read_srt(sample_file)

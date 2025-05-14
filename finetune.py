@@ -247,7 +247,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
             description="Generates commentary as per the defined settings"
         )
-    parser.add_argument("--dir", required=True, type=str, help="Directory containing the videos "
+    parser.add_argument("--dir", required=False, type=str, help="Directory containing the videos "
                             "and respective commentary in recordings and transcriptions_whole_data_english folder",
                             default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary")
     parser.add_argument("--n_train", required=False, type=int, default=10, help="Number of samples for training")
