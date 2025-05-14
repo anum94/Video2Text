@@ -169,6 +169,7 @@ def compute_10_percent(ref_list, pred_list, n_intervals = 10):
     intervals = interval_indices(len(pred_list), n_intervals)
     score_dict = {}
     for i, (start, end) in enumerate(intervals):
+        print (start, end)
         hyp = " ".join(pred_list[start:end])
         ref = " ".join(ref_list[start:end])
         rouge_score = rouge.score(ref, hyp)
