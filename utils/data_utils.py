@@ -189,6 +189,8 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
 
     p_corr, _ = pearsonr([1 if i==True else 0 for i in ref_timing],
                          [1 if i==True else 0 for i in pred_timing])
+    p_corr = float(p_corr)
+
     cm = confusion_matrix(ref_timing, pred_timing)
 
     metrics_over_intervals = compute_10_percent(ref_utterences, pred_utterences)

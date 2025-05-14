@@ -1,5 +1,6 @@
 import random
 
+import numpy as np
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
 from datetime import datetime
@@ -810,6 +811,7 @@ if __name__ == '__main__':
     means_dict["# frame"] = num_frames_to_use
     means_dict["step"] = step
     means_dict["k"] = k
+    means_dict["pearson_wo_nan"] = np.nanmean(np.array(df["pearson"]))
     run_name = f"step_{step}_k_{k}_frames_{num_frames_to_use}"
     json_file = f"{hf_dataset_path}_{model_id.replace('/', '_')}_{run_name}_{str(date_time)}.json"
     #print (json_file)
