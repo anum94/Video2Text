@@ -817,15 +817,13 @@ if __name__ == '__main__':
                         icl_output = icl_feedback_loop_generation, realtime_output=realtime_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
+            with open(f'{out_folder}/{run_name}_{str(date_time)}.json', 'w') as fp:
+                json.dump(metrics_per_sample, fp)
         except Exception as e:
             print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
-
         # Writing per experiments logs every loop
         #print(means_dict)
-        with open(f'{out_folder}/{run_name}_{str(date_time)}.json', 'w') as fp:
-            json.dump(metrics_per_sample, fp)
-
     # Writing per experiments logs every loop
     df = pd.DataFrame(metrics_all_samples)
     means_dict = df.select_dtypes(include='number').mean().to_dict()
