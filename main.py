@@ -732,7 +732,7 @@ if __name__ == '__main__':
 
 
         else:
-            model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True).to(0)
+            model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
             processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
     else:
         model = None
@@ -746,7 +746,7 @@ if __name__ == '__main__':
 
         # create folder to store logs for each sample.
         sample_name = os.path.dirname(mp4_file).split('/')[-1]
-        out_folder = os.path.join(my_folder, hf_dataset_path, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}_FP")
+        out_folder = os.path.join(my_folder, hf_dataset_path, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}")
         os.makedirs(out_folder, exist_ok=True)
 
         # define path for icl example
@@ -823,7 +823,7 @@ if __name__ == '__main__':
         wandb_mode = "online"
 
         wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
-               mode=wandb_mode, group="final_FP")
+               mode=wandb_mode, group="final")
         table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
         wandb.log({"experiment_metrics": table}, commit=True)
         wandb.finish()
