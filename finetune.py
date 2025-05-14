@@ -309,7 +309,6 @@ if __name__ == '__main__':
     ft_dataset_path = f"{hf_dataset_path}_FT_frames_{NUM_FRAMES}_step_{step}_n_{len(train_dataset_raw)}"
 
     lang = identify_language(hf_dataset_path)
-    use_existing = False
     if use_existing == True:
         train_dataset = datasets.load_from_disk(ft_dataset_path)
     else:
