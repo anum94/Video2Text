@@ -309,7 +309,7 @@ if __name__ == '__main__':
     ft_dataset_path = f"{hf_dataset_path}_FT_frames_{NUM_FRAMES}_step_{step}_n_{len(train_dataset_raw)}"
 
     lang = identify_language(hf_dataset_path)
-    '''
+
     if use_existing == True:
         train_dataset = datasets.load_from_disk(ft_dataset_path)
     else:
@@ -441,9 +441,9 @@ if __name__ == '__main__':
     for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
-    '''
+
     # ------------------------------- Test the trained model on whole Train Set ----------------------- #
-    REPO_ID = "anumafzal94/LLaVa-NeXT-Video-_step_2_frames_1_n_40000"
+    #REPO_ID = "anumafzal94/LLaVa-NeXT-Video-_step_2_frames_1_n_40000"
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(
             REPO_ID,
             torch_dtype=torch.float16,
