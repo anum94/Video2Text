@@ -45,6 +45,14 @@ def get_FT_prompt(prev_generation):
                 "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
                 "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
             )
+    
+user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                f"\nこれまでの実況:\n{context}\n"
+                "以下のルールに従って日本語実況を1文生成してください：\n"
+                "1) 新たな展開があるかどうかを特定してください。\n"
+                "2) 背景や風景の描写は避けてください。\n"
+                "3) 変化がある場合は、それを説明する1文の実況を生成してください。\n"
+                "4) 人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．")
 
     return prompt
 
