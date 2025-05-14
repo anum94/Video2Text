@@ -600,9 +600,16 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
     return pred_utterences, pred_utterences_step, eval_metrics, ref_utterences
 
+def contains_japanese(text):
+    return bool(re.search(r'[\u3040-\u30FF\u4E00-\u9FFF]', text))
+
 def simulate_speaking(pred_utterance, words_per_sec=4.0):
-    words = pred_utterance.strip().split()
-    delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
+    if contains_japanese(pred_utterance):
+        words = list(pred_utterance.strip()) # split by character
+        words_per_sec = 6.5 # average speed of japanese speech
+    else:
+        words = pred_utterance.strip().split()
+        delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
 
     for word in words:
         #print(word, end=' ', flush=True)
