@@ -1,6 +1,5 @@
 import random
 
-import numpy as np
 from transformers import LlavaNextVideoProcessor, LlavaNextVideoForConditionalGeneration
 from tqdm import tqdm
 from datetime import datetime
@@ -37,6 +36,10 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
         user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
                        "このシーンを1文で説明する日本語の実況を生成してください。\n"
                        "観客が没入できるような自然な実況を心がけてください。話すべきことがなければ <WAIT> を出力してください。")
+    elif mode == "baseline_smabra":
+        user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中の対戦のビデオクリップと、これまでに生成された実況です。\n"
+                       "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                       "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
     elif mode == "feedback_loop_init":
         user_prompt = ("You are a professional commentator for car racing games. You will be provided with a video clip"
@@ -50,6 +53,11 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
         user_prompt = ("あなたはカーレースのプロの実況者です。これからレース開始時のビデオクリップが提示されます。\n"
                        "それに対して1文の日本語実況を生成してください。\n"
                        "冗長になりすぎず、レースの初期情報を伝えてください。人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．")
+
+    elif mode == "feedback_loop_init_smabra":
+        user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。これから対戦開始時のビデオクリップが提示されます。\n"
+                       "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                       "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
     elif mode == "feedback_loop":
         if force:
@@ -88,6 +96,19 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                            "2) 状況に変化がなければ <WAIT> を出力してください。\n"
                            "3) 明確な変化があれば、それを説明する1文の実況を生成してください。\n"
                            "4) 人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．\n")
+
+    elif mode == "feedback_loop_smabra":
+        if force:
+            user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                           f"\nこれまでの実況:\n{context}\n"
+                            "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                            "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
+
+        else:
+            user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                           f"\nこれまでの実況:\n{context}\n"
+                            "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                            "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
 
     return user_prompt
@@ -240,16 +261,16 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
-    #print (pred_utterence)
+    print (pred_utterence)
     return pred_utterence
 
 def identify_dataset(transcription_file):
     if "transcriptions_whole_data_english" in transcription_file:
         return "" # race game in English
-    elif "transcriptions_smabra" in transcription_file:
+    elif "smabra_ja" in transcription_file:
         return "_smabra" # smash corpus
     else:
-        return "_ja" # race game in Japanese
+        return "" # race game in English
 
 
 def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False, split_word = "ASSISTANT:", ):
@@ -264,7 +285,7 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
     pred_utterences = []
     pred_utterences_step =[]
     pred_timing = []
-    #print(transcription_file)
+    print(transcription_file)
 
 
     for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
@@ -733,7 +754,7 @@ if __name__ == '__main__':
 
 
         else:
-            model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,).to(0)
+            model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
             processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
     else:
         model = None
@@ -757,12 +778,12 @@ if __name__ == '__main__':
         icl_transcription_file = icl_example["srt_path"]
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
+        run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
         try:
         #if True:
 
             print ("Baseline")
             baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
-
             print ("Feedback")
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step, ICL=False,
@@ -770,7 +791,7 @@ if __name__ == '__main__':
                                                               context_window=context_window, model_name=model_name
                                                               , logs_dir=out_folder
                                                               )
-            
+
             print ("Realtime")
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
@@ -784,9 +805,7 @@ if __name__ == '__main__':
                                                                   context_window=context_window, logs_dir=out_folder,
                                                                   model_name=model_name)
 
-            icl_feedback_loop_generation = baseline_generation
-            feedback_loop_generation = baseline_generation
-            realtime_loop_generation = baseline_generation
+
             run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
             config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
                       "dataset": hf_dataset_path
