@@ -32,8 +32,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
         
     elif mode == "baseline_ja":
         user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
-                       "このシーンを1〜2文で説明する日本語の実況を生成してください。\n"
-                       "背景情報や風景の描写は避け、レースの展開に集中してください。\n"
+                       "このシーンを1文で説明する日本語の実況を生成してください。\n"
                        "観客が没入できるような自然な実況を心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
     elif mode == "feedback_loop_init":
@@ -47,9 +46,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
     elif mode == "feedback_loop_init_ja":
         user_prompt = ("あなたはカーレースのプロの実況者です。これからレース開始時のビデオクリップが提示されます。\n"
                        "それに対して1文の日本語実況を生成してください。\n"
-                       "1) 登場するプレイヤーの人数、名前、車種を特定してください。\n"
-                       "2) 背景情報や風景の描写は避けてください。\n"
-                       "3) 冗長になりすぎず、レースの初期情報を伝えてください。")
+                       "冗長になりすぎず、レースの初期情報を伝えてください。人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．")
 
     elif mode == "feedback_loop":
         if force:
@@ -75,18 +72,19 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
         if force:
             user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
                            f"\nこれまでの実況:\n{context}\n"
-                           "ビデオに新たな展開があるかどうかを比較・分析し、以下のルールに従って日本語実況を1〜2文生成してください：\n"
+                           "以下のルールに従って日本語実況を1〜2文生成してください：\n"
                            "1) 新たな展開があるかどうかを特定してください。\n"
                            "2) 背景や風景の描写は避けてください。\n"
-                           "3) 変化がある場合は、それを説明する1〜2文の実況を生成してください。\n")
+                           "3) 変化がある場合は、それを説明する1文の実況を生成してください。\n"
+                           "4) 人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．")
         else:
             user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
                            f"\nこれまでの実況:\n{context}\n"
                            "ビデオに新たな展開があるかどうかを比較・分析し、以下のルールに従って日本語実況を生成してください：\n"
                            "1) 新たな展開があるかどうかを特定してください。\n"
-                           "2) 背景や風景の描写は避けてください。\n"
-                           "3) 状況に変化がなければ <WAIT> を出力してください。\n"
-                           "4) 明確な変化があれば、それを説明する1〜2文の実況を生成してください。\n")
+                           "2) 状況に変化がなければ <WAIT> を出力してください。\n"
+                           "3) 明確な変化があれば、それを説明する1文の実況を生成してください。\n"
+                           "4) 人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．\n")
 
 
     return user_prompt
@@ -242,10 +240,18 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
     print (pred_utterence)
     return pred_utterence
 
+def identify_dataset(transcription_file):
+    if "transcriptions_whole_data" in transcription_file:
+        return "_ja" # race game in Japanese
+    elif "transcriptions_smabra" in transcription_file:
+        return "_smabra" # smash corpus
+    else:
+        return "" # race game in English
+
 
 def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose = False, split_word = "ASSISTANT:", ):
-
-    user_prompt = get_user_prompt("baseline")
+    data_prefix = identify_dataset(transcription_file)
+    user_prompt = get_user_prompt("baseline" + data_prefix)
 
     ground_truth = read_srt(transcription_file)
     video_metadata = get_video_info(mp4_file)
@@ -255,6 +261,8 @@ def baseline(mp4_file, transcription_file, num_frames_to_use, step = 1, verbose 
     pred_utterences = []
     pred_utterences_step =[]
     pred_timing = []
+    print(transcription_file)
+
 
     for t in tqdm(range(0,video_metadata["duration"],step), total=video_metadata["duration"]/step):
 
@@ -359,7 +367,8 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
 
         init_str = " ".join(ref_utterences[:skip_frames])
         output_buffer_str = " ".join(ref_utterences[:t1])
-        user_prompt_t1 = get_user_prompt("feedback_loop", context=init_str, step=step)
+        data_prefix = identify_dataset(example["transcription"])
+        user_prompt_t1 = get_user_prompt("feedback_loop" + data_prefix, context=init_str, step=step)
         user_prompt_t1 += output_buffer_str
         generation_t1 = ref_utterences[t1]
         video_t1 = sample_frames(mp4_file, num_frames_to_use, start_frame=(t1 - step + 1) * num_frames_per_second,
@@ -371,7 +380,8 @@ def construct_icl_examples(example, t, k=2, step=1,num_frames_to_use = 5,skip_fr
                                  end_frame=(t2 + 1) * num_frames_per_second, format="video")
         init_str = "".join(ref_utterences[:skip_frames])
         output_buffer_str = "".join(ref_utterences[:t2])
-        user_prompt_t2 = get_user_prompt("feedback_loop", context=init_str, step=step)
+        data_prefix = identify_dataset(example['transcription'])
+        user_prompt_t2 = get_user_prompt("feedback_loop" + data_prefix, context=init_str, step=step)
         user_prompt_t2 += output_buffer_str
         generation_t2 = "<WAIT>"
 
@@ -415,7 +425,8 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
         # print(t)
         if t < init_skip_frames:
             if init:
-                user_prompt = get_user_prompt("feedback_loop_init")
+                data_prefix = identify_dataset(transcription_file)
+                user_prompt = get_user_prompt("feedback_loop_init" + data_prefix)
                 max_new_tokens = 100
                 do_sample = False
                 init = False
@@ -426,7 +437,8 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
                 continue
         else:
             force_flag = wait_count >= int(20 / step)
-            user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step, force=force_flag)
+            data_prefix = identify_dataset(transcription_file)
+            user_prompt = get_user_prompt("feedback_loop" + data_prefix, context=init_str, step=step, force=force_flag)
             user_prompt += "\nPrevious generated commentary: \n" + output_buffer_str + "\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say. If you have nothing to say, generate a <WAIT> token."
             max_new_tokens = 50
             do_sample = False
@@ -515,7 +527,8 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
 
         if t < init_skip_frames:
             if t == 0:
-                user_prompt = get_user_prompt("feedback_loop_init")
+                data_prefix = identify_dataset(transcription_file)
+                user_prompt = get_user_prompt("feedback_loop_init" + data_prefix)
                 max_new_tokens = 150
                 do_sample = False
 
@@ -525,10 +538,12 @@ def baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use, step
                 continue
         else:
             if wait_count >= int(20/step):
-                user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step, force=True)
+                data_prefix = identify_dataset(transcription_file)
+                user_prompt = get_user_prompt("feedback_loop" + data_prefix, context=init_str, step=step, force=True)
                 temp = 1
             else:
-                user_prompt = get_user_prompt("feedback_loop", context=init_str, step=step)
+                data_prefix = identify_dataset(transcription_file)
+                user_prompt = get_user_prompt("feedback_loop" + data_prefix, context=init_str, step=step)
                 temp = 1.2
             user_prompt += output_buffer_str
             max_new_tokens = 50
