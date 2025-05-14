@@ -265,7 +265,7 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
                 number = int(match.group(1))
                 string_part = match.group(2)
                 t = int(number)
-                ut = str(str).strip()
+                ut = str(string_part).strip()
                 if ut and "WAIT" not in ut:
                     if contains_japanese(ut):
                         num_of_words = len(ut)
