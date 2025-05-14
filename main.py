@@ -21,6 +21,8 @@ import argparse
 import json
 from datasets import Dataset, load_dataset, concatenate_datasets
 import datasets
+import re
+
 def get_user_prompt(mode="baseline", context="", step = 1, force=False):
     #todo: move prompts to a yaml file
     if mode == "baseline":
@@ -607,6 +609,7 @@ def simulate_speaking(pred_utterance, words_per_sec=4.0):
     if contains_japanese(pred_utterance):
         words = list(pred_utterance.strip()) # split by character
         words_per_sec = 6.5 # average speed of japanese speech
+        delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
     else:
         words = pred_utterance.strip().split()
         delay = 1.0 / words_per_sec  # 1語あたりの表示時間（秒）
