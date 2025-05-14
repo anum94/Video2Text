@@ -172,10 +172,10 @@ def compute_10_percent(ref_list, pred_list, n_intervals = 10):
         hyp = " ".join(pred_list[start:end])
         ref = " ".join(ref_list[start:end])
         rouge_score = rouge.score(ref, hyp)
-        _, _, bert_F1 = bertscore.score([hyp], [ref])
+        _, _, bert_F1 = bertscore.score(pred_list[start:end], ref_list[start:end])
         bert_F1 = float((bert_F1.numpy())[0])
         smoothie = SmoothingFunction().method4
-        BLEUscore = nltk.translate.bleu_score.sentence_bleu(ref_list[start:end], pred_list[start:end],smoothing_function=smoothie)
+        BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_list[start:end]], pred_list[start:end],smoothing_function=smoothie)
 
 
         score_dict[ f"rouge_{i * 10}-{(i + 1) * 10}%"] = rouge_score['rougeL'].fmeasure
@@ -206,13 +206,13 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
 
     # BERTScore calculation
     scorer = BERTScorer(model_type='bert-base-uncased')
-    P, R, bert_F1 = scorer.score([pred_commentary], [ref_commentary])
+    P, R, bert_F1 = scorer.score(pred_utterences, ref_utterences)
     bert_F1 = float((bert_F1.numpy())[0])
     # print(f"BERTScore Precision: {P.mean():.4f}, Recall: {R.mean():.4f}, F1: {F1.mean():.4f}")
 
     # flatten_2d_dict(rouge)
 
-    BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, weights)
+    BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_utterences], pred_utterences)
 
     ref_lines = parse_srt(reference_srt)
     hyp_lines = parse_srt(generated_srt)
