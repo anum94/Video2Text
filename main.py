@@ -733,7 +733,7 @@ if __name__ == '__main__':
 
 
         else:
-            model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
+            model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,).to(0)
             processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
     else:
         model = None
@@ -757,7 +757,6 @@ if __name__ == '__main__':
         icl_transcription_file = icl_example["srt_path"]
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
-        run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
         try:
         #if True:
 
@@ -788,8 +787,8 @@ if __name__ == '__main__':
             icl_feedback_loop_generation = baseline_generation
             feedback_loop_generation = baseline_generation
             realtime_loop_generation = baseline_generation
-            run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
-            config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
+            run_name = f"FP{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
+            config = {"model": f"{model_id}_FP", "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
                       "dataset": hf_dataset_path
                       }
 
