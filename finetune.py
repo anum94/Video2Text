@@ -15,7 +15,8 @@ from datasets import Dataset, load_dataset, concatenate_datasets
 from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
 from transformers import AutoProcessor, BitsAndBytesConfig, LlavaNextVideoForConditionalGeneration
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
-from main import get_utterence_timing, extract_until_last_complete_sentence, create_ds, baseline_feedback_loop
+from main import get_utterence_timing, extract_until_last_complete_sentence, create_ds, baseline_feedback_loop, \
+    identify_dataset
 import torch
 from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
@@ -35,18 +36,27 @@ def get_commentary_path(commentary_directory, game_path):
     else:
         commentary_path = None
     return commentary_path
+def identify_language(hf_dataset_path):
+    if "Ja" in hf_dataset_path:
+        return "ja"
+    else:
+
+        return "en"
+
 def get_FT_prompt(prev_generation):
-    prompt =    ("You are a professional commentator for car racing games. You are provided with a video clip"
-                "from an ongoing car racing game and commentary generated for the game so far."
-                 f"Previous generated Commentary: {prev_generation}"
-                 "Your task is to compare the given video with the previously generated commentary. "
-                "1) Identify if the video has any new development as compared to the already provided commentary."
-                "2) Ignore the background information and refrain the describing the scenery too much."
-                "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
-                "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
-            )
+    if lang == "en":
+        prompt =    ("You are a professional commentator for car racing games. You are provided with a video clip"
+                    "from an ongoing car racing game and commentary generated for the game so far."
+                     f"Previous generated Commentary: {prev_generation}"
+                     "Your task is to compare the given video with the previously generated commentary. "
+                    "1) Identify if the video has any new development as compared to the already provided commentary."
+                    "2) Ignore the background information and refrain the describing the scenery too much."
+                    "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
+                    "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
+                )
+    elif lang == "ja":
     
-    user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+       prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
                 f"\nこれまでの実況:\n{prev_generation}\n"
                 "以下のルールに従って日本語実況を1文生成してください：\n"
                 "1) 新たな展開があるかどうかを特定してください。\n"
@@ -298,6 +308,8 @@ if __name__ == '__main__':
         hf_dataset_path = hf_dataset_path.replace("/", "")
     ft_dataset_path = f"{hf_dataset_path}_FT_frames_{NUM_FRAMES}_step_{step}_n_{len(train_dataset_raw)}"
 
+    lang = identify_language(hf_dataset_path)
+    use_existing = False
     if use_existing == True:
         train_dataset = datasets.load_from_disk(ft_dataset_path)
     else:
