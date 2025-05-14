@@ -758,11 +758,12 @@ if __name__ == '__main__':
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
         run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
-        #try:
-        if True:
+        try:
+        #if True:
 
             print ("Baseline")
             baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+
             print ("Feedback")
             feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step, ICL=False,
@@ -770,7 +771,7 @@ if __name__ == '__main__':
                                                               context_window=context_window, model_name=model_name
                                                               , logs_dir=out_folder
                                                               )
-
+            
             print ("Realtime")
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
@@ -784,7 +785,9 @@ if __name__ == '__main__':
                                                                   context_window=context_window, logs_dir=out_folder,
                                                                   model_name=model_name)
 
-
+            icl_feedback_loop_generation = baseline_generation
+            feedback_loop_generation = baseline_generation
+            realtime_loop_generation = baseline_generation
             run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
             config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
                       "dataset": hf_dataset_path
@@ -794,8 +797,8 @@ if __name__ == '__main__':
                         icl_output = icl_feedback_loop_generation, realtime_output=realtime_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
-        #except Exception as e:
-        #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
+        except Exception as e:
+            print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
 
         # Writing per experiments logs every loop
@@ -811,7 +814,10 @@ if __name__ == '__main__':
     means_dict["# frame"] = num_frames_to_use
     means_dict["step"] = step
     means_dict["k"] = k
-    means_dict["pearson_wo_nan"] = np.nanmean(np.array(df["pearson"]))
+    means_dict["baseline_pearson_wo_nan"] = np.nanmean(np.array(df["baseline_pearson"]))
+    means_dict["feedback_pearson_wo_nan"] = np.nanmean(np.array(df["feedback_pearson"]))
+    means_dict["realtime_pearson_wo_nan"] = np.nanmean(np.array(df["realtime_pearson"]))
+    means_dict["icl_pearson_wo_nan"] = np.nanmean(np.array(df["icl_pearson"]))
     run_name = f"step_{step}_k_{k}_frames_{num_frames_to_use}"
     json_file = f"{hf_dataset_path}_{model_id.replace('/', '_')}_{run_name}_{str(date_time)}.json"
     #print (json_file)
