@@ -231,6 +231,7 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
             "BLEU": BLEUscore,  "ref_timing": list(ref_timing), "pearson": p_corr,
             "pred_timing": list(pred_timing), "bins": metrics_over_intervals, "BERTScore": bert_F1,
             'LAAL': laal, "LA": la}
+    print (res)
     return res
 
 
