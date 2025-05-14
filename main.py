@@ -840,7 +840,7 @@ if __name__ == '__main__':
     means_dict["icl_pearson_wo_nan"] = np.nanmean(np.array(df["icl_pearson"]))
     run_name = f"step_{step}_k_{k}_frames_{num_frames_to_use}"
     json_file = f"{hf_dataset_path}_{model_id.replace('/', '_')}_{run_name}_{str(date_time)}.json"
-    #print (json_file)
+    print (json_file)
     with open(json_file, 'w') as fp:
         json.dump(means_dict, fp)
 
