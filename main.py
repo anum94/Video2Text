@@ -36,6 +36,10 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
         user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
                        "このシーンを1文で説明する日本語の実況を生成してください。\n"
                        "観客が没入できるような自然な実況を心がけてください。話すべきことがなければ <WAIT> を出力してください。")
+    elif mode == "baseline_smabra":
+        user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中の対戦のビデオクリップと、これまでに生成された実況です。\n"
+                       "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                       "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
     elif mode == "feedback_loop_init":
         user_prompt = ("You are a professional commentator for car racing games. You will be provided with a video clip"
@@ -49,6 +53,11 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
         user_prompt = ("あなたはカーレースのプロの実況者です。これからレース開始時のビデオクリップが提示されます。\n"
                        "それに対して1文の日本語実況を生成してください。\n"
                        "冗長になりすぎず、レースの初期情報を伝えてください。人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．")
+
+    elif mode == "feedback_loop_init_smabra":
+        user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。これから対戦開始時のビデオクリップが提示されます。\n"
+                       "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                       "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
     elif mode == "feedback_loop":
         if force:
@@ -87,6 +96,19 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                            "2) 状況に変化がなければ <WAIT> を出力してください。\n"
                            "3) 明確な変化があれば、それを説明する1文の実況を生成してください。\n"
                            "4) 人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．\n")
+
+    elif mode == "feedback_loop_smabra":
+        if force:
+            user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                           f"\nこれまでの実況:\n{context}\n"
+                            "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                            "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
+
+        else:
+            user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                           f"\nこれまでの実況:\n{context}\n"
+                            "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                            "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
 
     return user_prompt
@@ -245,7 +267,7 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
 def identify_dataset(transcription_file):
     if "transcriptions_whole_data" in transcription_file:
         return "_ja" # race game in Japanese
-    elif "transcriptions_smabra" in transcription_file:
+    elif "smabra_ja" in transcription_file:
         return "_smabra" # smash corpus
     else:
         return "" # race game in English
