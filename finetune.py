@@ -46,8 +46,8 @@ def get_FT_prompt(prev_generation):
                 "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
             )
     
-user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
-                f"\nこれまでの実況:\n{context}\n"
+    user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                f"\nこれまでの実況:\n{prev_generation}\n"
                 "以下のルールに従って日本語実況を1文生成してください：\n"
                 "1) 新たな展開があるかどうかを特定してください。\n"
                 "2) 背景や風景の描写は避けてください。\n"

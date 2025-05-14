@@ -169,13 +169,13 @@ def compute_10_percent(ref_list, pred_list, n_intervals = 10):
     intervals = interval_indices(len(pred_list), n_intervals)
     score_dict = {}
     for i, (start, end) in enumerate(intervals):
-        hyp = " ".join(pred_list[start:end])
-        ref = " ".join(ref_list[start:end])
-        rouge_score = rouge.score(ref, hyp)
-        _, _, bert_F1 = bertscore.score([hyp], [ref])
+        hyp = " ".join()
+        ref = " ".join()
+        rouge_score = rouge.score(ref_list[start:end], pred_list[start:end])
+        _, _, bert_F1 = bertscore.score(pred_list[start:end], ref_list[start:end])
         bert_F1 = float((bert_F1.numpy())[0])
         smoothie = SmoothingFunction().method4
-        BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref], [hyp],smoothing_function=smoothie)
+        BLEUscore = nltk.translate.bleu_score.sentence_bleu(ref_list[start:end], pred_list[start:end],smoothing_function=smoothie)
 
 
         score_dict[ f"rouge_{i * 10}-{(i + 1) * 10}%"] = rouge_score['rougeL'].fmeasure
@@ -198,16 +198,16 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
     metrics_over_intervals = compute_10_percent(ref_utterences, pred_utterences)
 
 
-    pred_commentary = "\n".join(pred_utterences)
-    ref_commentary = "\n".join(ref_utterences)
+    #pred_commentary = "\n".join(pred_utterences)
+    #ref_commentary = "\n".join(ref_utterences)
     r_scorer = rouge_scorer.RougeScorer([ 'rougeL'], use_stemmer=True)
-    rouge = r_scorer.score(ref_commentary, pred_commentary)
+    rouge = r_scorer.score(ref_utterences, pred_utterences)
     rouge_L = rouge['rougeL'].fmeasure
 
 
     # BERTScore calculation
     scorer = BERTScorer(model_type='bert-base-uncased')
-    P, R, bert_F1 = scorer.score([pred_commentary], [ref_commentary])
+    P, R, bert_F1 = scorer.score(pred_utterences, ref_utterences)
     bert_F1 = float((bert_F1.numpy())[0])
     #print(f"BERTScore Precision: {P.mean():.4f}, Recall: {R.mean():.4f}, F1: {F1.mean():.4f}")
 
@@ -215,7 +215,8 @@ def compute_metrics(ref_timing, pred_timing, pred_utterences, ref_utterences, ge
     #flatten_2d_dict(rouge)
 
     smoothie = SmoothingFunction().method4
-    BLEUscore = nltk.translate.bleu_score.sentence_bleu([ref_commentary], pred_commentary, smoothing_function=smoothie)
+    pred_commentary = "\n".join(pred_utterences)
+    BLEUscore = nltk.translate.bleu_score.sentence_bleu(ref_utterences, pred_commentary, smoothing_function=smoothie)
 
 
     ref_lines = parse_srt(reference_srt)
