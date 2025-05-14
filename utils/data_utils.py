@@ -258,6 +258,7 @@ def convert_text_to_srt(file_path: str = None, talking_speed_sample:str = "../Ra
         with open(file_path, 'r') as file:
             lines = file.readlines()
         for line in lines:
+            print (line)
             l = line.split(':')
             t = int(l[0])
             ut = str(l[1]).strip()
