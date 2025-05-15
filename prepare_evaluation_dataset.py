@@ -160,7 +160,7 @@ if __name__ == '__main__':
         # iteration over each model generations
         df_models = df.groupby('model')
         for model_name, group_model in df_models:
-            print (model_name)
+            #print (model_name)
             group_model.to_excel(f"{model_name}.xlsx")
             if "anumafzal94" in model_name:
                 eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
@@ -200,7 +200,7 @@ if __name__ == '__main__':
 
     eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=excel_columns)
     eval_df["sample"] = samples
-    eval_df.to_excel("evaluation_samples.xlsx")
+    eval_df.to_excel(f"{ds}_evaluation_samples.xlsx")
 
 
 
