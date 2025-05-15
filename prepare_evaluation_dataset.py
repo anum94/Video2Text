@@ -42,10 +42,15 @@ if __name__ == '__main__':
     VIDEO_DIR = args.video_dir
     logs_directory = args.logs_dir
 
+    logs_directory = logs_directory.split('/')
+
+
     logs_list = []
     for file_path in findDirWithFileInLevel(logs_directory, 3):
          sample_dict = {}
          nested_paths = file_path.split('/')
+         if len(nested_paths) < 5:
+             continue
          print(nested_paths)
          sample_dict["model"] = nested_paths[-3]
          config = nested_paths[-1].split("_")
