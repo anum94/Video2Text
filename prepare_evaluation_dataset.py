@@ -56,7 +56,7 @@ if __name__ == '__main__':
          sample_dict["step"], sample_dict["frames_used"], sample_dict["k"] = config[1], config[3], config[5]
          sample_dict["sample"] = nested_paths[-2]
          sample_dict["video_path"] = get_video_path(sample_dict["sample"])
-         print (sample_dict)
+
 
          for srt_file in os.listdir(file_path):
              if ".srt" in srt_file:
@@ -70,8 +70,11 @@ if __name__ == '__main__':
                      sample_dict["baseline_srt"] = os.path.join(file_path,srt_file)
 
          logs_list.append(sample_dict)
+         print(sample_dict)
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Logical_Coherence"]
+    print(len(logs_list))
     df = pd.DataFrame(logs_list).dropna()
+    print(len(df))
     df = df.loc[(df['step'] == 2) & (df['frames_used'] == 1) & (df['k'] == 8)]
     print (len(df))
     df_samples = df.groupby('sample')
