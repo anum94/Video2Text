@@ -6,7 +6,7 @@ import shutil
 import argparse
 import random
 
-SAMPLES_PER_MODEL = 2
+SAMPLES_PER_MODEL = 10
 from utils.video_utils import get_video_info
 model_dict = {"llava-hf_LLaVA-NeXT-Video-7B-hf": "M1",
               "gpt-4o-mini-2024-07-18": "M3",
@@ -143,6 +143,8 @@ if __name__ == '__main__':
     excel_columns = []
     samples = []
     for sample_name, group_sample in df_samples:
+        if len(samples) == 10:
+            break
         samples.append(sample_name)
 
         group_sample = group_sample.head(SAMPLES_PER_MODEL)
@@ -200,7 +202,7 @@ if __name__ == '__main__':
 
     eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=excel_columns)
     eval_df["sample"] = samples
-    eval_df.to_excel(f"{ds}_evaluation_samples.xlsx")
+    eval_df.to_excel(f"evaluation_samples/{ds}_evaluation_samples.xlsx")
 
 
 
