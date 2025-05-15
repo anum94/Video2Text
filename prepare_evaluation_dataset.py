@@ -88,6 +88,7 @@ if __name__ == '__main__':
             df_models = df.groupby('model')
             for model_name, group_model in df_models:
                 print (model_name)
+                group_model.to_excel(f"{model_name}.xlsx")
                 if "anumafzal94" in model_name:
                     eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
                     os.makedirs(eval_model_dir, exist_ok=True)
@@ -122,7 +123,8 @@ if __name__ == '__main__':
                     prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                     eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                     excel_columns += eval_col
-    eval_df = df = pd.DataFrame(0, index=np.arange(len(samples)), columns=eval_col)
+
+    eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=eval_col)
     eval_df["sample"] = samples
     print(eval_df)
     eval_df.to_excel("evaluation_samples.xlsx")
