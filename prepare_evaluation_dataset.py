@@ -179,15 +179,11 @@ if __name__ == '__main__':
 
         # iteration over each model generations
         df_models = group_sample.groupby('model')
-        if len(df_models) < 4:
+        if len(df_models) < 6:
             continue
         samples.append(sample_name)
         for model_name, group_model in df_models:
-
-            print (model_name)
-            print (group_model)
-            group_model = group_model.sort_values(by='time')
-            print(group_model)
+            group_model = group_model.sort_values(by='time', ascending=False)
 
             if "anumafzal94" in model_name and "LLaVa" in model_name:
                 #This is a fine-tuned llava model so we would handle this case separately
