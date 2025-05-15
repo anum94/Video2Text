@@ -50,7 +50,8 @@ for file_path in findDirWithFileInLevel(logs_directory, 3):
      logs_list.append(sample_dict)
 evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Logical_Coherence"]
 df = pd.DataFrame(logs_list).dropna()
-df = df.loc[(df['step'] == 2) & (df['frames_used'] == 1) & (df['k'].isin([6,8]))]
+df = df.loc[(df['step'] == 2) & (df['frames_used'] == 1) & (df['k'] == 8)]
+print (len(df))
 df_samples = df.groupby('sample')
 excel_columns = []
 samples = []
