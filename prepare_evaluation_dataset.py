@@ -163,7 +163,7 @@ if __name__ == '__main__':
         df_models = group_sample.groupby('model')
         for model_name, group_model in df_models:
             print (model_name)
-            print (len(group_model))
+            print (group_model)
 
             if "anumafzal94" in model_name and "llava" in model_name:
                 #This is a fine-tuned llava model so we would handle this case separately
