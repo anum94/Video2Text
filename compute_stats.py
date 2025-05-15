@@ -30,7 +30,7 @@ if __name__ == '__main__':
         metadata = get_video_info(mp4_file)
         length.append(metadata["duration"])
         srt = read_srt(transcription_file)
-        if "ja" in hf_dataset:
+        if "Ja" in hf_dataset:
             tokenizer = Tokenizer()
             tokens = list(tokenizer.tokenize(srt.tex))
             srt_count = [token.surface for token in tokens if
