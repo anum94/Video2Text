@@ -74,7 +74,8 @@ if __name__ == '__main__':
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Logical_Coherence"]
     print(len(logs_list))
     df = pd.DataFrame(logs_list)#.dropna()
-    print(df.columns)
+    for col in df:
+        print(df[col].unique())
     df = df[((df['step'] == 2) & (df['frames_used'] == 1)) & (df['k'] == 2) ]
 
     print (len(df))
