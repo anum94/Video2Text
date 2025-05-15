@@ -1,11 +1,12 @@
 import os
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
 import shutil
 import argparse
 import random
-
+import time
 SAMPLES_PER_MODEL = 10
 from utils.video_utils import get_video_info
 model_dict = {"llava-hf_LLaVA-NeXT-Video-7B-hf": "M1",
@@ -133,16 +134,22 @@ if __name__ == '__main__':
                     sample_dict["feedback_srt"] = os.path.join(file_path,srt_file)
                 else:
                     sample_dict["baseline_srt"] = os.path.join(file_path,srt_file)
+
+                ti_m = os.path.getmtime(os.path.join(file_path,srt_file))
+                t_obj = time.ctime(ti_m)
+                sample_dict["time"] = datetime.strptime(t_obj, '%a %b %d %H:%M:%S %Y')
          if "anumafzal94" in sample_dict["model"]:
             sample_dict["realtime_srt"] = "NA"
             sample_dict["icl_srt"] = "NA"
 
 
          logs_list.append(sample_dict)
+         print(sample_dict)
         #print(sample_dict)
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Coherence"]
     df = pd.DataFrame(logs_list)#.dropna()
     df = df[df[['video_path', 'icl_srt', 'baseline_srt', 'feedback_srt']].notna()]
+    #df['time'] = pd.to_datetime(df['time'], format='%y%m%d')
     df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'].isin(['8', '0'])) ]
     df.sample(frac=1)
 
@@ -174,6 +181,8 @@ if __name__ == '__main__':
 
             print (model_name)
             print (group_model)
+            group_model = group_model.sort_values(by='time')
+            print(group_model)
 
             if "anumafzal94" in model_name and "LLaVa" in model_name:
                 #This is a fine-tuned llava model so we would handle this case separately
