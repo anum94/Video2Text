@@ -114,9 +114,11 @@ if __name__ == '__main__':
     for file_path in findDirWithFileInLevel(logs_directory, 3):
          sample_dict = {}
          nested_paths = file_path.split('/')
-         print (nested_paths)
+         print (ds)
          if len(nested_paths) < 6 and ds not in nested_paths:
              continue
+
+         print(nested_paths)
          #print(nested_paths)
          sample_dict["model"] = nested_paths[-3]
 
