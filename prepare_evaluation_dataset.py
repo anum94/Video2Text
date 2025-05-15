@@ -179,7 +179,7 @@ if __name__ == '__main__':
 
         # iteration over each model generations
         df_models = group_sample.groupby('model')
-        if len(df_models) < 6:
+        if len(df_models) < 4:
             continue
         samples.append(sample_name)
         for model_name, group_model in df_models:
