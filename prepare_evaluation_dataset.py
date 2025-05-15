@@ -138,9 +138,11 @@ if __name__ == '__main__':
                 ti_m = os.path.getmtime(os.path.join(file_path,srt_file))
                 t_obj = time.ctime(ti_m)
                 sample_dict["time"] = datetime.strptime(t_obj, '%a %b %d %H:%M:%S %Y')
+
          if "anumafzal94" in sample_dict["model"]:
             sample_dict["realtime_srt"] = "NA"
             sample_dict["icl_srt"] = "NA"
+            sample_dict["baseline_srt"] = "NA"
 
 
          logs_list.append(sample_dict)
@@ -148,8 +150,8 @@ if __name__ == '__main__':
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Coherence"]
     df = pd.DataFrame(logs_list)#.dropna()
     df = df.dropna(subset=['icl_srt'])
-    df = df.dropna(subset=['baseline_srt'])
     df = df.dropna(subset=['feedback_srt'])
+    df = df.dropna(subset=['realtime_srt'])
     df = df.dropna(subset=['video_path'])
 
 
