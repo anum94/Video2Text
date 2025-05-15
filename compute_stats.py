@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import os
+from janome.tokenizer import Tokenizer
 import numpy as np
 import datasets
 from tqdm import tqdm
@@ -29,7 +30,13 @@ if __name__ == '__main__':
         metadata = get_video_info(mp4_file)
         length.append(metadata["duration"])
         srt = read_srt(transcription_file)
-        srt_count = len(srt.text.split())
+        if "ja" in hf_dataset:
+            tokenizer = Tokenizer()
+            tokens = list(tokenizer.tokenize(srt.tex))
+            srt_count = [token.surface for token in tokens if
+                     token.surface.strip() and token.part_of_speech.split(',')[0] != '記号']
+        else:
+            srt_count = len(srt.text.split())
         if srt_count > 0:
             srts.append(srt_count)
 
