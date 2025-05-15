@@ -122,7 +122,7 @@ if __name__ == '__main__':
                     # Copy srt files into the respective sample/model directory
 
                     # Baseline
-                    srt_mode = 'baseline_srt'
+                    srt_mode = 'icl_srt'
                     source = group_model.iloc[0][srt_mode]
                     destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
                     #dest = shutil.copyfile(source, destination)
@@ -132,7 +132,6 @@ if __name__ == '__main__':
 
                     # Realtime
                     srt_mode = 'realtime_srt'
-                    srt_mode = 'icl_srt'
                     source = group_model.iloc[0][srt_mode]
                     destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
                     #dest = shutil.copyfile(source, destination)
