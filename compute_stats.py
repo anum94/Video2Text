@@ -1,0 +1,58 @@
+import argparse
+import datetime
+import os
+import numpy as np
+import datasets
+from tqdm import tqdm
+from utils.video_utils import get_video_info
+from utils.data_utils import read_srt
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+            description="Prepares samples for Human Evaluation from previously conducted experiments."
+    )
+
+    parser.add_argument("--hf_dataset", required=True, type=str, help="directoty with all the videos")
+
+    args = parser.parse_args()
+
+    hf_dataset = args.hf_dataset
+    ds = datasets.load_from_disk(hf_dataset)
+    test_dataset = ds['test'].with_format("torch")
+    length = []
+    srts = []
+
+    for i in tqdm(range(len(test_dataset))):
+        # get sample
+        mp4_file = test_dataset[i]["video_path"]
+        transcription_file = test_dataset[i]["srt_path"]
+
+        metadata = get_video_info(mp4_file)
+        length.append(metadata["duration"])
+        srt = read_srt(transcription_file)
+        srt_count = len(srt.text.split())
+        srts.append(srt_count)
+
+    maximum = max(length)
+    minimum = min(length)
+    average = sum(length) / len(length)
+
+    print("Maximum Video Duration:", maximum)
+    print("Minimum Video Duration:", minimum)
+    print("Average Video Duration:", average)
+
+    maximum = max(srts)
+    minimum = min(srts)
+    average = sum(srts) / len(srts)
+
+    print("Maximum Commentary words:", maximum)
+    print("Minimum Commentary words:", minimum)
+    print("Average Commentary words:", average)
+
+
+
+
+
+
+
+
+
