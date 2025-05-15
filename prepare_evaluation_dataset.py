@@ -4,8 +4,10 @@ import numpy as np
 import pandas as pd
 import shutil
 import argparse
-SAMPLES_PER_MODEL = 2
+import random
 
+SAMPLES_PER_MODEL = 2
+from utils.video_utils import get_video_info
 model_dict = {"llava-hf_LLaVA-NeXT-Video-7B-hf": "M1",
               "gpt-4o-mini-2024-07-18": "M3",
                 "Qwen_Qwen2.5-VL-7B-Instruct": "M2",
@@ -14,6 +16,66 @@ model_dict = {"llava-hf_LLaVA-NeXT-Video-7B-hf": "M1",
               }
 
 srt_dict = { "realtime_srt": "G1.srt", "icl_srt": "G2.srt", "ft_str": "G3.srt"}
+
+import copy
+
+from ffmpeg import FFmpeg
+import webvtt  # https://github.com/glut23/webvtt-py
+from webvtt.models import Timestamp
+
+
+def secs_to_timestamp(secs):
+    if secs is None:
+        return None
+    hours, secs = divmod(secs, 3600)
+    mins, secs = divmod(secs, 60)
+    secs, msecs = divmod(secs, 1)
+    return str(Timestamp(int(hours), int(mins), int(secs), int(msecs * 1000)))
+
+
+def timestamp_to_secs(ts):
+    ts = Timestamp.from_string(ts)
+    return ts.hours * 3600 + ts.minutes * 60 + ts.seconds + ts.milliseconds / 1000.0
+
+
+def cut_video(video_in, video_out, start, end=None):
+    t_opt = { "t": end - start } if end else {}
+    out_opts = {
+        "ss": start,
+        **t_opt,
+    }
+
+    ffmpeg = FFmpeg()
+    ffmpeg = ffmpeg.option('y')
+    ffmpeg = ffmpeg.input(
+        video_in,
+    )
+    ffmpeg = ffmpeg.output(
+        video_out,
+        # map=['0'],
+        ss=start,
+        **t_opt,
+        c='copy',
+    )
+    ffmpeg.execute()
+
+
+def cut_subtitles(subs_in, subs_out, start, end=None):
+    all_subs = webvtt.from_srt(subs_in)
+    subs = webvtt.WebVTT()
+    for orig_caption in all_subs.iter_slice(secs_to_timestamp(start), secs_to_timestamp(end)):
+        caption = copy.copy(orig_caption)
+        caption.start = orig_caption.start and str(secs_to_timestamp(timestamp_to_secs(orig_caption.start) - start))
+        caption.end = orig_caption.end and str(secs_to_timestamp(timestamp_to_secs(orig_caption.end) - start))
+        subs.captions.append(caption)
+    subs.save_as_srt(subs_out)
+
+
+def cut(video_in, subs_in, video_out, subs_out, start, end=None):
+    cut_video(video_in, video_out, start, end)
+    cut_subtitles(subs_in, subs_out, start, end)
+
+
 def findDirWithFileInLevel(path, level=3):
     c = path.count(os.sep)
     for root, dirs, files in os.walk(path):
@@ -74,16 +136,15 @@ if __name__ == '__main__':
         #print(sample_dict)
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Logical_Coherence"]
     print(len(logs_list))
-    df = pd.DataFrame(logs_list)#.dropna
+    df = pd.DataFrame(logs_list).dropna()
     df = df[df['video_path'].notna()]
-    df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'] == '8') ]
+    #df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'] == '8') ]
 
     print (len(df))
     df_samples = df.groupby('sample')
     excel_columns = []
     samples = []
     for sample_name, group_sample in df_samples:
-
         samples.append(sample_name)
 
         group_sample = group_sample.head(SAMPLES_PER_MODEL)
@@ -92,8 +153,13 @@ if __name__ == '__main__':
 
         # Copy video into the directory
         source = group_sample.iloc[0]['video_path']
-        destination = os.path.join(eval_samples_dir, os.path.basename(source))
-        dest = shutil.copyfile(source, destination)
+        video_metadata = get_video_info(source)
+        start = random.randint(0,video_metadata["duration"]-11)
+        end = start + 10
+        destination = os.path.join(eval_samples_dir, f"{os.path.basename(source).replace('.mp4', f'_{start}-{end}.mp4')}")
+        #dest = shutil.copyfile(source, destination)
+        print(destination)
+        cut_video(video_in=source,video_out=destination,start=start,end=end)
 
         # iteration over each model generations
         df_models = df.groupby('model')
@@ -107,7 +173,7 @@ if __name__ == '__main__':
                 srt_mode = 'feedback_srt'
                 source = group_model.iloc[0][srt_mode]
                 destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                #dest = shutil.copyfile(source, destination)
+                dest = shutil.copyfile(source, destination)
                 prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                 eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                 excel_columns += eval_col
@@ -120,7 +186,9 @@ if __name__ == '__main__':
                 srt_mode = 'icl_srt'
                 source = group_model.iloc[0][srt_mode]
                 destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                #dest = shutil.copyfile(source, destination)
+                print (source)
+                print (destination)
+                dest = shutil.copyfile(source, destination)
                 prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                 eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                 excel_columns += eval_col
@@ -129,7 +197,7 @@ if __name__ == '__main__':
                 srt_mode = 'realtime_srt'
                 source = group_model.iloc[0][srt_mode]
                 destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                #dest = shutil.copyfile(source, destination)
+                dest = shutil.copyfile(source, destination)
                 prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                 eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                 excel_columns += eval_col
