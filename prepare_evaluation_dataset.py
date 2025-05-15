@@ -50,7 +50,7 @@ if __name__ == '__main__':
          nested_paths = file_path.split('/')
          if len(nested_paths) < 6 and ds not in nested_paths:
              continue
-         print(nested_paths)
+         #print(nested_paths)
          sample_dict["model"] = nested_paths[-3]
          config = nested_paths[-1].split("_")
          sample_dict["step"], sample_dict["frames_used"], sample_dict["k"] = config[1], config[3], config[5]
@@ -75,6 +75,7 @@ if __name__ == '__main__':
     print(len(logs_list))
     df = pd.DataFrame(logs_list)#.dropna()
     for col in df:
+        print (col)
         print(df[col].unique())
     df = df[((df['step'] == 2) & (df['frames_used'] == 1)) & (df['k'] == 2) ]
 
