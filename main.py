@@ -24,9 +24,8 @@ from datasets import Dataset, load_dataset, concatenate_datasets
 import datasets
 import re
 
-
-def get_user_prompt(mode="baseline", context="", step=1, force=False):
-    # todo: move prompts to a yaml file
+def get_user_prompt(mode="baseline", context="", step = 1, force=False):
+    #todo: move prompts to a yaml file
     if mode == "baseline":
         user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
                        "from an ongoing car racing game and commentary generated for the game so far. \n"
@@ -102,15 +101,16 @@ def get_user_prompt(mode="baseline", context="", step=1, force=False):
     elif mode == "feedback_loop_smabra":
         if force:
             user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
-                           f"\nこれまでの実況:\n{context}\n"
-                           "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
-                           "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
+                               f"\nこれまでの実況:\n{context}\n"
+                                "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                                "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
         else:
             user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
-                           f"\nこれまでの実況:\n{context}\n"
-                           "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
-                           "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
+                               f"\nこれまでの実況:\n{context}\n"
+                                "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                                "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
+
 
     return user_prompt
 def create_ds(folder):
