@@ -32,7 +32,7 @@ if __name__ == '__main__':
         srt = read_srt(transcription_file)
         if "Ja" in hf_dataset:
             tokenizer = Tokenizer()
-            tokens = list(tokenizer.tokenize(srt.tex))
+            tokens = list(tokenizer.tokenize(srt.text))
             srt_count = [token.surface for token in tokens if
                      token.surface.strip() and token.part_of_speech.split(',')[0] != '記号']
         else:
