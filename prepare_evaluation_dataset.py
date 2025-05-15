@@ -49,7 +49,7 @@ if __name__ == '__main__':
     for file_path in findDirWithFileInLevel(logs_directory, 3):
          sample_dict = {}
          nested_paths = file_path.split('/')
-         if len(nested_paths) < 6 and ds not in nested_paths:
+         if len(nested_paths) < 6:# and ds not in nested_paths:
              continue
          #print(nested_paths)
          sample_dict["model"] = nested_paths[-3]
@@ -58,29 +58,23 @@ if __name__ == '__main__':
          sample_dict["sample"] = nested_paths[-2]
          sample_dict["video_path"] = get_video_path(sample_dict["sample"])
 
-
          for srt_file in os.listdir(file_path):
-             sample_dict["realtime_srt"] = "NA"
-             sample_dict["icl_srt"] = "NA"
-             sample_dict["feedback_srt"] = "NA"
-    else:
-        sample_dict["baseline_srt"] = os.path.join(file_path, srt_file)
+            if ".srt" in srt_file:
+                if "realtime" in srt_file:
+                    sample_dict["realtime_srt"] = os.path.join(file_path,srt_file)
+                elif "icl" in srt_file:
+                    sample_dict["icl_srt"] = os.path.join(file_path,srt_file)
+                elif "feedback" in srt_file:
+                    sample_dict["feedback_srt"] = os.path.join(file_path,srt_file)
+                else:
+                    sample_dict["baseline_srt"] = os.path.join(file_path,srt_file)
 
-        if ".srt" in srt_file:
-            if "realtime" in srt_file:
-                sample_dict["realtime_srt"] = os.path.join(file_path,srt_file)
-            elif "icl" in srt_file:
-                sample_dict["icl_srt"] = os.path.join(file_path,srt_file)
-            elif "feedback" in srt_file:
-                sample_dict["feedback_srt"] = os.path.join(file_path,srt_file)
-            else:
-                sample_dict["baseline_srt"] = os.path.join(file_path,srt_file)
-
-        logs_list.append(sample_dict)
+         logs_list.append(sample_dict)
         #print(sample_dict)
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Logical_Coherence"]
     print(len(logs_list))
-    df = pd.DataFrame(logs_list)#.dropna()
+    df = pd.DataFrame(logs_list)#.dropna
+    df = df[df['video_path'].notna()]
     df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'] == '8') ]
 
     print (len(df))
@@ -88,56 +82,56 @@ if __name__ == '__main__':
     excel_columns = []
     samples = []
     for sample_name, group_sample in df_samples:
-        if len(group_sample) >= SAMPLES_PER_MODEL:
-            samples.append(sample_name)
-            print(sample_name)
-            group_sample = group_sample.head(SAMPLES_PER_MODEL)
-            eval_samples_dir = os.path.join("evaluation_samples", ds, sample_name)
-            os.makedirs(eval_samples_dir, exist_ok=True)
 
-            # Copy video into the directory
-            source = group_sample.iloc[0]['video_path']
-            destination = os.path.join(eval_samples_dir, os.path.basename(source))
-            dest = shutil.copyfile(source, destination)
+        samples.append(sample_name)
 
-            # iteration over each model generations
-            df_models = df.groupby('model')
-            for model_name, group_model in df_models:
-                print (model_name)
-                group_model.to_excel(f"{model_name}.xlsx")
-                if "anumafzal94" in model_name:
-                    eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
-                    os.makedirs(eval_model_dir, exist_ok=True)
+        group_sample = group_sample.head(SAMPLES_PER_MODEL)
+        eval_samples_dir = os.path.join("evaluation_samples", ds, sample_name)
+        os.makedirs(eval_samples_dir, exist_ok=True)
 
-                    srt_mode = 'feedback_srt'
-                    source = group_model.iloc[0][srt_mode]
-                    destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                    #dest = shutil.copyfile(source, destination)
-                    prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
-                    eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
-                    excel_columns += eval_col
-                else:
-                    eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
-                    os.makedirs(eval_model_dir, exist_ok=True)
-                    # Copy srt files into the respective sample/model directory
+        # Copy video into the directory
+        source = group_sample.iloc[0]['video_path']
+        destination = os.path.join(eval_samples_dir, os.path.basename(source))
+        dest = shutil.copyfile(source, destination)
 
-                    # Baseline
-                    srt_mode = 'icl_srt'
-                    source = group_model.iloc[0][srt_mode]
-                    destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                    #dest = shutil.copyfile(source, destination)
-                    prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
-                    eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
-                    excel_columns += eval_col
+        # iteration over each model generations
+        df_models = df.groupby('model')
+        for model_name, group_model in df_models:
+            print (model_name)
+            group_model.to_excel(f"{model_name}.xlsx")
+            if "anumafzal94" in model_name:
+                eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
+                os.makedirs(eval_model_dir, exist_ok=True)
 
-                    # Realtime
-                    srt_mode = 'realtime_srt'
-                    source = group_model.iloc[0][srt_mode]
-                    destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                    #dest = shutil.copyfile(source, destination)
-                    prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
-                    eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
-                    excel_columns += eval_col
+                srt_mode = 'feedback_srt'
+                source = group_model.iloc[0][srt_mode]
+                destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
+                #dest = shutil.copyfile(source, destination)
+                prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
+                eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
+                excel_columns += eval_col
+            else:
+                eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
+                os.makedirs(eval_model_dir, exist_ok=True)
+                # Copy srt files into the respective sample/model directory
+
+                # ICL
+                srt_mode = 'icl_srt'
+                source = group_model.iloc[0][srt_mode]
+                destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
+                #dest = shutil.copyfile(source, destination)
+                prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
+                eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
+                excel_columns += eval_col
+
+                # Realtime
+                srt_mode = 'realtime_srt'
+                source = group_model.iloc[0][srt_mode]
+                destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
+                #dest = shutil.copyfile(source, destination)
+                prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
+                eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
+                excel_columns += eval_col
 
     eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=excel_columns)
     eval_df["sample"] = samples
