@@ -35,18 +35,20 @@ if __name__ == '__main__':
 
     parser.add_argument("--video_dir", required=True, type=str, help="directoty with all the videos")
     parser.add_argument("--logs_dir", required=True, type=str, help="log directoty with all .srt files")
+    parser.add_argument("--ds", required=True, type=str, help="name of the dataset")
 
 
     args = parser.parse_args()
 
     VIDEO_DIR = args.video_dir
     logs_directory = args.logs_dir
+    ds = args.ds
 
     logs_list = []
     for file_path in findDirWithFileInLevel(logs_directory, 3):
          sample_dict = {}
          nested_paths = file_path.split('/')
-         if len(nested_paths) < 6:
+         if len(nested_paths) < 6 and ds not in nested_paths:
              continue
          print(nested_paths)
          sample_dict["model"] = nested_paths[-3]
@@ -79,7 +81,7 @@ if __name__ == '__main__':
             samples.append(sample_name)
             print(sample_name)
             group_sample = group_sample.head(SAMPLES_PER_MODEL)
-            eval_samples_dir = os.path.join("evaluation_samples", sample_name)
+            eval_samples_dir = os.path.join("evaluation_samples", ds, sample_name)
             os.makedirs(eval_samples_dir, exist_ok=True)
 
             # Copy video into the directory
