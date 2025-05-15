@@ -768,7 +768,10 @@ if __name__ == '__main__':
         transcription_file = test_dataset[i]["srt_path"]
 
         # create folder to store logs for each sample.
-        sample_name = os.path.dirname(mp4_file).split('/')[-1]
+        if "smbra" in hf_dataset_path.lower():
+            sample_name = (os.path.basename(mp4_file)).replace('.mp4', '')
+        else:
+            sample_name = os.path.dirname(mp4_file).split('/')[-1]
         out_folder = os.path.join(my_folder, os.path.basename(hf_dataset_path), model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}")
         print (out_folder)
         os.makedirs(out_folder, exist_ok=True)
