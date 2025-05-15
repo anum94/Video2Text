@@ -56,7 +56,8 @@ if __name__ == '__main__':
          sample_dict["step"], sample_dict["frames_used"], sample_dict["k"] = config[1], config[3], config[5]
          sample_dict["sample"] = nested_paths[-2]
          sample_dict["video_path"] = get_video_path(sample_dict["sample"])
-         FT = True if "FT" in "model" else False
+         print (sample_dict)
+
          for srt_file in os.listdir(file_path):
              if ".srt" in srt_file:
                  if "realtime" in srt_file:
@@ -129,7 +130,7 @@ if __name__ == '__main__':
                     eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                     excel_columns += eval_col
 
-    eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=eval_col)
+    eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=excel_columns)
     eval_df["sample"] = samples
     print(eval_df)
     eval_df.to_excel("evaluation_samples.xlsx")
