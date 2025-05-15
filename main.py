@@ -768,7 +768,7 @@ if __name__ == '__main__':
         transcription_file = test_dataset[i]["srt_path"]
 
         # create folder to store logs for each sample.
-        if "smbra" in hf_dataset_path.lower():
+        if "smabra" in hf_dataset_path.lower():
             sample_name = (os.path.basename(mp4_file)).replace('.mp4', '')
         else:
             sample_name = os.path.dirname(mp4_file).split('/')[-1]
