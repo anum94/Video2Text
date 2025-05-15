@@ -112,7 +112,7 @@ if __name__ == '__main__':
     for file_path in findDirWithFileInLevel(logs_directory, 3):
          sample_dict = {}
          nested_paths = file_path.split('/')
-         if len(nested_paths) < 6:# and ds not in nested_paths:
+         if len(nested_paths) < 6 and ds not in nested_paths:
              continue
          #print(nested_paths)
          sample_dict["model"] = nested_paths[-3]
@@ -134,13 +134,11 @@ if __name__ == '__main__':
 
          logs_list.append(sample_dict)
         #print(sample_dict)
-    evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Logical_Coherence"]
-    print(len(logs_list))
+    evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Coherence"]
     df = pd.DataFrame(logs_list).dropna()
     df = df[df['video_path'].notna()]
-    #df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'] == '8') ]
+    df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'] == '8') ]
 
-    print (len(df))
     df_samples = df.groupby('sample')
     excel_columns = []
     samples = []
@@ -157,8 +155,6 @@ if __name__ == '__main__':
         start = random.randint(0,video_metadata["duration"]-11)
         end = start + 10
         destination = os.path.join(eval_samples_dir, f"{os.path.basename(source).replace('.mp4', f'_{start}-{end}.mp4')}")
-        #dest = shutil.copyfile(source, destination)
-        print(destination)
         cut_video(video_in=source,video_out=destination,start=start,end=end)
 
         # iteration over each model generations
@@ -172,8 +168,8 @@ if __name__ == '__main__':
 
                 srt_mode = 'feedback_srt'
                 source = group_model.iloc[0][srt_mode]
-                destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                dest = shutil.copyfile(source, destination)
+                destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
+                cut_subtitles(subs_in=source, subs_out=destination,start=start,end=end)
                 prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                 eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                 excel_columns += eval_col
@@ -185,10 +181,9 @@ if __name__ == '__main__':
                 # ICL
                 srt_mode = 'icl_srt'
                 source = group_model.iloc[0][srt_mode]
-                destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                print (source)
-                print (destination)
-                dest = shutil.copyfile(source, destination)
+                destination = os.path.join(eval_model_dir,
+                                           f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
+                cut_subtitles(subs_in=source, subs_out=destination, start=start, end=end)
                 prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                 eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                 excel_columns += eval_col
@@ -196,15 +191,15 @@ if __name__ == '__main__':
                 # Realtime
                 srt_mode = 'realtime_srt'
                 source = group_model.iloc[0][srt_mode]
-                destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                dest = shutil.copyfile(source, destination)
+                destination = os.path.join(eval_model_dir,
+                                           f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
+                cut_subtitles(subs_in=source, subs_out=destination, start=start, end=end)
                 prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                 eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                 excel_columns += eval_col
 
     eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=excel_columns)
     eval_df["sample"] = samples
-    print(eval_df)
     eval_df.to_excel("evaluation_samples.xlsx")
 
 
