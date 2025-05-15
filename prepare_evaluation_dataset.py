@@ -146,8 +146,8 @@ if __name__ == '__main__':
         if len(samples) == 10:
             break
         samples.append(sample_name)
+        print (sample_name)
 
-        group_sample = group_sample.head(SAMPLES_PER_MODEL)
         eval_samples_dir = os.path.join("evaluation_samples", ds, sample_name)
         os.makedirs(eval_samples_dir, exist_ok=True)
 
@@ -160,8 +160,9 @@ if __name__ == '__main__':
         #cut_video(video_in=source,video_out=destination,start=start,end=end)
 
         # iteration over each model generations
-        df_models = df.groupby('model')
+        df_models = group_sample.groupby('model')
         for model_name, group_model in df_models:
+            print (model_name)
             print (len(group_model))
 
             if "anumafzal94" in model_name and "llava" in model_name:
