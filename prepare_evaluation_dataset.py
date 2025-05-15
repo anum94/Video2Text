@@ -75,7 +75,8 @@ if __name__ == '__main__':
     print(len(logs_list))
     df = pd.DataFrame(logs_list)#.dropna()
     print(df.columns)
-    df = df.loc[(df['step'] == 2) & (df['frames_used'] == 1) & (df['k'] == 8)]
+    df = df[((df['step'] == 2) & (df['frames_used'] == 1)) & (df['k'] == 8) ]
+
     print (len(df))
     df_samples = df.groupby('sample')
     excel_columns = []
