@@ -60,18 +60,24 @@ if __name__ == '__main__':
 
 
          for srt_file in os.listdir(file_path):
-             if ".srt" in srt_file:
-                 if "realtime" in srt_file:
-                     sample_dict["realtime_srt"] = os.path.join(file_path,srt_file)
-                 elif "icl" in srt_file:
-                     sample_dict["icl_srt"] = os.path.join(file_path,srt_file)
-                 elif "feedback" in srt_file:
-                     sample_dict["feedback_srt"] = os.path.join(file_path,srt_file)
-                 else:
-                     sample_dict["baseline_srt"] = os.path.join(file_path,srt_file)
+             sample_dict["realtime_srt"] = "NA"
+             sample_dict["icl_srt"] = "NA"
+             sample_dict["feedback_srt"] = "NA"
+    else:
+        sample_dict["baseline_srt"] = os.path.join(file_path, srt_file)
 
-         logs_list.append(sample_dict)
-         #print(sample_dict)
+        if ".srt" in srt_file:
+            if "realtime" in srt_file:
+                sample_dict["realtime_srt"] = os.path.join(file_path,srt_file)
+            elif "icl" in srt_file:
+                sample_dict["icl_srt"] = os.path.join(file_path,srt_file)
+            elif "feedback" in srt_file:
+                sample_dict["feedback_srt"] = os.path.join(file_path,srt_file)
+            else:
+                sample_dict["baseline_srt"] = os.path.join(file_path,srt_file)
+
+        logs_list.append(sample_dict)
+        #print(sample_dict)
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Logical_Coherence"]
     print(len(logs_list))
     df = pd.DataFrame(logs_list)#.dropna()
