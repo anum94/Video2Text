@@ -30,23 +30,28 @@ if __name__ == '__main__':
         length.append(metadata["duration"])
         srt = read_srt(transcription_file)
         srt_count = len(srt.text.split())
-        srts.append(srt_count)
+        if srt_count > 0:
+            srts.append(srt_count)
 
     maximum = max(length)
     minimum = min(length)
     average = sum(length) / len(length)
 
-    print("Maximum Video Duration:", maximum)
-    print("Minimum Video Duration:", minimum)
+
+
     print("Average Video Duration:", average)
+    print("Minimum Video Duration:", minimum)
+    print("Maximum Video Duration:", maximum)
 
     maximum = max(srts)
     minimum = min(srts)
     average = sum(srts) / len(srts)
 
-    print("Maximum Commentary words:", maximum)
-    print("Minimum Commentary words:", minimum)
+
+
     print("Average Commentary words:", average)
+    print("Minimum Commentary words:", minimum)
+    print("Maximum Commentary words:", maximum)
 
 
 
