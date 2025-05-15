@@ -46,6 +46,7 @@ if __name__ == '__main__':
     for file_path in findDirWithFileInLevel(logs_directory, 3):
          sample_dict = {}
          nested_paths = file_path.split('/')
+         print(nested_paths)
          sample_dict["model"] = nested_paths[-3]
          config = nested_paths[-1].split("_")
          sample_dict["step"], sample_dict["frames_used"], sample_dict["k"] = config[1], config[3], config[5]
