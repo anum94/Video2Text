@@ -144,12 +144,15 @@ if __name__ == '__main__':
 
 
          logs_list.append(sample_dict)
-         print(sample_dict)
         #print(sample_dict)
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Coherence"]
     df = pd.DataFrame(logs_list)#.dropna()
-    df = df[df[['video_path', 'icl_srt', 'baseline_srt', 'feedback_srt']].notna()]
-    #df['time'] = pd.to_datetime(df['time'], format='%y%m%d')
+    df = df.dropna(subset=['icl_srt'])
+    df = df.dropna(subset=['baseline_srt'])
+    df = df.dropna(subset=['feedback_srt'])
+    df = df.dropna(subset=['video_path'])
+
+
     df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'].isin(['8', '0'])) ]
     df.sample(frac=1)
 
