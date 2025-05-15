@@ -19,7 +19,7 @@ srt_dict = { "realtime_srt": "G1.srt", "icl_srt": "G2.srt", "ft_str": "G3.srt"}
 
 import copy
 
-from ffmpeg import FFmpeg
+#from ffmpeg import FFmpeg
 import webvtt  # https://github.com/glut23/webvtt-py
 from webvtt.models import Timestamp
 
@@ -157,19 +157,22 @@ if __name__ == '__main__':
         start = random.randint(0,video_metadata["duration"]-11)
         end = start + 10
         destination = os.path.join(eval_samples_dir, f"{os.path.basename(source).replace('.mp4', f'_{start}-{end}.mp4')}")
-        cut_video(video_in=source,video_out=destination,start=start,end=end)
+        #cut_video(video_in=source,video_out=destination,start=start,end=end)
 
         # iteration over each model generations
         df_models = df.groupby('model')
         for model_name, group_model in df_models:
-            #print (model_name)
-            group_model.to_excel(f"{model_name}.xlsx")
-            if "anumafzal94" in model_name:
+            print (len(group_model))
+
+            if "anumafzal94" in model_name and "llava" in model_name:
+                #This is a fine-tuned llava model so we would handle this case separately
+                print(model_name)
                 eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
                 os.makedirs(eval_model_dir, exist_ok=True)
 
-                srt_mode = 'feedback_srt'
+                srt_mode = 'feedback_srt' #for fetching the correct srt file
                 source = group_model.iloc[0][srt_mode]
+                srt_mode = "ft_srt" # for create a distinction with fine-tuning model
                 destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
                 cut_subtitles(subs_in=source, subs_out=destination,start=start,end=end)
                 prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
