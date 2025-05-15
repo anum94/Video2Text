@@ -8,7 +8,7 @@ SAMPLES_PER_MODEL = 2
 
 model_dict = {"llava-hf_LLaVA-NeXT-Video-7B-hf": "M1",
               "gpt-4o-mini-2024-07-18": "M3",
-                "Qwen_Qwen2.5-VL-7B-Instruct'": "M2",
+                "Qwen_Qwen2.5-VL-7B-Instruct": "M2",
               "anumafzal94_LLaVa-NeXT-Video-_step_2_frames_1_n_40000": "M4"
               }
 
