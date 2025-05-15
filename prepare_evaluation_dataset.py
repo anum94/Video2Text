@@ -73,7 +73,7 @@ if __name__ == '__main__':
          print(sample_dict)
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Logical_Coherence"]
     print(len(logs_list))
-    df = pd.DataFrame(logs_list).dropna()
+    df = pd.DataFrame(logs_list)#.dropna()
     print(len(df))
     df = df.loc[(df['step'] == 2) & (df['frames_used'] == 1) & (df['k'] == 8)]
     print (len(df))
