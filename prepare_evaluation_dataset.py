@@ -75,6 +75,7 @@ for sample_name, group_sample in df_samples:
         # iteration over each model generations
         df_models = df.groupby('model')
         for model_name, group_model in df_models:
+            print (model_name)
             if "anumafzal94" in model_name:
                 eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
                 os.makedirs(eval_model_dir, exist_ok=True)
@@ -82,7 +83,7 @@ for sample_name, group_sample in df_samples:
                 srt_mode = 'feedback_srt'
                 source = group_model.iloc[0][srt_mode]
                 destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                dest = shutil.copyfile(source, destination)
+                #dest = shutil.copyfile(source, destination)
                 prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                 eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                 excel_columns += eval_col
@@ -95,7 +96,7 @@ for sample_name, group_sample in df_samples:
                 srt_mode = 'baseline_srt'
                 source = group_model.iloc[0][srt_mode]
                 destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                dest = shutil.copyfile(source, destination)
+                #dest = shutil.copyfile(source, destination)
                 prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                 eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                 excel_columns += eval_col
@@ -105,13 +106,14 @@ for sample_name, group_sample in df_samples:
                 srt_mode = 'icl_srt'
                 source = group_model.iloc[0][srt_mode]
                 destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode]}")
-                dest = shutil.copyfile(source, destination)
+                #dest = shutil.copyfile(source, destination)
                 prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                 eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                 excel_columns += eval_col
 eval_df = df = pd.DataFrame(0, index=np.arange(len(samples)), columns=eval_col)
 eval_df["sample"] = samples
 print(eval_df)
+eval_df.to_excel("evaluation_samples.xlsx")
 
 
 
