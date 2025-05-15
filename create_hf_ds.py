@@ -1,4 +1,4 @@
-import argparse, os
+import argparse, os, glob
 from main import get_commentary_path
 from pandas import DataFrame
 from datasets import Dataset
@@ -43,6 +43,41 @@ def create_ds(folder):
     hf_dataset.save_to_disk(dir)
     return dir
 
+def create_ds_smabra(folder):
+    print("Reading Smabra dataset...")
+    video_directory = args.recordings_dir
+    video_directory = os.path.join(folder, video_directory)
+
+    # commentary_directory = "transcriptions_whole_data_english"
+    commentary_directory = args.transcriptions_dir
+    commentary_directory = os.path.join(folder, commentary_directory)
+    hf_dataset = []
+
+    count = 0
+    for i, srt_path in enumerate(glob.glob(commentary_directory + "/*.srt")):
+        mp4_file = srt_path.replace("transcriptions_smabra_ja/", "recordings/")
+        mp4_file = mp4_file.replace("_kyakkan.srt", "_客観.mp4")
+        print(srt_path)
+        print(mp4_file)
+        assert os.path.exists(srt_path), f"❌ SRT file not found: {srt_path}"
+        assert os.path.exists(mp4_file), f"❌ MP4 file not found: {mp4_file}"
+
+        sample_name = os.path.dirname(mp4_file).split('/')[-1]
+        dataset_item = {"sample_name": sample_name,
+                        "video_path": mp4_file,
+                        "srt_path": srt_path}
+        hf_dataset.append(dataset_item)
+
+    hf_dataset = Dataset.from_list(hf_dataset)
+    dataset_processed = hf_dataset.shuffle(seed=42)
+    print(f"kyakkan commentary not available for {count} samples.")
+    print(dataset_processed)
+    hf_dataset = dataset_processed.train_test_split(test_size=60)
+    dir = f"{os.path.basename(folder)}_HF"#"RaceCommentaryEn/"
+    os.makedirs(dir, exist_ok=True)
+    hf_dataset.save_to_disk(dir)
+    return dir
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
@@ -57,7 +92,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     folder = args.dir
-    create_ds(folder=folder)
+    
+    if "SmabraData" in folder:
+        print("Start loading Smabra data...")
+        create_ds_smabra(folder=folder)
+    else:
+        create_ds(folder=folder)
 
     #train_dataset, test_dataset = hf_dataset['train'].with_format("torch"), hf_dataset['test'].with_format("torch")
 
