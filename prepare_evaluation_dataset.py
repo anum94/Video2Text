@@ -15,7 +15,7 @@ model_dict = {"llava-hf_LLaVA-NeXT-Video-7B-hf": "M1",
               "llava-hf_LLaVA-NeXT-Video-7B-hfFP": "M5"
               }
 
-srt_dict = { "realtime_srt": "G1.srt", "icl_srt": "G2.srt", "ft_srt": "G3.srt"}
+srt_dict = { "realtime_srt": "G1.srt", "icl_srt": "G2.srt", "feedback_srt": "G3.srt"}
 
 import copy
 
