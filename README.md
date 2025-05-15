@@ -14,3 +14,8 @@ python finetune.py --dir "/groups/gac50547/RaceCommentary/" --frames 2 --step 2 
 #transcription_file = os.path.join(folder, transcription_file)
 #mp4_file = "AC_150221-130155_R_ks_porsche_macan_mugello_/AC_150221-130155_R_ks_porsche_macan_mugello_客観.mp4"
 #mp4_file = os.path.join(video_directory, mp4_file)
+
+
+# Preparing Human Evaluation files:
+ python prepare_evaluation_dataset.py --video_dir "/groups/gac50547/RaceCommentary/recordings" --logs_dir "logs/" --ds "RaceCommentaryEn"
+
