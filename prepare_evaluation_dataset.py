@@ -142,8 +142,7 @@ if __name__ == '__main__':
         #print(sample_dict)
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Coherence"]
     df = pd.DataFrame(logs_list)#.dropna()
-    df = df[df['video_path'].notna()]
-    df = df[df['icl_srt'].notna()]
+    df = df[df[['video_path', 'icl_srt', 'baseline_srt', 'feedback_srt']].notna()]
     df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'].isin(['8', '0'])) ]
     df.sample(frac=1)
 
