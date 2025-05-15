@@ -118,7 +118,6 @@ if __name__ == '__main__':
          if len(nested_paths) < 6 or ds not in nested_paths:
              continue
 
-         print(nested_paths)
          #print(nested_paths)
          sample_dict["model"] = nested_paths[-3]
 
@@ -152,6 +151,7 @@ if __name__ == '__main__':
          logs_list.append(sample_dict)
         #print(sample_dict)
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Coherence"]
+    print (len(logs_list))
     df = pd.DataFrame(logs_list)#.dropna()
     df = df.dropna(subset=['icl_srt'])
     df = df.dropna(subset=['feedback_srt'])
