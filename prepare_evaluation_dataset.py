@@ -42,9 +42,6 @@ if __name__ == '__main__':
     VIDEO_DIR = args.video_dir
     logs_directory = args.logs_dir
 
-    logs_directory = logs_directory.split('/')
-
-
     logs_list = []
     for file_path in findDirWithFileInLevel(logs_directory, 3):
          sample_dict = {}
