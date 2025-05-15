@@ -137,7 +137,8 @@ if __name__ == '__main__':
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Coherence"]
     df = pd.DataFrame(logs_list).dropna()
     df = df[df['video_path'].notna()]
-    df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'] == '8') ]
+    df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'].isin(['8', '0'])) ]
+    df.sample(frac=1)
 
     df_samples = df.groupby('sample')
     excel_columns = []
