@@ -211,6 +211,7 @@ if __name__ == '__main__':
     eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=excel_columns)
     eval_df["sample"] = samples
     eval_df.to_excel(f"evaluation_samples/{ds}_evaluation_samples.xlsx")
+    print(eval_df)
 
 
 
