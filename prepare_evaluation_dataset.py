@@ -148,8 +148,7 @@ if __name__ == '__main__':
     for sample_name, group_sample in df_samples:
         if len(samples) == 10:
             break
-        samples.append(sample_name)
-        print (sample_name)
+
 
         eval_samples_dir = os.path.join("evaluation_samples", ds, sample_name)
         os.makedirs(eval_samples_dir, exist_ok=True)
@@ -164,6 +163,9 @@ if __name__ == '__main__':
 
         # iteration over each model generations
         df_models = group_sample.groupby('model')
+        if len(df_models) < 4:
+            continue
+        samples.append(sample_name)
         for model_name, group_model in df_models:
 
             print (model_name)
