@@ -35,6 +35,7 @@ if __name__ == '__main__':
             tokens = list(tokenizer.tokenize(srt.text))
             srt_count = [token.surface for token in tokens if
                      token.surface.strip() and token.part_of_speech.split(',')[0] != '記号']
+            srt_count = len(srt_count)
         else:
             srt_count = len(srt.text.split())
         if srt_count > 0:
