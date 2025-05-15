@@ -116,10 +116,13 @@ if __name__ == '__main__':
              continue
          #print(nested_paths)
          sample_dict["model"] = nested_paths[-3]
+
          config = nested_paths[-1].split("_")
          sample_dict["step"], sample_dict["frames_used"], sample_dict["k"] = config[1], config[3], config[5]
          sample_dict["sample"] = nested_paths[-2]
          sample_dict["video_path"] = get_video_path(sample_dict["sample"])
+         if "anumafzal94" in sample_dict["model"]:
+             print(sample_dict["video_path"])
 
          for srt_file in os.listdir(file_path):
             if ".srt" in srt_file:
