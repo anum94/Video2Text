@@ -32,7 +32,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                        "Your task is to generate 1 - 2 line of commentary to describe it. Ignore the background information and refrain the describing the scenery too much."
                        "\nDescribe this scene as a single-sentence commentary for making audience immersed.  If you have nothing to say, generate a <WAIT> token."
                        )
-        
+
     elif mode == "baseline_ja":
         user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
                        "このシーンを1文で説明する日本語の実況を生成してください。\n"
@@ -49,7 +49,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                        "2) Ignore the background information and refrain the describing the scenery."
                        "3) Initial information about the game without being too verbose."
                        )
-        
+
     elif mode == "feedback_loop_init_ja":
         user_prompt = ("あなたはカーレースのプロの実況者です。これからレース開始時のビデオクリップが提示されます。\n"
                        "それに対して1文の日本語実況を生成してください。\n"
@@ -63,23 +63,23 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
     elif mode == "feedback_loop":
         if force:
             user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
-                "from an ongoing car racing game and commentary generated for the game so far."
-                 f"\nPrevious generated Commentary: \n{context}\n"
-                 "Your task is to compare the given video with the previously generated commentary. \n"
-                "1) Identify if the video has any new development as compared to the already provided commentary. \n"
-                "2) Ignore the background information and refrain the describing the scenery too much. \n"
-                "3) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it. \n"
-            )
+                           "from an ongoing car racing game and commentary generated for the game so far."
+                           f"\nPrevious generated Commentary: \n{context}\n"
+                           "Your task is to compare the given video with the previously generated commentary. \n"
+                           "1) Identify if the video has any new development as compared to the already provided commentary. \n"
+                           "2) Ignore the background information and refrain the describing the scenery too much. \n"
+                           "3) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it. \n"
+                           )
         else:
             user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
-                "from an ongoing car racing game and commentary generated for the game so far."
-                 f"\nPrevious generated Commentary: \n{context}\n"
-                 "Your task is to compare the given video with the previously generated commentary. \n "
-                "1) Identify if the video has any new development as compared to the already provided commentary. \n"
-                "2) Ignore the background information and refrain the describing the scenery too much.\n"
-                "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>\n"
-                "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it.\n"
-            )
+                           "from an ongoing car racing game and commentary generated for the game so far."
+                           f"\nPrevious generated Commentary: \n{context}\n"
+                           "Your task is to compare the given video with the previously generated commentary. \n "
+                           "1) Identify if the video has any new development as compared to the already provided commentary. \n"
+                           "2) Ignore the background information and refrain the describing the scenery too much.\n"
+                           "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>\n"
+                           "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it.\n"
+                           )
     elif mode == "feedback_loop_ja":
         if force:
             user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
@@ -98,22 +98,21 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                            "3) 明確な変化があれば、それを説明する1文の実況を生成してください。\n"
                            "4) 人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．\n")
 
-    elif mode == "feedback_loop_smabra":
-        if force:
-            user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
-                           f"\nこれまでの実況:\n{context}\n"
-                            "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
-                            "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
+       elif mode == "feedback_loop_smabra":
+            if force:
+                user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                               f"\nこれまでの実況:\n{context}\n"
+                                "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                                "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
-        else:
-            user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
-                           f"\nこれまでの実況:\n{context}\n"
-                            "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
-                            "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
+            else:
+                user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                               f"\nこれまでの実況:\n{context}\n"
+                                "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                                "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
 
     return user_prompt
-
 def create_ds(folder):
     video_directory = "recordings"
     video_directory = os.path.join(folder, video_directory)
@@ -268,7 +267,7 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
 def identify_dataset(transcription_file):
     if "transcriptions_whole_data_english" in transcription_file:
         return "" # race game in English
-    elif "transcriptions_smabra" in transcription_file:
+    elif "smabra_ja" in transcription_file:
         return "_smabra" # smash corpus
     else:
         return "_ja" # race game in Japanese
@@ -755,7 +754,7 @@ if __name__ == '__main__':
 
 
         else:
-            model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,).to(0)
+            model = LlavaNextVideoForConditionalGeneration.from_pretrained(model_id, torch_dtype=torch.float16, low_cpu_mem_usage=True,load_in_4bit=True,).to(0)
             processor = LlavaNextVideoProcessor.from_pretrained(model_id, use_fast = True)
     else:
         model = None
@@ -779,6 +778,7 @@ if __name__ == '__main__':
         icl_transcription_file = icl_example["srt_path"]
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
+        run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
         try:
         #if True:
 
@@ -806,9 +806,7 @@ if __name__ == '__main__':
                                                                   context_window=context_window, logs_dir=out_folder,
                                                                   model_name=model_name)
 
-            icl_feedback_loop_generation = baseline_generation
-            feedback_loop_generation = baseline_generation
-            realtime_loop_generation = baseline_generation
+
             run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
             config = {"model": model_id, "step": step, "# frame": num_frames_to_use, "sample_name": sample_name, "k": k,
                       "dataset": hf_dataset_path
@@ -818,15 +816,13 @@ if __name__ == '__main__':
                         icl_output = icl_feedback_loop_generation, realtime_output=realtime_loop_generation, config=config, WB = WB,
                         )
             metrics_all_samples.append(metrics_per_sample)
+            with open(f'{out_folder}/{run_name}_{str(date_time)}.json', 'w') as fp:
+                json.dump(metrics_per_sample, fp)
         except Exception as e:
             print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
 
-
         # Writing per experiments logs every loop
         #print(means_dict)
-        with open(f'{out_folder}/{run_name}_{str(date_time)}.json', 'w') as fp:
-            json.dump(metrics_per_sample, fp)
-
     # Writing per experiments logs every loop
     df = pd.DataFrame(metrics_all_samples)
     means_dict = df.select_dtypes(include='number').mean().to_dict()
@@ -840,8 +836,8 @@ if __name__ == '__main__':
     means_dict["realtime_pearson_wo_nan"] = np.nanmean(np.array(df["realtime_pearson"]))
     means_dict["icl_pearson_wo_nan"] = np.nanmean(np.array(df["icl_pearson"]))
     run_name = f"step_{step}_k_{k}_frames_{num_frames_to_use}"
-    json_file = f"{hf_dataset_path}_{model_id.replace('/', '_')}_{run_name}_{str(date_time)}.json"
-    #print (json_file)
+    json_file = f"{hf_dataset_path.replace('/','-')}_{model_id.replace('/', '_')}_{run_name}_{str(date_time)}.json"
+    print (json_file)
     with open(json_file, 'w') as fp:
         json.dump(means_dict, fp)
 

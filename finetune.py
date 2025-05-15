@@ -15,8 +15,7 @@ from datasets import Dataset, load_dataset, concatenate_datasets
 from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
 from transformers import AutoProcessor, BitsAndBytesConfig, LlavaNextVideoForConditionalGeneration
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
-from main import get_utterence_timing, extract_until_last_complete_sentence, create_ds, baseline_feedback_loop, \
-    identify_dataset
+from main import get_utterence_timing, extract_until_last_complete_sentence, create_ds, baseline_feedback_loop
 import torch
 from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
@@ -36,15 +35,17 @@ def get_commentary_path(commentary_directory, game_path):
     else:
         commentary_path = None
     return commentary_path
-def identify_language(hf_dataset_path):
+def identify_dataset(hf_dataset_path):
     if "Ja" in hf_dataset_path:
-        return "ja"
+        if "sambra" in hf_dataset_path.lower():
+            return "sambra_ja"
+        else:
+            return "ja"
     else:
-
         return "en"
 
 def get_FT_prompt(prev_generation):
-    if lang == "en":
+    if ds == "en":
         prompt =    ("You are a professional commentator for car racing games. You are provided with a video clip"
                     "from an ongoing car racing game and commentary generated for the game so far."
                      f"Previous generated Commentary: {prev_generation}"
@@ -54,7 +55,7 @@ def get_FT_prompt(prev_generation):
                     "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
                     "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
                 )
-    elif lang == "ja":
+    elif ds == "ja":
     
        prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
                 f"\nこれまでの実況:\n{prev_generation}\n"
@@ -63,12 +64,11 @@ def get_FT_prompt(prev_generation):
                 "2) 背景や風景の描写は避けてください。\n"
                 "3) 変化がある場合は、それを説明する1文の実況を生成してください。\n"
                 "4) 人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．")
-
-    user_prompt_smabra = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
-                    f"\nこれまでの実況:\n{context}\n"
-                    "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
-                    "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
-
+    elif ds == "sambra_ja":
+        prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+                              f"\nこれまでの実況:\n{prev_generation}\n"
+                              "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                              "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
     return prompt
 
@@ -314,7 +314,7 @@ if __name__ == '__main__':
         hf_dataset_path = hf_dataset_path.replace("/", "")
     ft_dataset_path = f"{hf_dataset_path}_FT_frames_{NUM_FRAMES}_step_{step}_n_{len(train_dataset_raw)}"
 
-    lang = identify_language(hf_dataset_path)
+    ds = identify_dataset(hf_dataset_path)
     use_existing = False
     if use_existing == True:
         train_dataset = datasets.load_from_disk(ft_dataset_path)
