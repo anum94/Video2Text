@@ -24,22 +24,23 @@ from datasets import Dataset, load_dataset, concatenate_datasets
 import datasets
 import re
 
-def get_user_prompt(mode="baseline", context="", step = 1, force=False):
-    #todo: move prompts to a yaml file
+
+def get_user_prompt(mode="baseline", context="", step=1, force=False):
+    # todo: move prompts to a yaml file
     if mode == "baseline":
         user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
                        "from an ongoing car racing game and commentary generated for the game so far. \n"
                        "Your task is to generate 1 - 2 line of commentary to describe it. Ignore the background information and refrain the describing the scenery too much."
                        "\nDescribe this scene as a single-sentence commentary for making audience immersed.  If you have nothing to say, generate a <WAIT> token."
                        )
-        
+
     elif mode == "baseline_ja":
         user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
                        "このシーンを1文で説明する日本語の実況を生成してください。\n"
                        "観客が没入できるような自然な実況を心がけてください。話すべきことがなければ <WAIT> を出力してください。")
     elif mode == "baseline_smabra":
         user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中の対戦のビデオクリップと、これまでに生成された実況です。\n"
-                       "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                       "このシーンを1文説明する日本語の実況を生成し視聴者を楽しませてください。\n"
                        "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
     elif mode == "feedback_loop_init":
@@ -49,7 +50,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
                        "2) Ignore the background information and refrain the describing the scenery."
                        "3) Initial information about the game without being too verbose."
                        )
-        
+
     elif mode == "feedback_loop_init_ja":
         user_prompt = ("あなたはカーレースのプロの実況者です。これからレース開始時のビデオクリップが提示されます。\n"
                        "それに対して1文の日本語実況を生成してください。\n"
@@ -57,29 +58,29 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
 
     elif mode == "feedback_loop_init_smabra":
         user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。これから対戦開始時のビデオクリップが提示されます。\n"
-                       "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                       "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
                        "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
     elif mode == "feedback_loop":
         if force:
             user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
-                "from an ongoing car racing game and commentary generated for the game so far."
-                 f"\nPrevious generated Commentary: \n{context}\n"
-                 "Your task is to compare the given video with the previously generated commentary. \n"
-                "1) Identify if the video has any new development as compared to the already provided commentary. \n"
-                "2) Ignore the background information and refrain the describing the scenery too much. \n"
-                "3) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it. \n"
-            )
+                           "from an ongoing car racing game and commentary generated for the game so far."
+                           f"\nPrevious generated Commentary: \n{context}\n"
+                           "Your task is to compare the given video with the previously generated commentary. \n"
+                           "1) Identify if the video has any new development as compared to the already provided commentary. \n"
+                           "2) Ignore the background information and refrain the describing the scenery too much. \n"
+                           "3) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it. \n"
+                           )
         else:
             user_prompt = ("You are a professional commentator for car racing games. You are provided with a video clip"
-                "from an ongoing car racing game and commentary generated for the game so far."
-                 f"\nPrevious generated Commentary: \n{context}\n"
-                 "Your task is to compare the given video with the previously generated commentary. \n "
-                "1) Identify if the video has any new development as compared to the already provided commentary. \n"
-                "2) Ignore the background information and refrain the describing the scenery too much.\n"
-                "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>\n"
-                "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it.\n"
-            )
+                           "from an ongoing car racing game and commentary generated for the game so far."
+                           f"\nPrevious generated Commentary: \n{context}\n"
+                           "Your task is to compare the given video with the previously generated commentary. \n "
+                           "1) Identify if the video has any new development as compared to the already provided commentary. \n"
+                           "2) Ignore the background information and refrain the describing the scenery too much.\n"
+                           "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>\n"
+                           "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it.\n"
+                           )
     elif mode == "feedback_loop_ja":
         if force:
             user_prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
@@ -102,18 +103,16 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
         if force:
             user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
                            f"\nこれまでの実況:\n{context}\n"
-                            "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
-                            "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
+                           "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                           "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
         else:
             user_prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
                            f"\nこれまでの実況:\n{context}\n"
-                            "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
-                            "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
-
+                           "このシーンを1文で説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+                           "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
 
     return user_prompt
-
 def create_ds(folder):
     video_directory = "recordings"
     video_directory = os.path.join(folder, video_directory)
