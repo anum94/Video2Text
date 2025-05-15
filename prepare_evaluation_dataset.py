@@ -70,12 +70,12 @@ if __name__ == '__main__':
                      sample_dict["baseline_srt"] = os.path.join(file_path,srt_file)
 
          logs_list.append(sample_dict)
-         print(sample_dict)
+         #print(sample_dict)
     evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Logical_Coherence"]
     print(len(logs_list))
     df = pd.DataFrame(logs_list)#.dropna()
     print(df.columns)
-    df = df[((df['step'] == 2) & (df['frames_used'] == 1)) & (df['k'] == 8) ]
+    df = df[((df['step'] == 2) & (df['frames_used'] == 1)) & (df['k'] == 2) ]
 
     print (len(df))
     df_samples = df.groupby('sample')
