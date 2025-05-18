@@ -201,7 +201,7 @@ if __name__ == '__main__':
             df_models = group_sample.groupby('model')
             if len(df_models) < len(model_dict.keys()):
                 if os.path.exists(eval_samples_dir):
-                    os.removedirs(eval_samples_dir)
+                    shutil.rmtree(eval_samples_dir, ignore_errors=True)
                 continue
 
 
