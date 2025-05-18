@@ -63,7 +63,7 @@ if __name__ == '__main__':
         df = df.dropna(subset=['realtime_srt'])
 
 
-        df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'].isin(['8', '0'])) ]
+        #df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'].isin(['8', '0'])) ]
         df.sample(frac=1)
 
         df_models = df.groupby('model')
