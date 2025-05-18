@@ -254,7 +254,7 @@ if __name__ == '__main__':
 
 
 
-    eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=excel_columns)
+    eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=eval_cols)
     eval_df["sample"] = samples
     eval_df.to_excel(f"evaluation_samples/{ds}/evaluation_samples.xlsx")
     print(eval_df)
