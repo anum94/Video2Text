@@ -177,69 +177,76 @@ if __name__ == '__main__':
     excel_columns = []
     samples = []
     for sample_name, group_sample in df_samples:
-        if len(samples) == 10:
-            break
+        try:
+            eval_cols = []
+            if len(samples) == 10:
+                break
 
 
-        eval_samples_dir = os.path.join("evaluation_samples", ds, sample_name)
+            eval_samples_dir = os.path.join("evaluation_samples", ds, sample_name)
 
 
-        # Copy video into the directory
-        source = group_sample.iloc[0]['video_path']
-        video_metadata = get_video_info(source)
-        start = random.randint(0,video_metadata["duration"]-11)
-        end = start + 10
-        destination = os.path.join(eval_samples_dir, f"{os.path.basename(source).replace('.mp4', f'_{start}-{end}.mp4')}")
-        #cut_video(video_in=source,video_out=destination,start=start,end=end)
+            # Copy video into the directory
+            source = group_sample.iloc[0]['video_path']
+            video_metadata = get_video_info(source)
+            start = random.randint(0,video_metadata["duration"]-11)
+            end = start + 10
+            destination = os.path.join(eval_samples_dir, f"{os.path.basename(source).replace('.mp4', f'_{start}-{end}.mp4')}")
+            #cut_video(video_in=source,video_out=destination,start=start,end=end)
 
-        # iteration over each model generations
-        df_models = group_sample.groupby('model')
-        if len(df_models) < len(model_dict.keys()):
-            continue
+            # iteration over each model generations
+            df_models = group_sample.groupby('model')
+            if len(df_models) < len(model_dict.keys()):
+                continue
 
-        os.makedirs(eval_samples_dir, exist_ok=True)
+            os.makedirs(eval_samples_dir, exist_ok=True)
+
+            for model_name, group_model in df_models:
+                group_model = group_model.sort_values(by='time', ascending=False)
+
+                if "anumafzal94" in model_name and "LLaVa" in model_name:
+                    #This is a fine-tuned llava model so we would handle this case separately
+                    eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
+                    os.makedirs(eval_model_dir, exist_ok=True)
+
+                    srt_mode = 'feedback_srt' #for fetching the correct srt file
+                    source = group_model.iloc[0][srt_mode]
+                    destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
+                    cut_subtitles(subs_in=source, subs_out=destination,start=start,end=end)
+                    prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
+                    eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
+                    eval_cols += eval_col
+                else:
+                    eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
+                    os.makedirs(eval_model_dir, exist_ok=True)
+                    # Copy srt files into the respective sample/model directory
+
+                    # ICL
+                    srt_mode = 'icl_srt'
+                    source = group_model.iloc[0][srt_mode]
+                    destination = os.path.join(eval_model_dir,
+                                               f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
+                    print(source)
+                    print(destination)
+                    cut_subtitles(subs_in=source, subs_out=destination, start=start, end=end)
+                    prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
+                    eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
+                    eval_cols += eval_col
+
+                    # Realtime
+                    srt_mode = 'realtime_srt'
+                    source = group_model.iloc[0][srt_mode]
+                    destination = os.path.join(eval_model_dir,
+                                               f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
+                    cut_subtitles(subs_in=source, subs_out=destination, start=start, end=end)
+                    prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
+                    eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
+                    eval_cols += eval_col
+        except Exception as e:
+            print (e)
+            os.removedirs(eval_samples_dir)
+        excel_columns += eval_cols
         samples.append(sample_name)
-        for model_name, group_model in df_models:
-            group_model = group_model.sort_values(by='time', ascending=False)
-
-            if "anumafzal94" in model_name and "LLaVa" in model_name:
-                #This is a fine-tuned llava model so we would handle this case separately
-                eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
-                os.makedirs(eval_model_dir, exist_ok=True)
-
-                srt_mode = 'feedback_srt' #for fetching the correct srt file
-                source = group_model.iloc[0][srt_mode]
-                destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
-                cut_subtitles(subs_in=source, subs_out=destination,start=start,end=end)
-                prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
-                eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
-                excel_columns += eval_col
-            else:
-                eval_model_dir = os.path.join(eval_samples_dir, model_dict[model_name])
-                os.makedirs(eval_model_dir, exist_ok=True)
-                # Copy srt files into the respective sample/model directory
-
-                # ICL
-                srt_mode = 'icl_srt'
-                source = group_model.iloc[0][srt_mode]
-                destination = os.path.join(eval_model_dir,
-                                           f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
-                print(source)
-                print(destination)
-                cut_subtitles(subs_in=source, subs_out=destination, start=start, end=end)
-                prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
-                eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
-                excel_columns += eval_col
-
-                # Realtime
-                srt_mode = 'realtime_srt'
-                source = group_model.iloc[0][srt_mode]
-                destination = os.path.join(eval_model_dir,
-                                           f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
-                cut_subtitles(subs_in=source, subs_out=destination, start=start, end=end)
-                prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
-                eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
-                excel_columns += eval_col
 
     eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=excel_columns)
     eval_df["sample"] = samples
