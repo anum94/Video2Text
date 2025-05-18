@@ -244,7 +244,8 @@ if __name__ == '__main__':
                     eval_cols += eval_col
         except Exception as e:
             print (e)
-            os.removedirs(eval_samples_dir)
+            if os.path.exists(eval_samples_dir):
+                os.removedirs(eval_samples_dir)
         excel_columns += eval_cols
         samples.append(sample_name)
 
