@@ -24,66 +24,68 @@ def get_subdirs_at_depth(root_dir, target_depth=4):
 
 if __name__ == '__main__':
     logs_directory = "logs/"
-    ds = "RaceCommentaryEn"
+    datasets = ["RaceCommentaryEn", "RaceCommentaryJa", "SmabraDataJa"]
     logs_list = []
-    for file_path in get_subdirs_at_depth(logs_directory, 5):
-         sample_dict = {}
-         nested_paths = file_path.split('/')
+    for ds in datasets:
+        print (ds)
+        for file_path in get_subdirs_at_depth(logs_directory, 5):
+             sample_dict = {}
+             nested_paths = file_path.split('/')
 
-         if len(nested_paths) < 6 or ds not in nested_paths:
-             continue
+             if len(nested_paths) < 6 or ds not in nested_paths:
+                 continue
 
-         #print(nested_paths)
-         sample_dict["model"] = nested_paths[-3]
+             #print(nested_paths)
+             sample_dict["model"] = nested_paths[-3]
 
-         config = nested_paths[-1].split("_")
-         sample_dict["step"], sample_dict["frames_used"], sample_dict["k"] = config[1], config[3], config[5]
-         sample_dict["sample"] = nested_paths[-2]
-
-
-         for srt_file in os.listdir(file_path):
-            if ".srt" in srt_file:
-                if "realtime" in srt_file:
-                    sample_dict["realtime_srt"] = os.path.join(file_path,srt_file)
-                elif "icl" in srt_file:
-                    sample_dict["icl_srt"] = os.path.join(file_path,srt_file)
-                elif "feedback" in srt_file:
-                    sample_dict["feedback_srt"] = os.path.join(file_path,srt_file)
-                else:
-                    sample_dict["baseline_srt"] = os.path.join(file_path,srt_file)
-
-         logs_list.append(sample_dict)
-
-    df = pd.DataFrame(logs_list)#.dropna()
-    #df = df.dropna(subset=['icl_srt'])
-    #df = df.dropna(subset=['baseline_srt'])
-    #df = df.dropna(subset=['feedback_srt'])
-    df = df.dropna(subset=['realtime_srt'])
+             config = nested_paths[-1].split("_")
+             sample_dict["step"], sample_dict["frames_used"], sample_dict["k"] = config[1], config[3], config[5]
+             sample_dict["sample"] = nested_paths[-2]
 
 
-    df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'].isin(['8', '0'])) ]
-    df.sample(frac=1)
+             for srt_file in os.listdir(file_path):
+                if ".srt" in srt_file:
+                    if "realtime" in srt_file:
+                        sample_dict["realtime_srt"] = os.path.join(file_path,srt_file)
+                    elif "icl" in srt_file:
+                        sample_dict["icl_srt"] = os.path.join(file_path,srt_file)
+                    elif "feedback" in srt_file:
+                        sample_dict["feedback_srt"] = os.path.join(file_path,srt_file)
+                    else:
+                        sample_dict["baseline_srt"] = os.path.join(file_path,srt_file)
 
-    df_models = df.groupby('model')
-    excel_columns = []
-    samples = []
-    pattern = r'(\d+):\s*(.+)'
-    for model_name, group_model in df_models:
-        print (model_name)
-        srts = []
-        group_model = group_model.head(50)
-        print (len(group_model))
-        for item in group_model.iterrows():
-            srt = read_srt(item[1]["realtime_srt"])
-            c = len(srt.text.split())
-            srts.append(c)
-        maximum = max(srts)
-        minimum = min(srts)
-        average = sum(srts) / len(srts)
+             logs_list.append(sample_dict)
 
-        print("Average Commentary words:", average)
-        print("Minimum Commentary words:", minimum)
-        print("Maximum Commentary words:", maximum)
+        df = pd.DataFrame(logs_list)#.dropna()
+        #df = df.dropna(subset=['icl_srt'])
+        #df = df.dropna(subset=['baseline_srt'])
+        #df = df.dropna(subset=['feedback_srt'])
+        df = df.dropna(subset=['realtime_srt'])
+
+
+        df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'].isin(['8', '0'])) ]
+        df.sample(frac=1)
+
+        df_models = df.groupby('model')
+        excel_columns = []
+        samples = []
+        pattern = r'(\d+):\s*(.+)'
+        for model_name, group_model in df_models:
+            print (model_name)
+            srts = []
+            group_model = group_model.head(50)
+            print (len(group_model))
+            for item in group_model.iterrows():
+                srt = read_srt(item[1]["realtime_srt"])
+                c = len(srt.text.split())
+                srts.append(c)
+            maximum = max(srts)
+            minimum = min(srts)
+            average = sum(srts) / len(srts)
+
+            print("Average Commentary words:", average)
+            print("Minimum Commentary words:", minimum)
+            print("Maximum Commentary words:", maximum)
 
 
 
