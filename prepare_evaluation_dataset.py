@@ -250,7 +250,8 @@ if __name__ == '__main__':
         except Exception as e:
             print (e)
             if os.path.exists(eval_samples_dir):
-                os.removedirs(eval_samples_dir)
+                shutil.rmtree(eval_samples_dir, ignore_errors=True)
+
         excel_columns += eval_cols
         samples.append(sample_name)
 
