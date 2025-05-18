@@ -244,13 +244,15 @@ if __name__ == '__main__':
                     prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                     eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                     eval_cols += eval_col
+
+                    excel_columns += eval_cols
+                    samples.append(sample_name)
         except Exception as e:
             print (e)
             if os.path.exists(eval_samples_dir):
                 shutil.rmtree(eval_samples_dir, ignore_errors=True)
 
-        excel_columns += eval_cols
-        samples.append(sample_name)
+
 
     eval_df = pd.DataFrame(0, index=np.arange(len(samples)), columns=excel_columns)
     eval_df["sample"] = samples
