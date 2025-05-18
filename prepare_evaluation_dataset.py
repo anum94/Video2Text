@@ -13,11 +13,14 @@ from utils.video_utils import get_video_info
 model_dict = {"llava-hf_LLaVA-NeXT-Video-7B-hf": "M1",
               "gpt-4o-mini-2024-07-18": "M3",
                 "Qwen_Qwen2.5-VL-7B-Instruct": "M2",
-              "anumafzal94_LLaVa-NeXT-Video-_step_2_frames_1_n_40000": "M4", #Fine-tuned on Race commetary english
-              "anumafzal94/FT_LLaVa-NeXT-Video-_step_2_frames_1_n_40000": "M5" #FT race commentary ja
+              #"anumafzal94_LLaVa-NeXT-Video-_step_2_frames_1_n_40000": "M4", #Fine-tuned on Race commetary english
+              #"anumafzal94/FT_LLaVa-NeXT-Video-_step_2_frames_1_n_40000": "M5" #FT race commentary ja
               }
 
-srt_dict = { "realtime_srt": "G1.srt", "icl_srt": "G2.srt", "feedback_srt": "G3.srt"}
+srt_dict = { "baseline_srt": "G1.srt",
+    "realtime_srt": "G2.srt",
+             "icl_srt": "G3.srt",
+             "feedback_srt": "G4.srt"}
 
 import copy
 
@@ -121,7 +124,7 @@ if __name__ == '__main__':
          sample_dict = {}
          nested_paths = file_path.split('/')
 
-         if len(nested_paths) < 6 or ds not in nested_paths:
+         if len(nested_paths) < 6 or ds not in nested_paths or sample_dict["model"] not in model_dict.keys():
              continue
 
          #print(nested_paths)
@@ -156,12 +159,13 @@ if __name__ == '__main__':
 
          logs_list.append(sample_dict)
         #print(sample_dict)
-    evaluation_metrics = ["KEI", "Pause-awareness", "Quality"]
+    evaluation_metrics = ["KEI", "Pause-awareness", "Coherence", "Naturalness"]
 
     print (len(logs_list))
     df = pd.DataFrame(logs_list)#.dropna()
-    df = df.dropna(subset=['icl_srt'])
-    df = df.dropna(subset=['feedback_srt'])
+    #df = df.dropna(subset=['icl_srt'])
+    df = df.dropna(subset=['baseline_srt'])
+    #df = df.dropna(subset=['feedback_srt'])
     df = df.dropna(subset=['realtime_srt'])
     df = df.dropna(subset=['video_path'])
 
@@ -190,7 +194,7 @@ if __name__ == '__main__':
 
         # iteration over each model generations
         df_models = group_sample.groupby('model')
-        if len(df_models) < 3:
+        if len(df_models) < len(model_dict.keys()):
             continue
 
         os.makedirs(eval_samples_dir, exist_ok=True)
