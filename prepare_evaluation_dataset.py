@@ -179,7 +179,7 @@ if __name__ == '__main__':
     for sample_name, group_sample in df_samples:
         try:
             eval_cols = []
-            if len(samples) == 10:
+            if len(samples) == SAMPLES_PER_MODEL:
                 break
 
 
@@ -193,8 +193,6 @@ if __name__ == '__main__':
             start = random.randint(0,video_metadata["duration"]-11)
             end = start + 20
             destination = os.path.join(eval_samples_dir, f"{os.path.basename(source).replace('.mp4', f'_{start}-{end}.mp4')}")
-            print (source)
-            print(destination)
             cut_video(video_in=source,video_out=destination,start=start,end=end)
 
             # iteration over each model generations
