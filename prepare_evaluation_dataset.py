@@ -90,7 +90,7 @@ def get_video_path(sample):
     try:
         if 'smbra' in ds.lower():
             mp4_file = game_path+ ".mp4"
-            print(game_path)
+            print(mp4_file)
         else:
 
             mp4_file = [os.path.join(game_path, file) for file in os.listdir(game_path) if
