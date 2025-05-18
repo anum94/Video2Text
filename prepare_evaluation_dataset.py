@@ -8,7 +8,7 @@ import shutil
 import argparse
 import random
 import time
-SAMPLES_PER_MODEL = 15
+SAMPLES_PER_MODEL = 17
 from utils.video_utils import get_video_info
 model_dict = {"llava-hf_LLaVA-NeXT-Video-7B-hf": "M1",
               "gpt-4o-mini-2024-07-18": "M3",
