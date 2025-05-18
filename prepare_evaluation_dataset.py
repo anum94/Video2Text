@@ -89,7 +89,8 @@ def get_video_path(sample):
     print (game_path)
     try:
         if 'smbra' in ds.lower():
-            mp4_file = sample+ "_客観.mp4"
+            mp4_file = game_path+ ".mp4"
+            print(game_path)
         else:
 
             mp4_file = [os.path.join(game_path, file) for file in os.listdir(game_path) if
@@ -177,7 +178,7 @@ if __name__ == '__main__':
 
 
         eval_samples_dir = os.path.join("evaluation_samples", ds, sample_name)
-        os.makedirs(eval_samples_dir, exist_ok=True)
+
 
         # Copy video into the directory
         source = group_sample.iloc[0]['video_path']
@@ -191,6 +192,8 @@ if __name__ == '__main__':
         df_models = group_sample.groupby('model')
         if len(df_models) < 3:
             continue
+
+        os.makedirs(eval_samples_dir, exist_ok=True)
         samples.append(sample_name)
         for model_name, group_model in df_models:
             group_model = group_model.sort_values(by='time', ascending=False)
