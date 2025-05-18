@@ -13,8 +13,8 @@ from utils.video_utils import get_video_info
 model_dict = {"llava-hf_LLaVA-NeXT-Video-7B-hf": "M1",
               "gpt-4o-mini-2024-07-18": "M3",
                 "Qwen_Qwen2.5-VL-7B-Instruct": "M2",
-              "anumafzal94_LLaVa-NeXT-Video-_step_2_frames_1_n_40000": "M4",
-              "llava-hf_LLaVA-NeXT-Video-7B-hfFP": "M5"
+              "anumafzal94_LLaVa-NeXT-Video-_step_2_frames_1_n_40000": "M4", #Fine-tuned on Race commetary english
+              "anumafzal94/FT_LLaVa-NeXT-Video-_step_2_frames_1_n_40000": "M5" #FT race commentary ja
               }
 
 srt_dict = { "realtime_srt": "G1.srt", "icl_srt": "G2.srt", "feedback_srt": "G3.srt"}
@@ -86,8 +86,13 @@ def findDirWithFileInLevel(path, level=3):
                 yield root
 def get_video_path(sample):
     game_path = os.path.join(VIDEO_DIR, sample)
+    print (game_path)
     try:
-        mp4_file = [os.path.join(game_path, file) for file in os.listdir(game_path) if
+        if 'smbra' in ds.lower():
+            mp4_file = sample+ "_客観.mp4"
+        else:
+
+            mp4_file = [os.path.join(game_path, file) for file in os.listdir(game_path) if
                     file.endswith('.mp4') and os.path.isfile(os.path.join(game_path, file)) and "客観" in file][0]
         return mp4_file
     except:
@@ -150,7 +155,8 @@ if __name__ == '__main__':
 
          logs_list.append(sample_dict)
         #print(sample_dict)
-    evaluation_metrics = ["KEI", "WAIT-NESS", "Naturalness", "Coherence"]
+    evaluation_metrics = ["KEI", "Pause-awareness", "Quality"]
+
     print (len(logs_list))
     df = pd.DataFrame(logs_list)#.dropna()
     df = df.dropna(subset=['icl_srt'])
