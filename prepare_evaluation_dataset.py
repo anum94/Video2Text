@@ -124,7 +124,7 @@ if __name__ == '__main__':
          sample_dict = {}
          nested_paths = file_path.split('/')
 
-         if len(nested_paths) < 6 or ds not in nested_paths or sample_dict["model"] not in model_dict.keys():
+         if len(nested_paths) < 6 or ds not in nested_paths or nested_paths[-3] not in model_dict.keys():
              continue
 
          #print(nested_paths)
