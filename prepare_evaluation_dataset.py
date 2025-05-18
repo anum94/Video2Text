@@ -89,11 +89,11 @@ def findDirWithFileInLevel(path, level=3):
                 yield root
 def get_video_path(sample):
     game_path = os.path.join(VIDEO_DIR, sample)
-    print (game_path)
+
     try:
         if 'smabra' in ds.lower():
             mp4_file = game_path+ ".mp4"
-            print(mp4_file)
+
         else:
 
             mp4_file = [os.path.join(game_path, file) for file in os.listdir(game_path) if
@@ -224,6 +224,8 @@ if __name__ == '__main__':
                 source = group_model.iloc[0][srt_mode]
                 destination = os.path.join(eval_model_dir,
                                            f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
+                print(source)
+                print(destination)
                 cut_subtitles(subs_in=source, subs_out=destination, start=start, end=end)
                 prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                 eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
