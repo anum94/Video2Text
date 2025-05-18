@@ -184,6 +184,7 @@ if __name__ == '__main__':
 
 
             eval_samples_dir = os.path.join("evaluation_samples", ds, sample_name)
+            os.makedirs(eval_samples_dir, exist_ok=True)
 
 
             # Copy video into the directory
@@ -192,14 +193,18 @@ if __name__ == '__main__':
             start = random.randint(0,video_metadata["duration"]-11)
             end = start + 10
             destination = os.path.join(eval_samples_dir, f"{os.path.basename(source).replace('.mp4', f'_{start}-{end}.mp4')}")
+            print (source)
+            print(destination)
             cut_video(video_in=source,video_out=destination,start=start,end=end)
 
             # iteration over each model generations
             df_models = group_sample.groupby('model')
             if len(df_models) < len(model_dict.keys()):
+                if os.path.exists(eval_samples_dir):
+                    os.removedirs(eval_samples_dir)
                 continue
 
-            os.makedirs(eval_samples_dir, exist_ok=True)
+
 
             for model_name, group_model in df_models:
                 group_model = group_model.sort_values(by='time', ascending=False)
