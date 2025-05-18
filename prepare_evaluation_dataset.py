@@ -8,7 +8,7 @@ import shutil
 import argparse
 import random
 import time
-SAMPLES_PER_MODEL = 15
+SAMPLES_PER_MODEL = 3
 from utils.video_utils import get_video_info
 model_dict = {"llava-hf_LLaVA-NeXT-Video-7B-hf": "M1",
               "gpt-4o-mini-2024-07-18": "M3",
@@ -193,7 +193,9 @@ if __name__ == '__main__':
             start = random.randint(0,video_metadata["duration"]-11)
             end = start + 20
             destination = os.path.join(eval_samples_dir, f"{os.path.basename(source).replace('.mp4', f'_{start}-{end}.mp4')}")
-            cut_video(video_in=source,video_out=destination,start=start,end=end)
+            #cut_video(video_in=source,video_out=destination,start=start,end=end)
+            print (source)
+            shutil.copyfile(source, destination)
 
             # iteration over each model generations
             df_models = group_sample.groupby('model')
@@ -215,7 +217,9 @@ if __name__ == '__main__':
                     srt_mode = 'feedback_srt' #for fetching the correct srt file
                     source = group_model.iloc[0][srt_mode]
                     destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
-                    cut_subtitles(subs_in=source, subs_out=destination,start=start,end=end)
+                    #cut_subtitles(subs_in=source, subs_out=destination,start=start,end=end)
+                    print(source)
+                    shutil.copyfile(source, destination)
                     prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                     eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                     eval_cols += eval_col
@@ -230,7 +234,9 @@ if __name__ == '__main__':
                     destination = os.path.join(eval_model_dir,
                                                f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
 
-                    cut_subtitles(subs_in=source, subs_out=destination, start=start, end=end)
+                    #cut_subtitles(subs_in=source, subs_out=destination, start=start, end=end)
+                    print(source)
+                    shutil.copyfile(source, destination)
                     prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                     eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                     eval_cols += eval_col
