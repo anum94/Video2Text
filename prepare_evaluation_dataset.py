@@ -24,7 +24,7 @@ srt_dict = { "baseline_srt": "G1.srt",
 
 import copy
 
-#from ffmpeg import FFmpeg
+from ffmpeg import FFmpeg
 import webvtt  # https://github.com/glut23/webvtt-py
 from webvtt.models import Timestamp
 
@@ -192,7 +192,7 @@ if __name__ == '__main__':
             start = random.randint(0,video_metadata["duration"]-11)
             end = start + 10
             destination = os.path.join(eval_samples_dir, f"{os.path.basename(source).replace('.mp4', f'_{start}-{end}.mp4')}")
-            #cut_video(video_in=source,video_out=destination,start=start,end=end)
+            cut_video(video_in=source,video_out=destination,start=start,end=end)
 
             # iteration over each model generations
             df_models = group_sample.groupby('model')
