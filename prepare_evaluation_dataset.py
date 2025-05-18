@@ -247,7 +247,9 @@ if __name__ == '__main__':
                     source = group_model.iloc[0][srt_mode]
                     destination = os.path.join(eval_model_dir,
                                                f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
-                    cut_subtitles(subs_in=source, subs_out=destination, start=start, end=end)
+                    #cut_subtitles(subs_in=source, subs_out=destination, start=start, end=end)
+                    print(source)
+                    shutil.copyfile(source, destination)
                     prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                     eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                     eval_cols += eval_col
