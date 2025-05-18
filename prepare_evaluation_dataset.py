@@ -194,7 +194,7 @@ if __name__ == '__main__':
             end = start + 20
             destination = os.path.join(eval_samples_dir, f"{os.path.basename(source).replace('.mp4', f'_{start}-{end}.mp4')}")
             #cut_video(video_in=source,video_out=destination,start=start,end=end)
-            print (source)
+
             shutil.copyfile(source, destination)
 
             # iteration over each model generations
@@ -203,6 +203,7 @@ if __name__ == '__main__':
                 if os.path.exists(eval_samples_dir):
                     shutil.rmtree(eval_samples_dir, ignore_errors=True)
                 continue
+            print(source)
 
 
 
