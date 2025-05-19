@@ -61,7 +61,7 @@ if __name__ == '__main__':
         #df = df.dropna(subset=['icl_srt'])
         #df = df.dropna(subset=['baseline_srt'])
         #df = df.dropna(subset=['feedback_srt'])
-        df = df.dropna(subset=['realtime_srt'])
+        df = df.dropna(subset=['icl_srt'])
 
 
         #df = df[((df['step'] == '2') & (df['frames_used'] == '1')) & (df['k'].isin(['8', '0'])) ]
