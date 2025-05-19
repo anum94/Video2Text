@@ -176,7 +176,7 @@ if __name__ == '__main__':
     excel_columns = []
     samples = []
     for sample_name, group_sample in df_samples:
-        print (group_sample)
+        #print (group_sample)
         try:
             eval_cols = []
             if len(samples) == SAMPLES_PER_MODEL:
@@ -198,12 +198,12 @@ if __name__ == '__main__':
 
             # iteration over each model generations
             df_models = group_sample.groupby('model')
-            print (df_models)
+            #print (df_models)
             if len(df_models) < len(model_dict.keys()):
                 if os.path.exists(eval_samples_dir):
                     shutil.rmtree(eval_samples_dir, ignore_errors=True)
                 continue
-            print(source)
+            #print(source)
 
             for model_name, group_model in df_models:
                 print (model_name)
