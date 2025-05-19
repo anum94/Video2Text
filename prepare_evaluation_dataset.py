@@ -164,7 +164,7 @@ if __name__ == '__main__':
     df = pd.DataFrame(logs_list)#.dropna()
     #df = df.dropna(subset=['icl_srt'])
     df = df.dropna(subset=['baseline_srt'])
-    #df = df.dropna(subset=['feedback_srt'])
+    df = df.dropna(subset=['feedback_srt'])
     df = df.dropna(subset=['realtime_srt'])
     df = df.dropna(subset=['video_path'])
 
@@ -176,6 +176,7 @@ if __name__ == '__main__':
     excel_columns = []
     samples = []
     for sample_name, group_sample in df_samples:
+        print (group_sample)
         try:
             eval_cols = []
             if len(samples) == SAMPLES_PER_MODEL:
