@@ -126,9 +126,6 @@ if __name__ == '__main__':
 
          if len(nested_paths) < 6 or ds not in nested_paths or nested_paths[-3] not in model_dict.keys():
              continue
-
-         print (nested_paths)
-
          #print(nested_paths)
          sample_dict["model"] = nested_paths[-3]
 
@@ -181,7 +178,7 @@ if __name__ == '__main__':
     for sample_name, group_sample in df_samples:
         try:
             eval_cols = []
-            if len(samples) == SAMPLES_PER_MODEL:
+            if len(samples) < SAMPLES_PER_MODEL:
                 break
 
 
