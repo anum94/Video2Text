@@ -127,6 +127,8 @@ if __name__ == '__main__':
          if len(nested_paths) < 6 or ds not in nested_paths or nested_paths[-3] not in model_dict.keys():
              continue
 
+         print (nested_paths)
+
          #print(nested_paths)
          sample_dict["model"] = nested_paths[-3]
 
@@ -193,9 +195,8 @@ if __name__ == '__main__':
             start = random.randint(0,video_metadata["duration"]-11)
             end = start + 20
             destination = os.path.join(eval_samples_dir, f"{os.path.basename(source).replace('.mp4', f'_{start}-{end}.mp4')}")
-            #cut_video(video_in=source,video_out=destination,start=start,end=end)
-
-            shutil.copyfile(source, destination)
+            cut_video(video_in=source,video_out=destination,start=start,end=end)
+            #shutil.copyfile(source, destination)
 
             # iteration over each model generations
             df_models = group_sample.groupby('model')
@@ -205,9 +206,8 @@ if __name__ == '__main__':
                 continue
             print(source)
 
-
-
             for model_name, group_model in df_models:
+                print (model_name)
                 group_model = group_model.sort_values(by='time', ascending=False)
 
                 if "anumafzal94" in model_name and "LLaVa" in model_name:
@@ -217,10 +217,11 @@ if __name__ == '__main__':
 
                     srt_mode = 'feedback_srt' #for fetching the correct srt file
                     source = group_model.iloc[0][srt_mode]
+
                     destination = os.path.join(eval_model_dir, f"{srt_dict[srt_mode].replace('.srt', f'_{start}-{end}.srt')}")
-                    #cut_subtitles(subs_in=source, subs_out=destination,start=start,end=end)
+                    cut_subtitles(subs_in=source, subs_out=destination,start=start,end=end)
                     print(source)
-                    shutil.copyfile(source, destination)
+                    #shutil.copyfile(source, destination)
                     prefix = f"{model_dict[model_name]}_{srt_dict[srt_mode]}"
                     eval_col = [f"{prefix}_{e}" for e in evaluation_metrics]
                     eval_cols += eval_col
