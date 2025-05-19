@@ -24,10 +24,11 @@ def get_subdirs_at_depth(root_dir, target_depth=4):
 
 if __name__ == '__main__':
     logs_directory = "logs/"
-    datasets = ["RaceCommentaryEn", "RaceCommentaryJa", "SmabraDataJa"]
+    datasets = ["RaceCommentaryEn", "RaceCommentaryJa", "SmabraDataJa",]
     logs_list = []
     for ds in datasets:
         print (ds)
+        logs_list = []
         for file_path in get_subdirs_at_depth(logs_directory, 5):
              sample_dict = {}
              nested_paths = file_path.split('/')
@@ -84,7 +85,7 @@ if __name__ == '__main__':
                     srt = read_srt(item[1][mode])
 
                     if "Ja" in ds:
-                        print (srt.text)
+                        #print (srt.text)
                         tokenizer = Tokenizer()
                         tokens = list(tokenizer.tokenize(srt.text))
                         srt_count = [token.surface for token in tokens if
