@@ -78,7 +78,7 @@ if __name__ == '__main__':
             group_model = group_model.head(50)
             print (len(group_model))
             for item in group_model.iterrows():
-                srt = read_srt(item[1]["realtime_srt"])
+                srt = read_srt(item[1]["icl_srt"])
                 c = len(srt.text.split())
                 srts.append(c)
             maximum = max(srts)
