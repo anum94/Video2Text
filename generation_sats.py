@@ -83,6 +83,7 @@ if __name__ == '__main__':
                     srt = read_srt(item[1][mode])
 
                     if "Ja" in ds:
+                        print (srt.text)
                         tokenizer = Tokenizer()
                         tokens = list(tokenizer.tokenize(srt.text))
                         srt_count = [token.surface for token in tokens if
