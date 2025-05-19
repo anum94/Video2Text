@@ -73,7 +73,7 @@ if __name__ == '__main__':
         samples = []
         pattern = r'(\d+):\s*(.+)'
         for model_name, group_model in df_models:
-            #print (model_name)
+            print (model_name)
             srts = []
             group_model.sample(frac=1)
             group_model = group_model.head(19)
