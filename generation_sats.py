@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
              if len(nested_paths) < 6 or ds not in nested_paths:
                  continue
-             print(nested_paths)
+             #print(nested_paths)
 
              #print(nested_paths)
              sample_dict["model"] = nested_paths[-3]
