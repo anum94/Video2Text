@@ -80,6 +80,7 @@ if __name__ == '__main__':
             for item in group_model.iterrows():
 
                 for mode in ["icl_srt", "feedback_srt", "baseline_srt", "realtime_srt"]:
+                    print (item[1][mode])
                     srt = read_srt(item[1][mode])
 
                     if "Ja" in ds:
