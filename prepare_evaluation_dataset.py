@@ -178,7 +178,7 @@ if __name__ == '__main__':
     for sample_name, group_sample in df_samples:
         try:
             eval_cols = []
-            if len(samples) < SAMPLES_PER_MODEL:
+            if len(samples) == SAMPLES_PER_MODEL:
                 break
 
 
@@ -197,6 +197,7 @@ if __name__ == '__main__':
 
             # iteration over each model generations
             df_models = group_sample.groupby('model')
+            print (df_models)
             if len(df_models) < len(model_dict.keys()):
                 if os.path.exists(eval_samples_dir):
                     shutil.rmtree(eval_samples_dir, ignore_errors=True)
