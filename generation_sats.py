@@ -1,6 +1,6 @@
 import os
 import re
-
+from janome.tokenizer import Tokenizer
 import pandas as pd
 model_dict = {"llava-hf_LLaVA-NeXT-Video-7B-hf": "M1",
               "gpt-4o-mini-2024-07-18": "M3",
@@ -78,21 +78,22 @@ if __name__ == '__main__':
             group_model = group_model.head(50)
             print (len(group_model))
             for item in group_model.iterrows():
-                srt = read_srt(item[1]["icl_srt"])
-                c = len(srt.text.split())
-                srts.append(c)
 
-                srt = read_srt(item[1]["feedback_srt"])
-                c = len(srt.text.split())
-                srts.append(c)
+                for mode in ["icl_srt", "feedback_srt", "baseline_srt", "realtime_srt"]:
+                    srt = read_srt(item[1][mode])
 
-                srt = read_srt(item[1]["baseline_srt"])
-                c = len(srt.text.split())
-                srts.append(c)
+                    if "Ja" in ds:
+                        tokenizer = Tokenizer()
+                        tokens = list(tokenizer.tokenize(srt.text))
+                        srt_count = [token.surface for token in tokens if
+                                     token.surface.strip() and token.part_of_speech.split(',')[0] != '記号']
+                        srt_count = len(srt_count)
+                        srts.append(srt_count)
 
-                srt = read_srt(item[1]["realtime_srt"])
-                c = len(srt.text.split())
-                srts.append(c)
+
+                    else:
+                        c = len(srt.text.split())
+                        srts.append(c)
             maximum = max(srts)
             minimum = min(srts)
             average = sum(srts) / len(srts)
