@@ -80,7 +80,7 @@ if __name__ == '__main__':
             print (len(group_model))
             for item in group_model.iterrows():
 
-                for mode in ["realtime_srt",]:# "feedback_srt", "baseline_srt", "icl_srt"]:
+                for mode in ["realtime_srt", "feedback_srt", "baseline_srt", "icl_srt"]:
                     print (item[1][mode])
                     srt = read_srt(item[1][mode])
 
