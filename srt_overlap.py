@@ -140,7 +140,7 @@ if __name__ == '__main__':
             #print (len(group_model))
             for item in group_model.iterrows():
 
-                for mode in ["feedback_srt", ]: #"feedback_srt",]:# "baseline_srt", "icl_srt"]:
+                for mode in ["icl_srt", ]: #"feedback_srt",]:# "baseline_srt", "icl_srt"]:
                     #print (item[1][mode])
                     srt = parse_srt_file(item[1][mode])
                     o = calculate_overlap_proportion(srt)
