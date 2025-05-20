@@ -137,7 +137,7 @@ if __name__ == '__main__':
             overlap = []
             group_model.sample(frac=1)
             group_model = group_model.head(19)
-            print (len(group_model))
+            #print (len(group_model))
             for item in group_model.iterrows():
 
                 for mode in ["realtime_srt", ]: #"feedback_srt",]:# "baseline_srt", "icl_srt"]:
