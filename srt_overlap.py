@@ -136,7 +136,7 @@ if __name__ == '__main__':
             print (model_name)
             overlap = []
             group_model.sample(frac=1)
-            #group_model = group_model.head(19)
+            group_model = group_model.head(19)
             print (len(group_model))
             for item in group_model.iterrows():
 
