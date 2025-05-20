@@ -787,6 +787,7 @@ if __name__ == '__main__':
         run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
         try:
         #if True:
+            print (icl_example_paths)
 
             print ("Baseline")
             baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
