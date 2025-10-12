@@ -251,7 +251,7 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
                 videos=videos,
                 padding=True,
                 return_tensors="pt",
-            max_length=context_window,
+            #max_length=context_window,
             ).to(model.device)
 
 
