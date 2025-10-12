@@ -452,6 +452,10 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
         if t < init_skip_frames:
             if init:
                 data_prefix = identify_dataset(transcription_file)
+                if data_prefix in ["_smabra", "_ja"]:
+                    l = "Japanese"
+                else:
+                    l = "English"
                 user_prompt = get_user_prompt("feedback_loop_init" + data_prefix)
                 max_new_tokens = 100
                 do_sample = False
@@ -465,7 +469,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
             force_flag = wait_count >= int(20 / step)
             data_prefix = identify_dataset(transcription_file)
             user_prompt = get_user_prompt("feedback_loop" + data_prefix, context=init_str, step=step, force=force_flag)
-            user_prompt += "\nPrevious generated commentary: \n" + output_buffer_str + "\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say. If you have nothing to say, generate a <WAIT> token."
+            user_prompt += "\nPrevious generated commentary: \n" + output_buffer_str + f"\n\nDescribe this scene as a single-sentence commentary in {l} for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say. If you have nothing to say, generate a <WAIT> token."
             max_new_tokens = 50
             do_sample = False
             temp = 1.0 if force_flag else 1.2
