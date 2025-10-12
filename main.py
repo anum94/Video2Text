@@ -482,6 +482,7 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
         # ICL例の取得
         if ICL:
             icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
+            print (icl_examples)
             videos = [icl_example['video'] for icl_example in icl_examples]
         else:
             videos = []
