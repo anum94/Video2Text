@@ -813,7 +813,7 @@ if __name__ == '__main__':
             print ("Realtime")
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
-                                                              split_word=split_word, ICL=icl_example_paths, processor=processor,
+                                                              split_word=split_word, ICL=False, processor=processor,
                                                               model=model, context_window=context_window, model_name=model_name)
             print ("ICL Feedback")
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
