@@ -259,6 +259,7 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
                                  max_length=context_window).to(model.device)
 
         output = model.generate(**inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4, temperature=1.0)
+        print (output)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
@@ -797,15 +798,15 @@ if __name__ == '__main__':
             print (icl_example_paths)
 
             print ("Baseline")
-            baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
+            #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
 
             print ("Feedback")
-            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
-                                                              init_skip_frames=skip_frames, step=step, ICL=False,
-                                                              split_word = split_word, processor=processor, model=model,
-                                                              context_window=context_window, model_name=model_name
-                                                              , logs_dir=out_folder
-                                                              )
+            #feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
+            #                                                  init_skip_frames=skip_frames, step=step, ICL=False,
+            #                                                  split_word = split_word, processor=processor, model=model,
+            #                                                  context_window=context_window, model_name=model_name
+            #                                                  , logs_dir=out_folder
+            #                                                  )
             
             print ("Realtime")
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
