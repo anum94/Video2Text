@@ -260,7 +260,7 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
         pred_utterence = pred_utterence.split(split_word)[-1]
 
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
-    #print ("utterance: ", pred_utterence)
+    print ("utterance: ", pred_utterence)
     return pred_utterence
 
 def identify_dataset(transcription_file):
