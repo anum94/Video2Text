@@ -452,10 +452,6 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
         if t < init_skip_frames:
             if init:
                 data_prefix = identify_dataset(transcription_file)
-                if data_prefix in ["_smabra", "_ja"]:
-                    l = "Japanese"
-                else:
-                    l = "English"
                 user_prompt = get_user_prompt("feedback_loop_init" + data_prefix)
                 max_new_tokens = 100
                 do_sample = False
@@ -469,7 +465,10 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
             force_flag = wait_count >= int(20 / step)
             data_prefix = identify_dataset(transcription_file)
             user_prompt = get_user_prompt("feedback_loop" + data_prefix, context=init_str, step=step, force=force_flag)
-            user_prompt += "\nPrevious generated commentary: \n" + output_buffer_str + f"\n\nDescribe this scene as a single-sentence commentary in {l} for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say. If you have nothing to say, generate a <WAIT> token."
+            if data_prefix in ["_smabra", "_ja"]:
+                user_prompt += "\n前回生成された実況: \n" + output_buffer_str + f"\n\n観客を夢中にさせるように、この場面を一文の実況として描写してください。以前の説明の繰り返しは避けてください。以前と同じ実況を繰り返さないでください。明確な変化がある場合や伝えることがある場合のみ新しい実況を生成してください。何も言うことがなければ、<WAIT> トークンを生成してください。"
+            else:
+                user_prompt += "\nPrevious generated commentary: \n" + output_buffer_str + f"\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say. If you have nothing to say, generate a <WAIT> token."
             max_new_tokens = 50
             do_sample = False
             temp = 1.0 if force_flag else 1.2
@@ -507,7 +506,10 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
             pred_timing.append(True)
             pred_utterences.append(pred_utterance)
             pred_utterences_step.append(t)
-            output_buffer_str += f"utterance generated at {str(t)} seconds from the start: " + pred_utterance + "\n"
+            if data_prefix in ["_smabra", "_ja"]:
+                output_buffer_str += f"開始から{str(t)}秒で生成された発話: " + pred_utterance + "\n"
+            else:
+                output_buffer_str += f"utterance generated at {str(t)} seconds from the start: " + pred_utterance + "\n"
             wait_count = 0
             if t < init_skip_frames:
                 init_str = pred_utterance
