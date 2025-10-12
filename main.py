@@ -256,10 +256,10 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
         else:
             print (messages)
             prompt = processor.apply_chat_template(messages, add_generation_prompt=True, padding=True)
-            print (prompt)
+
             inputs_video = processor(text=prompt, videos=videos, padding=True, return_tensors="pt",
                                  max_length=context_window).to(model.device)
-            print (inputs_video)
+
 
         output = model.generate(**inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4, temperature=1.0)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
