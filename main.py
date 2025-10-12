@@ -259,8 +259,8 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
                                  max_length=context_window).to(model.device)
 
         output = model.generate(**inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4, temperature=1.0)
-        print (output)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
+        print(pred_utterence)
         pred_utterence = pred_utterence.split(split_word)[-1]
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
     print (pred_utterence)
@@ -483,7 +483,6 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
         # ICL例の取得
         if ICL:
             icl_examples = construct_icl_examples(ICL, k=k, step=step, t=t, num_frames_to_use=num_frames_to_use)
-            print (icl_examples)
             videos = [icl_example['video'] for icl_example in icl_examples]
         else:
             videos = []
@@ -795,7 +794,7 @@ if __name__ == '__main__':
         run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
         try:
         #if True:
-            print (icl_example_paths)
+
 
             print ("Baseline")
             #baseline_generation = baseline(mp4_file, transcription_file, num_frames_to_use, step=step, split_word = split_word)
