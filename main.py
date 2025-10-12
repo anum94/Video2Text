@@ -253,22 +253,25 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
                 padding=True,
                 return_tensors="pt",
             ).to(model.device)
-
-            output = model.generate(**inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4,
-                                    temperature=1.0)
-            pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
-            pred_utterence = pred_utterence.split(split_word)[-1]
         else:
-            prompt = processor.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
 
-            inputs_video = processor(text=prompt, videos=videos, return_tensors="pt",
-                                 max_length=context_window)['input_ids'][0].to(model.device)
+            text = processor.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True
+            )
+            #images, videos = process_vision_info(messages)
+            inputs_video = processor(
+                text=text,
+                #images=images,
+                videos=videos,
+                padding=True,
+                return_tensors="pt",
+            ).to(model.device)
 
-            output = model.generate(inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4, temperature=1.0)
-            assistant_tokens = output[0][len(inputs_video):]
-            pred_utterence = processor.decode(assistant_tokens, skip_special_tokens=True)
 
-    print ("utterance: ", pred_utterence)
+        output = model.generate(**inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4, temperature=1.0)
+        pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
+        pred_utterence = pred_utterence.split(split_word)[-1]
+
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
     print ("utterance: ", pred_utterence)
     return pred_utterence
