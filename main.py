@@ -240,31 +240,18 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
 
     else:
         messages = get_messages(prompt, ICL=ICL)
-        if "qwen" in model_name:
-            # Preparation for inference
-            text = processor.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=True
-            )
-            #images, videos = process_vision_info(messages)
-            inputs_video = processor(
-                text=text,
-                #images=images,
-                videos=videos,
-                padding=True,
-                return_tensors="pt",
-            ).to(model.device)
-        else:
 
-            text = processor.apply_chat_template(
+        text = processor.apply_chat_template(
                 messages, tokenize=False, add_generation_prompt=True
             )
-            #images, videos = process_vision_info(messages)
-            inputs_video = processor(
+        #images, videos = process_vision_info(messages)
+        inputs_video = processor(
                 text=text,
                 #images=images,
                 videos=videos,
                 padding=True,
                 return_tensors="pt",
+            max_length=context_window,
             ).to(model.device)
 
 
