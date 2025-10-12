@@ -861,7 +861,7 @@ if __name__ == '__main__':
         wandb_mode = "online"
 
         wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
-               mode=wandb_mode, group="final")
+               mode=wandb_mode, group="LREC")
         table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
         wandb.log({"experiment_metrics": table}, commit=True)
         wandb.finish()
