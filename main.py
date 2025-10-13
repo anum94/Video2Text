@@ -756,7 +756,7 @@ if __name__ == '__main__':
             model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
                 model_id, torch_dtype=torch.float16, load_in_4bit=True, low_cpu_mem_usage=True
             ).to(0)
-            processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
+            processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct", use_fast = True)
 
 
         else:
