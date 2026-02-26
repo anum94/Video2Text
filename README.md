@@ -25,12 +25,12 @@ Basic Command:
 ```bash
 python main.py "path/to/data"
 ```
-### Advanced Example (with ICL and custom window):
+## Advanced Example (with ICL and custom window):
 
 ```bash
 python main.py --dir "/groups/gac50547/RaceCommentary" --n 1 --icl True --step 20 --k 4 --frames 1 --context_window 4096 --wb False
 ```
-### Arguments:
+## Arguments:
 
 --dir: Path to the video directory.
 
@@ -65,15 +65,3 @@ Arguments:
 --step: Sampling step size.
 
 --n: Total number of training steps or samples.
-
-## Project Structure
-Plaintext
-Video2Text/
-├── main.py          # Main inference and ICL script
-├── finetune.py      # Training and fine-tuning script
-├── requirements.txt # Project dependencies
-└── README.md        # Documentation
-
-Distributed under the MIT License. See LICENSE for more information.
-
-Author: Anum94
