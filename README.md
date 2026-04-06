@@ -1,6 +1,8 @@
 
 # Video2Text: Real-Time Generation of Game Video Commentary with Multimodal LLMs: Pause-Aware Decoding Approaches
 
+Official Repository for the paper: https://arxiv.org/pdf/2603.02655 accepted/published at LREC 2026.
+
 This repository supports both inference (using In-Context Learning) and fine-tuning for video-to-text tasks, specifically optimized for long-form content like race commentary.
 
 
