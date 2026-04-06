@@ -113,6 +113,7 @@ def get_user_prompt(mode="baseline", context="", step = 1, force=False):
 
 
     return user_prompt
+
 def create_ds(folder):
     video_directory = "recordings"
     video_directory = os.path.join(folder, video_directory)
@@ -239,33 +240,32 @@ def run_inference(model_name, model, processor, prompt, videos, ICL=False, conte
 
     else:
         messages = get_messages(prompt, ICL=ICL)
-        if "qwen" in model_name:
-            # Preparation for inference
-            text = processor.apply_chat_template(
+
+        text = processor.apply_chat_template(
                 messages, tokenize=False, add_generation_prompt=True
             )
-            #images, videos = process_vision_info(messages)
-            inputs_video = processor(
+        #images, videos = process_vision_info(messages)
+        inputs_video = processor(
                 text=text,
                 #images=images,
                 videos=videos,
                 padding=True,
                 return_tensors="pt",
+            max_length=context_window,
             ).to(model.device)
-        else:
-            prompt = processor.apply_chat_template(messages, add_generation_prompt=True, padding=True)
-            inputs_video = processor(text=prompt, videos=videos, padding=True, return_tensors="pt",
-                                 max_length=context_window).to(model.device)
+
 
         output = model.generate(**inputs_video, do_sample=False, max_new_tokens=50, no_repeat_ngram_size=4, temperature=1.0)
         pred_utterence = processor.decode(output[0][2:], skip_special_tokens=True)
         pred_utterence = pred_utterence.split(split_word)[-1]
+
     pred_utterence = extract_until_last_complete_sentence(pred_utterence)
-    #print (pred_utterence)
+    #print ("utterance: ", pred_utterence)
     return pred_utterence
 
 def identify_dataset(transcription_file):
-    if "transcriptions_whole_data_english" in transcription_file:
+    if ("transcriptions_who"
+        "le_data_english") in transcription_file:
         return "" # race game in English
     elif "smabra_ja" in transcription_file:
         return "_smabra" # smash corpus
@@ -463,7 +463,10 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
             force_flag = wait_count >= int(20 / step)
             data_prefix = identify_dataset(transcription_file)
             user_prompt = get_user_prompt("feedback_loop" + data_prefix, context=init_str, step=step, force=force_flag)
-            user_prompt += "\nPrevious generated commentary: \n" + output_buffer_str + "\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say. If you have nothing to say, generate a <WAIT> token."
+            if data_prefix in ["_smabra", "_ja"]:
+                user_prompt += "\n前回生成された実況: \n" + output_buffer_str + f"\n\n観客を夢中にさせるように、この場面を一文の実況として描写してください。以前の説明の繰り返しは避けてください。以前と同じ実況を繰り返さないでください。明確な変化がある場合や伝えることがある場合のみ新しい実況を生成してください。何も言うことがなければ、<WAIT> トークンを生成してください。"
+            else:
+                user_prompt += "\nPrevious generated commentary: \n" + output_buffer_str + f"\n\nDescribe this scene as a single-sentence commentary for making audience immersed. Please avoid repeating earlier descriptions. Do not repeat the same commentary as before. Only generate new commentary if there is a clear change or you have something to say. If you have nothing to say, generate a <WAIT> token."
             max_new_tokens = 50
             do_sample = False
             temp = 1.0 if force_flag else 1.2
@@ -501,7 +504,10 @@ def realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use, proc
             pred_timing.append(True)
             pred_utterences.append(pred_utterance)
             pred_utterences_step.append(t)
-            output_buffer_str += f"utterance generated at {str(t)} seconds from the start: " + pred_utterance + "\n"
+            if data_prefix in ["_smabra", "_ja"]:
+                output_buffer_str += f"開始から{str(t)}秒で生成された発話: " + pred_utterance + "\n"
+            else:
+                output_buffer_str += f"utterance generated at {str(t)} seconds from the start: " + pred_utterance + "\n"
             wait_count = 0
             if t < init_skip_frames:
                 init_str = pred_utterance
@@ -748,9 +754,9 @@ if __name__ == '__main__':
     if model_type == "hf":
         if "qwen" in model_name:
             model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-                model_id, torch_dtype="auto", load_in_4bit=True, low_cpu_mem_usage=True
+                model_id, torch_dtype=torch.float16, load_in_4bit=True, low_cpu_mem_usage=True
             ).to(0)
-            processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct")
+            processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-7B-Instruct", use_fast = True)
 
 
         else:
@@ -767,8 +773,12 @@ if __name__ == '__main__':
         transcription_file = test_dataset[i]["srt_path"]
 
         # create folder to store logs for each sample.
-        sample_name = os.path.dirname(mp4_file).split('/')[-1]
-        out_folder = os.path.join(my_folder, hf_dataset_path, model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}")
+        if "smabra" in hf_dataset_path.lower():
+            sample_name = (os.path.basename(mp4_file)).replace('.mp4', '')
+        else:
+            sample_name = os.path.dirname(mp4_file).split('/')[-1]
+        out_folder = os.path.join(my_folder, os.path.basename(hf_dataset_path), model_id.replace('/', '_'), sample_name, f"step_{step}_frames-used_{num_frames_to_use}_k_{k}")
+        print (out_folder)
         os.makedirs(out_folder, exist_ok=True)
 
         # define path for icl example
@@ -778,7 +788,6 @@ if __name__ == '__main__':
         icl_transcription_file = icl_example["srt_path"]
         icl_example_paths = {'mp4_file': icl_mp4_file,
                              'transcription': icl_transcription_file}
-        run_name = f"{sample_name}_step_{step}_k_{k}_frames_{num_frames_to_use}"
         try:
         #if True:
 
@@ -796,7 +805,7 @@ if __name__ == '__main__':
             print ("Realtime")
             realtime_loop_generation = realtime_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
                                                               init_skip_frames=skip_frames, step=step,
-                                                              split_word=split_word, ICL=icl_example_paths, processor=processor,
+                                                              split_word=split_word, ICL=False, processor=processor,
                                                               model=model, context_window=context_window, model_name=model_name)
             print ("ICL Feedback")
             icl_feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, num_frames_to_use,
@@ -848,7 +857,7 @@ if __name__ == '__main__':
         wandb_mode = "online"
 
         wandb.init(project=project_name, entity=entity, config=config, name=f"g_{run_name}",
-               mode=wandb_mode, group="final")
+               mode=wandb_mode, group="LREC")
         table = wandb.Table(columns=list(means_dict.keys()),data = [list(means_dict.values())] )
         wandb.log({"experiment_metrics": table}, commit=True)
         wandb.finish()

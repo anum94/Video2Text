@@ -42,6 +42,7 @@ def create_ds(folder):
     dir = f"{os.path.basename(folder)}_HF"  # "RaceCommentaryEn/"
     os.makedirs(dir, exist_ok=True)
     hf_dataset.save_to_disk(dir)
+    print (f"HF dataset saved at {dir}")
     return dir
 
 
