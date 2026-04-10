@@ -1,9 +1,9 @@
 transformers
 torch
-#flash_attn
+peft
+opencv-python
 accelerate
 pillow
-opencv-python
 openai
 pysrt
 sentencepiece
@@ -21,6 +21,5 @@ bitsandbytes
 bert_score
 huggingface_hub[hf_xet]
 qwen-vl-utils
-livecc-utils
 liger_kernel
 flash_attn
