@@ -9,32 +9,62 @@ from datetime import datetime
 import time
 from tqdm import tqdm
 import warnings
+
 warnings.filterwarnings("ignore")
 import datasets
 from datasets import Dataset, load_dataset, concatenate_datasets
-from transformers import Trainer, TrainingArguments, Seq2SeqTrainingArguments, DataCollatorForLanguageModeling
-from transformers import AutoProcessor, BitsAndBytesConfig, LlavaNextVideoForConditionalGeneration
+from transformers import (
+    Trainer,
+    TrainingArguments,
+    Seq2SeqTrainingArguments,
+    DataCollatorForLanguageModeling,
+)
+from transformers import (
+    AutoProcessor,
+    BitsAndBytesConfig,
+    LlavaNextVideoForConditionalGeneration,
+)
 from peft import LoraConfig, prepare_model_for_kbit_training, get_peft_model
-from main import get_utterence_timing, extract_until_last_complete_sentence, create_ds, baseline_feedback_loop
+from main import (
+    get_utterence_timing,
+    extract_until_last_complete_sentence,
+    create_ds,
+    baseline_feedback_loop,
+)
 import torch
 from torch.utils.data import DataLoader
 from huggingface_hub import snapshot_download, hf_hub_download, HfFileSystem
 from utils.data_utils import read_srt
+
 # Local Module imports
-from utils.video_utils import sample_frames, get_video_info, write_video, read_video, process_video
+from utils.video_utils import (
+    sample_frames,
+    get_video_info,
+    write_video,
+    read_video,
+    process_video,
+)
 import argparse
 # Reference tutorial: LLaVA-NeXT-Video/Fine_tune_LLaVa_NeXT_Video_with_HFTrainer.ipynb
 
+
 def get_commentary_path(commentary_directory, game_path):
     game_path = os.path.basename(game_path)
-    commentary_path = [os.path.join(commentary_directory, file) for file in os.listdir(commentary_directory) if
-     file.endswith('.srt') and os.path.isfile(os.path.join(commentary_directory, file)) and "kyakkan" in file
-         and game_path in file]
+    commentary_path = [
+        os.path.join(commentary_directory, file)
+        for file in os.listdir(commentary_directory)
+        if file.endswith(".srt")
+        and os.path.isfile(os.path.join(commentary_directory, file))
+        and "kyakkan" in file
+        and game_path in file
+    ]
     if len(commentary_path) > 0:
         commentary_path = commentary_path[0]
     else:
         commentary_path = None
     return commentary_path
+
+
 def identify_dataset(hf_dataset_path):
     if "Ja" in hf_dataset_path:
         if "sambra" in hf_dataset_path.lower():
@@ -44,71 +74,79 @@ def identify_dataset(hf_dataset_path):
     else:
         return "en"
 
+
 def get_FT_prompt(prev_generation):
     if ds == "en":
-        prompt =    ("You are a professional commentator for car racing games. You are provided with a video clip"
-                    "from an ongoing car racing game and commentary generated for the game so far."
-                     f"Previous generated Commentary: {prev_generation}"
-                     "Your task is to compare the given video with the previously generated commentary. "
-                    "1) Identify if the video has any new development as compared to the already provided commentary."
-                    "2) Ignore the background information and refrain the describing the scenery too much."
-                    "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
-                    "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
-                )
+        prompt = (
+            "You are a professional commentator for car racing games. You are provided with a video clip"
+            "from an ongoing car racing game and commentary generated for the game so far."
+            f"Previous generated Commentary: {prev_generation}"
+            "Your task is to compare the given video with the previously generated commentary. "
+            "1) Identify if the video has any new development as compared to the already provided commentary."
+            "2) Ignore the background information and refrain the describing the scenery too much."
+            "3) If the state of the game as compared to the provided commentary has not changed, then generate <WAIT>"
+            "4) If there are new developments in the provided video, then generate 1 - 2 line of commentary to describe it."
+        )
     elif ds == "ja":
-    
-       prompt = ("あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
-                f"\nこれまでの実況:\n{prev_generation}\n"
-                "以下のルールに従って日本語実況を1文生成してください：\n"
-                "1) 新たな展開があるかどうかを特定してください。\n"
-                "2) 背景や風景の描写は避けてください。\n"
-                "3) 変化がある場合は、それを説明する1文の実況を生成してください。\n"
-                "4) 人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．")
+        prompt = (
+            "あなたはカーレースのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+            f"\nこれまでの実況:\n{prev_generation}\n"
+            "以下のルールに従って日本語実況を1文生成してください：\n"
+            "1) 新たな展開があるかどうかを特定してください。\n"
+            "2) 背景や風景の描写は避けてください。\n"
+            "3) 変化がある場合は、それを説明する1文の実況を生成してください。\n"
+            "4) 人名や車種には言及せず「プレイヤー」や車の色を使って説明してください．"
+        )
     elif ds == "sambra_ja":
-        prompt = ("あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
-                              f"\nこれまでの実況:\n{prev_generation}\n"
-                              "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
-                              "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。")
+        prompt = (
+            "あなたは大乱闘スマッシュブラザーズのプロの実況者です。以下に示すのは現在進行中のレースのビデオクリップと、これまでに生成された実況です。\n"
+            f"\nこれまでの実況:\n{prev_generation}\n"
+            "このシーンを説明する日本語の実況を生成し視聴者を楽しませてください。\n"
+            "観客が没入できるよう驚きや感嘆句も含めてエキサイティングな実況となるよう心がけてください。話すべきことがなければ <WAIT> を出力してください。"
+        )
 
     return prompt
 
+
 def collate_fn(example):
     video_clips = read_video(example["video"])
-    video_clips= np.transpose(video_clips, (0,3, 1, 2))
+    video_clips = np.transpose(video_clips, (0, 3, 1, 2))
     prev_gen = example["prev_generations"]
     gt = example["gt"]
 
     conversation = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": get_FT_prompt(prev_gen)},
-                    {"type": "video"},
-                ],
-            },
-            {
-                "role": "assistant",
-                "content": [
-                    {"type": "text", "text": gt},
-                ],
-            },
-        ]
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": get_FT_prompt(prev_gen)},
+                {"type": "video"},
+            ],
+        },
+        {
+            "role": "assistant",
+            "content": [
+                {"type": "text", "text": gt},
+            ],
+        },
+    ]
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=False)
-    #video_clips = video_clips.to(model.device)
+    # video_clips = video_clips.to(model.device)
     batch = processor(
         text=prompt,
         videos=video_clips,
         truncation=True,
         max_length=MAX_LENGTH,
-        return_tensors="pt"
+        return_tensors="pt",
     )
 
     return batch
+
+
 def collate_fn_batch(examples):
     video_clips = [read_video(path) for path in examples["video"]]
     video_clips = [process_video(clip, num_frames=NUM_FRAMES) for clip in video_clips]
-    video_clips = np.stack(video_clips, axis=0)# list of video clips
-    video_clips= np.transpose(video_clips, (0,1, 4, 2, 3))
+    video_clips = np.stack(video_clips, axis=0)  # list of video clips
+    video_clips = np.transpose(video_clips, (0, 1, 4, 2, 3))
     prev_generations = examples["prev_generations"]
     ground_truths = examples["gt"]
     prompts = []
@@ -128,7 +166,9 @@ def collate_fn_batch(examples):
                 ],
             },
         ]
-        prompt = processor.apply_chat_template(conversation, add_generation_prompt=False)
+        prompt = processor.apply_chat_template(
+            conversation, add_generation_prompt=False
+        )
         prompts.append(prompt)
     for i, v in enumerate(video_clips):
         print(f"Video {i} shape:", v.shape)
@@ -137,19 +177,18 @@ def collate_fn_batch(examples):
         videos=video_clips,
         truncation=True,
         max_length=MAX_LENGTH,
-        return_tensors="pt"
+        return_tensors="pt",
     )
-
 
     return batch
 
-def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
+
+def create_training_samples(hf_ds, path, step=1, num_frames_to_use=1):
     hf_dataset = []
     cache_video_folder = f"{path}_videos"
 
     os.makedirs(cache_video_folder, exist_ok=True)
     for i in tqdm(range(len(hf_ds))):
-
         mp4_file = hf_ds[i]["video_path"]
         transcription_file = hf_ds[i]["srt_path"]
         sample_name = hf_ds[i]["sample_name"]
@@ -157,23 +196,36 @@ def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
         srt = read_srt(transcription_file)
         video_metadata = get_video_info(mp4_file)
         ref_utterences, ref_timing = get_utterence_timing(srt, video_metadata)
-        for t in range(0, video_metadata["duration"], step): #tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
+        for t in range(
+            0, video_metadata["duration"], step
+        ):  # tqdm(range(0, video_metadata["duration"], step), total=video_metadata["duration"] / step):
+            video = sample_frames(
+                mp4_file,
+                num_frames_to_use,
+                start_frame=t * video_metadata["frames_per_second"],
+                end_frame=(t + 1) * video_metadata["frames_per_second"],
+                format="video",
+            )
 
-            video = sample_frames(mp4_file, num_frames_to_use, start_frame=t * video_metadata["frames_per_second"],
-                                  end_frame=(t + 1) * video_metadata["frames_per_second"], format="video")
-
-            video_path = os.path.join(cache_video_folder, os.path.basename(mp4_file.replace('.mp4', f'_{t}.mp4')))
+            video_path = os.path.join(
+                cache_video_folder,
+                os.path.basename(mp4_file.replace(".mp4", f"_{t}.mp4")),
+            )
             write_video(video, video_path, video_metadata["frames_per_second"])
-            prev_generations = " ".join(ref_utterences[:(t - step)])
-            ground_truth = " ".join([ref_utterences[t - j] for j in reversed(range(step))])
+            prev_generations = " ".join(ref_utterences[: (t - step)])
+            ground_truth = " ".join(
+                [ref_utterences[t - j] for j in reversed(range(step))]
+            )
             if not ground_truth.strip():
                 ground_truth = "<WAIT>"
-            dataset_item = {"sample_name": sample_name,
-                           "video": video_path ,
-                          #  "video": video,
-                            "prev_generations": prev_generations,
-                            "num_frames": video.shape[0],
-                            "gt":ground_truth}
+            dataset_item = {
+                "sample_name": sample_name,
+                "video": video_path,
+                #  "video": video,
+                "prev_generations": prev_generations,
+                "num_frames": video.shape[0],
+                "gt": ground_truth,
+            }
             hf_dataset.append(dataset_item)
 
     hf_dataset = Dataset.from_list(hf_dataset)
@@ -185,6 +237,7 @@ def create_training_samples(hf_ds, path, step = 1, num_frames_to_use = 1):
 
 # ------------------------------------- LLM Fine-tuning ------------------------------------
 
+
 class LlavaNextVideoDataCollatorWithPadding:
     def __init__(self, processor):
         self.processor = processor
@@ -192,8 +245,10 @@ class LlavaNextVideoDataCollatorWithPadding:
     def __call__(self, features):
         padded_inputs = self.processor.tokenizer.pad(
             {
-                "input_ids": [feat['input_ids'][0] for feat in features], # each element is one batch only so we slice [0]
-                "attention_mask": [feat['attention_mask'][0] for feat in features],
+                "input_ids": [
+                    feat["input_ids"][0] for feat in features
+                ],  # each element is one batch only so we slice [0]
+                "attention_mask": [feat["attention_mask"][0] for feat in features],
             },
             padding=True,
             return_tensors="pt",
@@ -202,7 +257,9 @@ class LlavaNextVideoDataCollatorWithPadding:
         labels = padded_inputs["input_ids"].clone()
         labels[labels == self.processor.tokenizer.pad_token_id] = -100
         padded_inputs["labels"] = labels
-        padded_inputs["pixel_values_videos"] = torch.cat([feat['pixel_values_videos'] for feat in features], dim=0)
+        padded_inputs["pixel_values_videos"] = torch.cat(
+            [feat["pixel_values_videos"] for feat in features], dim=0
+        )
 
         return padded_inputs
 
@@ -210,43 +267,49 @@ class LlavaNextVideoDataCollatorWithPadding:
 def find_all_linear_names(model):
     cls = torch.nn.Linear
     lora_module_names = set()
-    multimodal_keywords = ['multi_modal_projector', 'vision_model']
+    multimodal_keywords = ["multi_modal_projector", "vision_model"]
     for name, module in model.named_modules():
         if any(mm_keyword in name for mm_keyword in multimodal_keywords):
             continue
         if isinstance(module, cls):
-            names = name.split('.')
+            names = name.split(".")
             lora_module_names.add(names[0] if len(names) == 1 else names[-1])
 
-    if 'lm_head' in lora_module_names: # needed for 16-bit
-        lora_module_names.remove('lm_head')
+    if "lm_head" in lora_module_names:  # needed for 16-bit
+        lora_module_names.remove("lm_head")
     return list(lora_module_names)
 
 
 def organize_metrics(feedback_loop_generation, config):
     f_eval_metrics = feedback_loop_generation[2]
 
-
     additional_columns = ["model_name", "sample", "# frame", "step"]
-    metrics_columns = (
-            additional_columns +
-            [f"feedback_{key}" for key in f_eval_metrics.keys()]
-    )
+    metrics_columns = additional_columns + [
+        f"feedback_{key}" for key in f_eval_metrics.keys()
+    ]
 
-    metrics_data = (
-            [config['model'], config['sample_name'], config['# frame'], config['step']] +
-            list(f_eval_metrics.values())
-    )
+    metrics_data = [
+        config["model"],
+        config["sample_name"],
+        config["# frame"],
+        config["step"],
+    ] + list(f_eval_metrics.values())
     metrics = dict(zip(metrics_columns, metrics_data))
-    additional_columns += ["feedback_ref_timing", "feedback_pred_timing", "feedback_bins", ]
+    additional_columns += [
+        "feedback_ref_timing",
+        "feedback_pred_timing",
+        "feedback_bins",
+    ]
     for k, v in metrics["feedback_bins"].items():
         metrics[f"feedback_{k}"] = v
 
-    metrics_per_sample = {k: v for k, v in metrics.items() if k not in additional_columns}
+    metrics_per_sample = {
+        k: v for k, v in metrics.items() if k not in additional_columns
+    }
     return metrics_per_sample
 
 
-def run_inference(example, model, split_word = "ASSISTANT:"):
+def run_inference(example, model, split_word="ASSISTANT:"):
 
     # Let's use chat template to format the prompt correctly, this time without the caption
     inputs_video = collate_fn(example)
@@ -259,23 +322,64 @@ def run_inference(example, model, split_word = "ASSISTANT:"):
     generated_text = extract_until_last_complete_sentence(generated_text)
     return generated_text
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-            description="Generates commentary as per the defined settings"
-        )
-    parser.add_argument("--dir", required=False, type=str, help="Directory containing the videos "
-                            "and respective commentary in recordings and transcriptions_whole_data_english folder",
-                            default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary")
-    parser.add_argument("--n_train", required=False, type=int, default=10, help="Number of samples for training")
-    parser.add_argument("--n_test", required=False, type=int, default=5, help="Number of samples for validation")
-    parser.add_argument("--use_existing", required=False, type=bool, help="Linking to previously preprocessed training/validaiton set", default=None)
-    parser.add_argument("--step", required=False, type=int, default=2, help="Time Step for generation")
-    parser.add_argument("--frames", required=False, type=int, default=2,
-                        help="Number of frames to use per step of generation")
-    parser.add_argument("--hf_dataset", required=False, type=str,
-                        help="The directory containing hf_Dataset", default = "RaceCommentaryEn/")
-    parser.add_argument("--context_window", required=False, type=int, default=5120,
-                        help="Context Window to be used by LLM")
+        description="Generates commentary as per the defined settings"
+    )
+    parser.add_argument(
+        "--dir",
+        required=False,
+        type=str,
+        help="Directory containing the videos "
+        "and respective commentary in recordings and transcriptions_whole_data_english folder",
+        default="/Users/anumafzal/PycharmProjects/video2Text/RaceCommentary",
+    )
+    parser.add_argument(
+        "--n_train",
+        required=False,
+        type=int,
+        default=10,
+        help="Number of samples for training",
+    )
+    parser.add_argument(
+        "--n_test",
+        required=False,
+        type=int,
+        default=5,
+        help="Number of samples for validation",
+    )
+    parser.add_argument(
+        "--use_existing",
+        required=False,
+        type=bool,
+        help="Linking to previously preprocessed training/validaiton set",
+        default=None,
+    )
+    parser.add_argument(
+        "--step", required=False, type=int, default=2, help="Time Step for generation"
+    )
+    parser.add_argument(
+        "--frames",
+        required=False,
+        type=int,
+        default=2,
+        help="Number of frames to use per step of generation",
+    )
+    parser.add_argument(
+        "--hf_dataset",
+        required=False,
+        type=str,
+        help="The directory containing hf_Dataset",
+        default="RaceCommentaryEn/",
+    )
+    parser.add_argument(
+        "--context_window",
+        required=False,
+        type=int,
+        default=5120,
+        help="Context Window to be used by LLM",
+    )
     args = parser.parse_args()
 
     folder = args.dir
@@ -286,31 +390,41 @@ if __name__ == '__main__':
     DATASET_PATH = args.dir
     MAX_LENGTH = args.context_window
     BATCH_SIZE = 2
-    NUM_FRAMES = args.frames # more frames -> more VRAM needed
-    OUTPUT_DIR = "logs/FT/" # path where to save the checkpoints
+    NUM_FRAMES = args.frames  # more frames -> more VRAM needed
+    OUTPUT_DIR = "logs/FT/"  # path where to save the checkpoints
     MODEL_ID = "llava-hf/LLaVa-NeXT-Video-7b-hf"
     USE_LORA = False
     USE_QLORA = True
     use_existing = args.use_existing
 
-
-    config = {"num_frames_to_use": NUM_FRAMES, "step":step, "max_length": MAX_LENGTH, "use_lora": USE_LORA,
-              "q_lora": USE_QLORA}
+    config = {
+        "num_frames_to_use": NUM_FRAMES,
+        "step": step,
+        "max_length": MAX_LENGTH,
+        "use_lora": USE_LORA,
+        "q_lora": USE_QLORA,
+    }
 
     if hf_dataset_path is None:
         hf_dataset_path = create_ds(DATASET_PATH)
 
     ft_dataset = datasets.load_from_disk(hf_dataset_path)
-    print (ft_dataset)
-    train_dataset_raw, test_dataset_raw = ft_dataset['train'].with_format("torch"), ft_dataset['test'].with_format("torch")
+    print(ft_dataset)
+    train_dataset_raw, test_dataset_raw = (
+        ft_dataset["train"].with_format("torch"),
+        ft_dataset["test"].with_format("torch"),
+    )
 
     # enable this line for testing
-    train_dataset_raw, test_dataset_raw = train_dataset_raw.select(range(300)), test_dataset_raw .select(range(200))
+    train_dataset_raw, test_dataset_raw = (
+        train_dataset_raw.select(range(300)),
+        test_dataset_raw.select(range(200)),
+    )
 
     processor = AutoProcessor.from_pretrained(MODEL_ID, use_fast=True)
     processor.tokenizer.padding_side = "right"
 
-    if hf_dataset_path[-1] == '/':
+    if hf_dataset_path[-1] == "/":
         hf_dataset_path = hf_dataset_path.replace("/", "")
     ft_dataset_path = f"{hf_dataset_path}_FT_frames_{NUM_FRAMES}_step_{step}_n_{len(train_dataset_raw)}"
 
@@ -320,8 +434,12 @@ if __name__ == '__main__':
         train_dataset = datasets.load_from_disk(ft_dataset_path)
     else:
         print("Creating training data from videos and srt files!")
-        train_dataset = create_training_samples(train_dataset_raw, path=ft_dataset_path,
-                                                num_frames_to_use=config["num_frames_to_use"], step=config["step"])
+        train_dataset = create_training_samples(
+            train_dataset_raw,
+            path=ft_dataset_path,
+            num_frames_to_use=config["num_frames_to_use"],
+            step=config["step"],
+        )
 
     print(train_dataset)
     if n_train == -1:
@@ -330,20 +448,28 @@ if __name__ == '__main__':
     print(train_dataset)
 
     # set num_proc higher for faster processing
-    #train_dataset = train_dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
-    dataset_processed = train_dataset.map(collate_fn, batched=False, fn_kwargs={},)# num_proc=)
-    #os.makedirs(cache_dir, exist_ok=True)
-    #train_dataset.save_to_disk(cache_dir)
-    #print (f"collated data saved to {cache_dir}")
-
+    # train_dataset = train_dataset.map(collate_fn_batch, batched=True, fn_kwargs={}, num_proc=2)
+    dataset_processed = train_dataset.map(
+        collate_fn,
+        batched=False,
+        fn_kwargs={},
+    )  # num_proc=)
+    # os.makedirs(cache_dir, exist_ok=True)
+    # train_dataset.save_to_disk(cache_dir)
+    # print (f"collated data saved to {cache_dir}")
 
     dataset_processed = dataset_processed.shuffle(seed=42)
     dataset_processed = dataset_processed.train_test_split(test_size=0.2)
 
-    train_dataset, validation_dataset = dataset_processed['train'].with_format("torch"), dataset_processed['test'].with_format("torch")
-    print (f"{len(train_dataset)} training example, {len(validation_dataset)} validation examples")
-    REPO_ID = f"anumafzal94/FT_LLaVa-NeXT-Video-_step_{step}_frames_{NUM_FRAMES}_n_{len(train_dataset)}" # Change to your hf-hub repo
-    
+    train_dataset, validation_dataset = (
+        dataset_processed["train"].with_format("torch"),
+        dataset_processed["test"].with_format("torch"),
+    )
+    print(
+        f"{len(train_dataset)} training example, {len(validation_dataset)} validation examples"
+    )
+    REPO_ID = f"anumafzal94/FT_LLaVa-NeXT-Video-_step_{step}_frames_{NUM_FRAMES}_n_{len(train_dataset)}"  # Change to your hf-hub repo
+
     if USE_QLORA or USE_LORA:
         if USE_QLORA:
             bnb_config = BitsAndBytesConfig(
@@ -378,33 +504,30 @@ if __name__ == '__main__':
     model = get_peft_model(model, lora_config)
 
     args = TrainingArguments(
-
         # args related to training
         output_dir=OUTPUT_DIR,
-        eval_strategy='steps',
+        eval_strategy="steps",
         eval_steps=20,
         per_device_train_batch_size=BATCH_SIZE,
         per_device_eval_batch_size=BATCH_SIZE,
         gradient_accumulation_steps=8,
         learning_rate=2e-05,
         num_train_epochs=1,
-        #max_steps=5,  # adjust this depending on your dataset size
-        lr_scheduler_type='cosine',
+        # max_steps=5,  # adjust this depending on your dataset size
+        lr_scheduler_type="cosine",
         warmup_ratio=0.1,
-
         # args related to eval/save
         logging_steps=20,
-        save_strategy='steps',
+        save_strategy="steps",
         save_steps=20,
         save_total_limit=1,
         fp16=True,  # we have the model train and eval with fp16 precision
         fp16_full_eval=True,
-        optim='adamw_bnb_8bit',
+        optim="adamw_bnb_8bit",
         # adam in lower-bits to save memory, consider changing to 'adamw_torch' if model is not converging
         report_to="wandb",  # install wand to use this
         hub_model_id=REPO_ID,
         push_to_hub=True,  # wel'll push the model to hub after each epoch
-
         # model that was wrapped for QLORA training with peft will not have arguments listed in its signature
         # so we need to pass lable names explicitly to calculate val loss
         label_names=["labels"],
@@ -430,33 +553,35 @@ if __name__ == '__main__':
         torch_dtype=torch.float16,
         device_map="auto",
     )
-    j = [1 if int(len(validation_dataset)/100) == 0 else int(len(validation_dataset)/100)]
+    j = [
+        1
+        if int(len(validation_dataset) / 100) == 0
+        else int(len(validation_dataset) / 100)
+    ]
     print("Old Model")
     for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
-    
-    
 
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-            REPO_ID,
-            torch_dtype=torch.float16,
-            device_map="auto",
-        )
-    print ("FT Model")
+        REPO_ID,
+        torch_dtype=torch.float16,
+        device_map="auto",
+    )
+    print("FT Model")
     for i in range(j):
         example = validation_dataset[i]
         print(run_inference(example, model))
 
     # ------------------------------- Test the trained model on whole Train Set ----------------------- #
-    #REPO_ID = "anumafzal94/LLaVa-NeXT-Video-_step_2_frames_1_n_40000"
+    # REPO_ID = "anumafzal94/LLaVa-NeXT-Video-_step_2_frames_1_n_40000"
     model = LlavaNextVideoForConditionalGeneration.from_pretrained(
-            REPO_ID,
-            torch_dtype=torch.float16,
-            device_map="auto",
-        )
+        REPO_ID,
+        torch_dtype=torch.float16,
+        device_map="auto",
+    )
     split_word = "ASSISTANT:"
-    date = '{date:%Y-%m-%d_%H-%M-%S}'.format(date=datetime.now())
+    date = "{date:%Y-%m-%d_%H-%M-%S}".format(date=datetime.now())
 
     metrics_all_samples = []
     if n_test > 400:
@@ -467,34 +592,50 @@ if __name__ == '__main__':
         transcription_file = test_dataset_raw[i]["srt_path"]
 
         # create folder to store logs for each sample.
-        sample_name = os.path.dirname(mp4_file).split('/')[-1]
-        #try:
+        sample_name = os.path.dirname(mp4_file).split("/")[-1]
+        # try:
         if True:
-            out_folder = os.path.join("logs", date, hf_dataset_path, REPO_ID.replace('/', '_'), sample_name,
-                                      f"step_{step}_frames-used_{NUM_FRAMES}_k_0")
+            out_folder = os.path.join(
+                "logs",
+                date,
+                hf_dataset_path,
+                REPO_ID.replace("/", "_"),
+                sample_name,
+                f"step_{step}_frames-used_{NUM_FRAMES}_k_0",
+            )
             print(out_folder)
             os.makedirs(out_folder, exist_ok=True)
 
-            feedback_loop_generation = baseline_feedback_loop(mp4_file, transcription_file, NUM_FRAMES,
-                                                                      init_skip_frames=10, step=step, ICL=False,
-                                                                      split_word = split_word, processor=processor,
-                                                                  model=model, logs_dir=out_folder, model_name = REPO_ID,
-                                                              context_window = 4096)
+            feedback_loop_generation = baseline_feedback_loop(
+                mp4_file,
+                transcription_file,
+                NUM_FRAMES,
+                init_skip_frames=10,
+                step=step,
+                ICL=False,
+                split_word=split_word,
+                processor=processor,
+                model=model,
+                logs_dir=out_folder,
+                model_name=REPO_ID,
+                context_window=4096,
+            )
 
+            config = {
+                "model": REPO_ID,
+                "step": step,
+                "# frame": NUM_FRAMES,
+                "sample_name": sample_name,
+            }
 
-
-            config = {"model": REPO_ID, "step": step, "# frame": NUM_FRAMES, "sample_name": sample_name,
-                              }
-
-            metrics_per_sample =  organize_metrics(feedback_loop_generation, config)
+            metrics_per_sample = organize_metrics(feedback_loop_generation, config)
             metrics_all_samples.append(metrics_per_sample)
-        #except Exception as e:
+        # except Exception as e:
         #    print (f"Caught the following exception for the sample \n Video Path:{mp4_file} \n Transcription File: {transcription_file} \n Exception: {e}")
-
 
     # Writing per experiments logs
     df = pd.DataFrame(metrics_all_samples)
-    means_dict = df.select_dtypes(include='number').mean().to_dict()
+    means_dict = df.select_dtypes(include="number").mean().to_dict()
     means_dict["n"] = len(df)
     means_dict["model_name"] = REPO_ID
     means_dict["# frame"] = NUM_FRAMES
@@ -502,8 +643,7 @@ if __name__ == '__main__':
     print(means_dict)
 
     import json
+
     run_name = f"final_FT_step_{step}_frames_{NUM_FRAMES}_n_{len(df)}"
-    with open(f'{run_name}.json', 'w') as fp:
+    with open(f"{run_name}.json", "w") as fp:
         json.dump(means_dict, fp)
-
-
